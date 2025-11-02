@@ -60,6 +60,9 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       target.layout,
     )
 
+    // Add runtime to compiler plugin classpath for all compilations
+    addRuntimeToCompilerClasspath(target)
+
     // Register stability dump task
     val stabilityDumpTask = target.tasks.register(
       "stabilityDump",
@@ -121,21 +124,19 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
   override fun getCompilerPluginId(): String = COMPILER_PLUGIN_ID
 
   override fun getPluginArtifact(): SubpluginArtifact {
-    // Check if compiler plugin is available as a project dependency
-    val compilerProject = getCompilerProject()
-    return if (compilerProject != null) {
-      SubpluginArtifact(
-        groupId = GROUP_ID,
-        artifactId = COMPILER_ARTIFACT_ID,
-        version = VERSION,
-      )
-    } else {
-      SubpluginArtifact(
-        groupId = GROUP_ID,
-        artifactId = COMPILER_ARTIFACT_ID,
-        version = VERSION,
-      )
-    }
+    return SubpluginArtifact(
+      groupId = GROUP_ID,
+      artifactId = COMPILER_ARTIFACT_ID,
+      version = VERSION,
+    )
+  }
+
+  override fun getPluginArtifactForNative(): SubpluginArtifact {
+    return SubpluginArtifact(
+      groupId = GROUP_ID,
+      artifactId = COMPILER_ARTIFACT_ID,
+      version = VERSION,
+    )
   }
 
   override fun applyToCompilation(
@@ -155,6 +156,25 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
           value = project.layout.buildDirectory.dir("stability").get().asFile.absolutePath,
         ),
       )
+    }
+  }
+
+  /**
+   * Add runtime to compiler plugin classpath.
+   * This ensures the compiler plugin can access runtime classes during compilation.
+   */
+  private fun addRuntimeToCompilerClasspath(project: Project) {
+    project.afterEvaluate {
+      val runtimeProject = getRuntimeProject(project)
+      val runtimeDependency = runtimeProject
+        ?: "$GROUP_ID:$RUNTIME_ARTIFACT_ID:$VERSION"
+
+      // Add runtime to all compiler plugin classpath configurations (not general compiler classpath)
+      project.configurations.configureEach {
+        if (name.contains("CompilerPluginClasspath", ignoreCase = true)) {
+          project.dependencies.add(name, runtimeDependency)
+        }
+      }
     }
   }
 

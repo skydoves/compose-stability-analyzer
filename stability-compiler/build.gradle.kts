@@ -29,7 +29,7 @@ kotlin {
 dependencies {
   compileOnly(libs.kotlin.stdlib)
   compileOnly(libs.kotlin.compiler.embeddable)
-  api(project(":stability-runtime"))
+  implementation(project(":stability-runtime"))
 
   testImplementation(kotlin("test"))
   testImplementation(kotlin("test-junit"))
