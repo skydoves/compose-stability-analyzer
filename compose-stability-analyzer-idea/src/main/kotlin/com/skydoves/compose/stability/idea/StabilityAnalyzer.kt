@@ -487,7 +487,37 @@ internal object StabilityAnalyzer {
               }
             }
 
-            // 5. Check for @StabilityInferred (from separate compilation)
+            // 5. Check if it's a kotlinx immutable collection (always stable)
+            if (fqName != null && fqName.startsWith("kotlinx.collections.immutable.")) {
+              if (fqName.contains("Immutable") || fqName.contains("Persistent")) {
+                return StabilityResult(
+                  ParameterStability.STABLE,
+                  "Kotlinx immutable collection",
+                )
+              }
+            }
+
+            // 6. If it's an interface, return RUNTIME (cannot determine)
+            if (resolved.isInterface()) {
+              return StabilityResult(
+                ParameterStability.RUNTIME,
+                "Interface type - actual implementation could be mutable",
+              )
+            }
+
+            // 7. Analyze class properties first (both data classes and normal classes)
+            // This check MUST come before @StabilityInferred to properly detect definitive cases
+            val propertyStability = analyzeClassPropertiesViaPsiWithReason(resolved, className)
+
+            // If property analysis gives a definitive answer (STABLE or UNSTABLE), return it
+            // Only fall back to @StabilityInferred for uncertain (RUNTIME) cases
+            if (propertyStability != null &&
+              propertyStability.stability != ParameterStability.RUNTIME
+            ) {
+              return propertyStability
+            }
+
+            // 8. Check for @StabilityInferred (from separate compilation)
             val hasStabilityInferred = resolved.annotationEntries.any { annotation ->
               annotation.shortName?.asString() == "StabilityInferred"
             }
@@ -498,26 +528,8 @@ internal object StabilityAnalyzer {
               )
             }
 
-            // 6. Check if it's a kotlinx immutable collection (always stable)
-            if (fqName != null && fqName.startsWith("kotlinx.collections.immutable.")) {
-              if (fqName.contains("Immutable") || fqName.contains("Persistent")) {
-                return StabilityResult(
-                  ParameterStability.STABLE,
-                  "Kotlinx immutable collection",
-                )
-              }
-            }
-
-            // 7. If it's an interface, return RUNTIME (cannot determine)
-            if (resolved.isInterface()) {
-              return StabilityResult(
-                ParameterStability.RUNTIME,
-                "Interface type - actual implementation could be mutable",
-              )
-            }
-
-            // 8. Analyze class properties (both data classes and normal classes)
-            return analyzeClassPropertiesViaPsiWithReason(resolved, className)
+            // Return property stability or null if no definitive answer
+            return propertyStability
           }
         }
       }

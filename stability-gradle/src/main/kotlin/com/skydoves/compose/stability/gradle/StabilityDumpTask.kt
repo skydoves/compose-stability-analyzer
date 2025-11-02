@@ -253,7 +253,9 @@ public abstract class StabilityDumpTask : DefaultTask() {
       val packageName = entry.qualifiedName.substringBeforeLast('.', "")
       val className = entry.qualifiedName.substringAfterLast('.')
 
-      !ignoredPackages.any { packageName.startsWith(it) } &&
+      // Filter out compiler-generated anonymous composables
+      !entry.qualifiedName.contains("<anonymous>") &&
+        !ignoredPackages.any { packageName.startsWith(it) } &&
         !ignoredClasses.contains(className)
     }
   }

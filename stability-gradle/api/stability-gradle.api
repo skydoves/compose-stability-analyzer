@@ -5,11 +5,16 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityAnalyzerExt
 	public final fun stabilityValidation (Lorg/gradle/api/Action;)V
 }
 
-public final class com/skydoves/compose/stability/gradle/StabilityAnalyzerGradlePlugin : org/gradle/api/Plugin {
+public final class com/skydoves/compose/stability/gradle/StabilityAnalyzerGradlePlugin : org/jetbrains/kotlin/gradle/plugin/KotlinCompilerPluginSupportPlugin {
 	public static final field Companion Lcom/skydoves/compose/stability/gradle/StabilityAnalyzerGradlePlugin$Companion;
 	public fun <init> ()V
 	public synthetic fun apply (Ljava/lang/Object;)V
 	public fun apply (Lorg/gradle/api/Project;)V
+	public fun applyToCompilation (Lorg/jetbrains/kotlin/gradle/plugin/KotlinCompilation;)Lorg/gradle/api/provider/Provider;
+	public fun getCompilerPluginId ()Ljava/lang/String;
+	public fun getPluginArtifact ()Lorg/jetbrains/kotlin/gradle/plugin/SubpluginArtifact;
+	public fun getPluginArtifactForNative ()Lorg/jetbrains/kotlin/gradle/plugin/SubpluginArtifact;
+	public fun isApplicable (Lorg/jetbrains/kotlin/gradle/plugin/KotlinCompilation;)Z
 }
 
 public final class com/skydoves/compose/stability/gradle/StabilityAnalyzerGradlePlugin$Companion {

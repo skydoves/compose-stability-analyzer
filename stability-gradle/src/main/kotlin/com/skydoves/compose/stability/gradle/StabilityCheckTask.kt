@@ -137,7 +137,8 @@ public abstract class StabilityCheckTask : DefaultTask() {
 
       val obj = content.substring(objStart, objEnd + 1)
       val entry = parseComposableObject(obj)
-      if (entry != null) {
+      // Filter out compiler-generated anonymous composables
+      if (entry != null && !entry.qualifiedName.contains("<anonymous>")) {
         entries[entry.qualifiedName] = entry
       }
 

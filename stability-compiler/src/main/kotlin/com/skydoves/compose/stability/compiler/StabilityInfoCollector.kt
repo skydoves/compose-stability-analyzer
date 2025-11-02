@@ -37,10 +37,15 @@ public class StabilityInfoCollector(
   /**
    * Export collected stability information to JSON file.
    * Does nothing if no composables were collected.
+   * Filters out anonymous composables (compiler-generated lambda functions).
    */
   public fun export() {
+    // Filter out anonymous composables (compiler-generated functions)
+    // Check the qualified name to catch cases like "Foo.<anonymous>.Bar"
+    val filteredComposables = composables.filter { !it.qualifiedName.contains("<anonymous>") }
+
     // Don't create file if there are no entries
-    if (composables.isEmpty()) {
+    if (filteredComposables.isEmpty()) {
       return
     }
 
@@ -50,7 +55,7 @@ public class StabilityInfoCollector(
       appendLine("{")
       appendLine("  \"composables\": [")
 
-      composables.sortedBy { it.qualifiedName }.forEachIndexed { index, info ->
+      filteredComposables.sortedBy { it.qualifiedName }.forEachIndexed { index, info ->
         appendLine("    {")
         appendLine("      \"qualifiedName\": \"${info.qualifiedName.escapeJson()}\",")
         appendLine("      \"simpleName\": \"${info.simpleName.escapeJson()}\",")
@@ -78,7 +83,7 @@ public class StabilityInfoCollector(
         }
 
         appendLine("      ]")
-        if (index < composables.size - 1) {
+        if (index < filteredComposables.size - 1) {
           appendLine("    },")
         } else {
           appendLine("    }")

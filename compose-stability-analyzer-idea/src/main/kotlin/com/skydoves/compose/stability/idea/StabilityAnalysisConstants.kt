@@ -84,6 +84,15 @@ internal object StabilityAnalysisConstants {
     "androidx.compose.ui.unit.DpSize",
     "androidx.compose.ui.unit.Constraints",
 
+    // Compose Foundation shapes
+    "androidx.compose.foundation.shape.RoundedCornerShape",
+    "androidx.compose.foundation.shape.CircleShape",
+    "androidx.compose.foundation.shape.CutCornerShape",
+    "androidx.compose.foundation.shape.CornerBasedShape",
+    "androidx.compose.foundation.shape.AbsoluteRoundedCornerShape",
+    "androidx.compose.foundation.shape.AbsoluteCutCornerShape",
+    "androidx.compose.ui.graphics.RectangleShape",
+
     // Compose text value classes
     "androidx.compose.ui.text.style.TextAlign",
     "androidx.compose.ui.text.style.TextDirection",

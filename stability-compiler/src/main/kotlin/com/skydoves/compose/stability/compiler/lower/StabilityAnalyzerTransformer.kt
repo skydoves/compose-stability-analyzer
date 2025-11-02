@@ -310,23 +310,32 @@ public class StabilityAnalyzerTransformer(
       return ParameterStability.STABLE
     }
 
-    // 14. Check for @StabilityInferred annotation (runtime check)
-    if (type.hasStabilityInferredAnnotation()) {
-      return ParameterStability.RUNTIME
-    }
-
-    // 15. Interfaces - cannot determine (RUNTIME)
+    // 14. Interfaces - cannot determine (RUNTIME)
     if (clazz.isInterfaceIr()) {
       return ParameterStability.RUNTIME
     }
 
-    // 16. Abstract classes - cannot determine (RUNTIME)
+    // 15. Abstract classes - cannot determine (RUNTIME)
     if (clazz.modality == org.jetbrains.kotlin.descriptors.Modality.ABSTRACT) {
       return ParameterStability.RUNTIME
     }
 
-    // 17. Regular classes (including data classes) - analyze properties
-    return analyzeClassProperties(clazz)
+    // 16. Regular classes - analyze properties first before checking @StabilityInferred
+    val propertyStability = analyzeClassProperties(clazz)
+
+    when (propertyStability) {
+      ParameterStability.STABLE -> return ParameterStability.STABLE
+      ParameterStability.UNSTABLE -> return ParameterStability.UNSTABLE
+      ParameterStability.RUNTIME -> {
+        // 17. Check @StabilityInferred: parameters=0 means stable, else runtime
+        val stabilityInferredParams = type.getStabilityInferredParameters()
+        return if (stabilityInferredParams == 0) {
+          ParameterStability.STABLE
+        } else {
+          ParameterStability.RUNTIME
+        }
+      }
+    }
   }
 
   /**
@@ -393,6 +402,14 @@ public class StabilityAnalyzerTransformer(
     val stabilityInferredFqName =
       FqName("androidx.compose.runtime.internal.StabilityInferred")
     return clazz.hasAnnotation(stabilityInferredFqName)
+  }
+
+  /**
+   * TODO: Read @StabilityInferred parameters field without deprecated IR APIs.
+   * Returns null (conservative RUNTIME) until stable API is available.
+   */
+  private fun IrType.getStabilityInferredParameters(): Int? {
+    return null
   }
 
   private fun IrType.isCollection(): Boolean {
@@ -547,6 +564,15 @@ public class StabilityAnalyzerTransformer(
       "androidx.compose.ui.unit.DpOffset",
       "androidx.compose.ui.unit.DpSize",
       "androidx.compose.ui.unit.Constraints",
+
+      // Compose Foundation shapes
+      "androidx.compose.foundation.shape.RoundedCornerShape",
+      "androidx.compose.foundation.shape.CircleShape",
+      "androidx.compose.foundation.shape.CutCornerShape",
+      "androidx.compose.foundation.shape.CornerBasedShape",
+      "androidx.compose.foundation.shape.AbsoluteRoundedCornerShape",
+      "androidx.compose.foundation.shape.AbsoluteCutCornerShape",
+      "androidx.compose.ui.graphics.RectangleShape",
 
       // Compose text value classes
       "androidx.compose.ui.text.style.TextAlign",

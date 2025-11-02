@@ -48,10 +48,10 @@ import org.jetbrains.kotlin.analysis.api.types.KaTypeNullability
  * 14. Standard collections (RUNTIME)
  * 15. Value classes
  * 16. Enums
- * 17. @StabilityInferred (RUNTIME)
- * 18. Interfaces (RUNTIME)
- * 19. Abstract classes (RUNTIME)
- * 20. Regular classes (with superclass stability checking)
+ * 17. Interfaces (RUNTIME)
+ * 18. Abstract classes (RUNTIME)
+ * 19. Regular classes - property analysis (returns STABLE/UNSTABLE if definitive)
+ * 20. @StabilityInferred (RUNTIME - only for uncertain cases)
  */
 internal class KtStabilityInferencer {
 
@@ -271,15 +271,7 @@ internal class KtStabilityInferencer {
       return KtStability.Certain(stable = true, reason = StabilityConstants.Messages.ENUM_STABLE)
     }
 
-    // 17. Check for @StabilityInferred annotation (runtime check)
-    if (classSymbol.hasStabilityInferredAnnotation()) {
-      return KtStability.Runtime(
-        className = fqName ?: simpleName,
-        reason = "Annotated with @StabilityInferred (from separate compilation)",
-      )
-    }
-
-    // 18. Interfaces - cannot determine (RUNTIME)
+    // 17. Interfaces - cannot determine (RUNTIME)
     if (classSymbol.classKind == KaClassKind.INTERFACE) {
       return KtStability.Runtime(
         className = fqName ?: simpleName,
@@ -287,7 +279,7 @@ internal class KtStabilityInferencer {
       )
     }
 
-    // 19. Abstract classes - cannot determine (RUNTIME)
+    // 18. Abstract classes - cannot determine (RUNTIME)
     if (classSymbol.modality == KaSymbolModality.ABSTRACT) {
       return KtStability.Runtime(
         className = fqName ?: simpleName,
@@ -295,8 +287,32 @@ internal class KtStabilityInferencer {
       )
     }
 
-    // 20. Regular classes (including data classes) - analyze properties
-    return analyzeClassProperties(classSymbol, currentlyAnalyzing)
+    // 19. Regular classes - analyze properties first before checking @StabilityInferred
+    val propertyStability = analyzeClassProperties(classSymbol, currentlyAnalyzing)
+
+    return when {
+      propertyStability is KtStability.Certain -> propertyStability
+      else -> {
+        // 20. Check @StabilityInferred: parameters=0 means stable, else runtime
+        val stabilityInferredParams = classSymbol.getStabilityInferredParameters()
+        when {
+          stabilityInferredParams != null -> {
+            if (stabilityInferredParams == 0) {
+              KtStability.Certain(
+                stable = true,
+                reason = "Annotated with @StabilityInferred(parameters=0)",
+              )
+            } else {
+              KtStability.Runtime(
+                className = fqName ?: simpleName,
+                reason = "Annotated with @StabilityInferred(parameters=$stabilityInferredParams)",
+              )
+            }
+          }
+          else -> propertyStability
+        }
+      }
+    }
   }
 
   /**
@@ -494,14 +510,12 @@ internal class KtStabilityInferencer {
   }
 
   /**
-   * Check if a class has @StabilityInferred annotation.
+   * TODO: Read @StabilityInferred parameters field using K2 Analysis API.
+   * Returns null (conservative RUNTIME) until reliable API is found.
    */
   context(KaSession)
-  private fun KaClassSymbol.hasStabilityInferredAnnotation(): Boolean {
-    return annotations.any { annotation ->
-      val fqName = annotation.classId?.asSingleFqName()?.asString()
-      fqName == "androidx.compose.runtime.internal.StabilityInferred"
-    }
+  private fun KaClassSymbol.getStabilityInferredParameters(): Int? {
+    return null
   }
 
   /**

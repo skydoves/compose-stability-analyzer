@@ -12,7 +12,7 @@ androidGradlePlugin = "8.13.0"
 androidxActivity = "1.11.0"
 androidxComposeBom = "2025.10.01"
 jetbrains-compose = "1.9.2"
-compose-stability-analyzer = "0.4.0"
+compose-stability-analyzer = "0.4.1"
 spotless = "6.21.0"
 
 [libraries]
