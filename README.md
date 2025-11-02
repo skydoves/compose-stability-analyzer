@@ -102,7 +102,7 @@ You can change the configuration on the way below:
 
 ## Stability Analyzer for Tracking Runtime Recomposition
 
-You can track the recomposition for specific composable functions with the `@TraceRecomposition` annotation at runtime. You don't need to write any logging code yourself, just add the annotation, run your app, and watch detailed recomposition logs appear in Logcat. It also supports Kotlin Multiplatform.
+You can track the recomposition for specific composable functions with the `@TraceRecomposition` annotation at runtime. You don't need to write any logging code yourself, just add the annotation, run your app, and watch detailed recomposition logs appear in Logcat.
 
 ![preview](art/preview6.png)
 
@@ -128,18 +128,6 @@ Next, apply the plugin on your root's `build.gradle.kts` file like below:
 
 ```kotlin
 alias(libs.plugins.stability.analyzer)
-```
-
-For Kotlin Multiplatform, you should also add the dependency below on your `build.gradle.kts` file:
-
-```kotlin
-sourceSets {
-    val commonMain by getting {
-        dependencies {
-            compileOnly("com.github.skydoves:compose-stability-compiler:0.4.0")
-        }
-    }
-}
 ```
 
 ### Kotlin Version Mapping
