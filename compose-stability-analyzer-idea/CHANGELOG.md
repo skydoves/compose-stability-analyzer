@@ -2,6 +2,18 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.4.1] - 2025-11-02
+
+### Fixed
+- Fixed stability analysis for Compose shape types (RoundedCornerShape, CircleShape, etc.) to correctly show as STABLE instead of RUNTIME
+- Improved consistency between IDEA plugin and compiler plugin stability inference
+- Added Compose Foundation shapes to known stable types list
+
+### Improved
+- Enhanced accuracy of stability analysis to match compiler plugin behavior
+
+---
+
 ## [0.4.0] - 2025-11-02
 
 ### Added

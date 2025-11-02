@@ -121,7 +121,7 @@ This is incredibly useful for:
 Add the dependency below to your `libs.versions.toml` file:
 
 ```toml
-stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.4.0" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.4.1" }
 ```
 
 Next, apply the plugin on your root's `build.gradle.kts` file like below:
@@ -135,8 +135,9 @@ alias(libs.plugins.stability.analyzer)
 It’s **strongly recommended to use the exact same Kotlin version** as this library. Using a different Kotlin version may lead to compilation errors during the build process.
 
 | Stability Analyzer | Kotlin |
-|-------------|-------------|
-| 0.4.0       | 2.2.21 |
+|--------------------|-------------|
+| 0.4.1              | 2.2.21 |
+| 0.4.0              | 2.2.21 |
 
 ### TraceRecomposition Annotation
 
