@@ -45,7 +45,7 @@ You can download the Compose Stability Analyzer Plugin with the steps below:
 
 1. Download the idea plugin file below:
 
-[compose-stability-analyzer-idea-0.4.0.zip](https://github.com/user-attachments/files/23287212/compose-stability-analyzer-idea-0.4.0.zip)
+[compose-stability-analyzer-idea-0.4.1.zip](https://github.com/user-attachments/files/23290392/compose-stability-analyzer-idea-0.4.1.zip)
 
 2. Open **Android Studio** > **Settings** (or **Preferences**) > **Plugins** > **⚙️ icon** > **Install Plugin from Disk...** Select the `.zip` file > **Restart Android Studio**.
 
