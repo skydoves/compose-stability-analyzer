@@ -58,15 +58,45 @@ internal class KtStabilityInferencer {
   private val settings: StabilitySettingsState
     get() = StabilitySettingsState.getInstance()
 
+  // Cycle detection for recursive types
+  private val analyzingTypes = ThreadLocal.withInitial { mutableSetOf<String>() }
+
   /**
    * Analyzes a Kotlin type to determine its stability.
    * Main entry point for K2-based stability analysis.
    */
   context(KaSession)
   internal fun ktStabilityOf(type: KaType): KtStability {
-    // Get the original type string BEFORE stripping nullability (preserves annotations)
-    val originalTypeString = type.render(position = org.jetbrains.kotlin.types.Variance.INVARIANT)
+    val originalTypeString = try {
+      type.render(position = org.jetbrains.kotlin.types.Variance.INVARIANT)
+    } catch (e: StackOverflowError) {
+      return KtStability.Runtime(
+        className = "Unknown",
+        reason = "Unable to render type due to complexity",
+      )
+    }
 
+    val currentlyAnalyzing = analyzingTypes.get()
+    if (originalTypeString in currentlyAnalyzing) {
+      return KtStability.Runtime(
+        className = originalTypeString,
+        reason = StabilityConstants.Messages.CIRCULAR_REFERENCE,
+      )
+    }
+
+    currentlyAnalyzing.add(originalTypeString)
+    try {
+      return ktStabilityOfInternal(type, originalTypeString)
+    } finally {
+      currentlyAnalyzing.remove(originalTypeString)
+    }
+  }
+
+  /**
+   * Internal implementation separated for proper cleanup.
+   */
+  context(KaSession)
+  private fun ktStabilityOfInternal(type: KaType, originalTypeString: String): KtStability {
     // 1. Nullable types - MUST be checked first to strip nullability
     // Use KaTypeNullability enum for compatibility with Android Studio AI-243
     val nonNullableType = if (type.isMarkedNullable) {

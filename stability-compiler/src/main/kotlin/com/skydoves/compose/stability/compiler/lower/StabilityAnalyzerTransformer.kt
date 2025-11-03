@@ -55,6 +55,9 @@ public class StabilityAnalyzerTransformer(
   private val irBuilder = RecompositionIrBuilder(context)
   private var irBuilderInitialized = false
 
+  // Cycle detection for recursive types
+  private val analyzingTypes = ThreadLocal.withInitial { mutableSetOf<String>() }
+
   override fun visitFunctionNew(declaration: IrFunction): IrStatement {
     val functionName = declaration.name.asString()
     val fqName = declaration.kotlinFqName.asString()
@@ -248,8 +251,34 @@ public class StabilityAnalyzerTransformer(
     }
 
     val classSymbol = type.classOrNull
-    val fqName = type.classFqName?.asString()
+    val fqName = try {
+      type.classFqName?.asString()
+    } catch (e: StackOverflowError) {
+      return ParameterStability.RUNTIME
+    }
 
+    val typeId = fqName ?: classSymbol?.owner?.name?.asString() ?: type.render()
+    val currentlyAnalyzing = analyzingTypes.get()
+    if (typeId in currentlyAnalyzing) {
+      return ParameterStability.RUNTIME
+    }
+
+    currentlyAnalyzing.add(typeId)
+    try {
+      return analyzeTypeStabilityInternal(type, classSymbol, fqName)
+    } finally {
+      currentlyAnalyzing.remove(typeId)
+    }
+  }
+
+  /**
+   * Internal implementation separated for proper cleanup.
+   */
+  private fun analyzeTypeStabilityInternal(
+    type: IrType,
+    classSymbol: org.jetbrains.kotlin.ir.symbols.IrClassSymbol?,
+    fqName: String?,
+  ): ParameterStability {
     // 2b. Type parameters (T, E, K, V in generics) - RUNTIME
     // If we can't resolve to a class, it's likely a type parameter
     if (classSymbol == null) {

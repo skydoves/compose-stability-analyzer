@@ -6,11 +6,14 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
 ### Fixed
 - Fixed stability analysis for Compose shape types (RoundedCornerShape, CircleShape, etc.) to correctly show as STABLE instead of RUNTIME
+- Fixed StackOverflowError when analyzing recursive or self-referential types (Issue #11)
 - Improved consistency between IDEA plugin and compiler plugin stability inference
 - Added Compose Foundation shapes to known stable types list
+- Added cycle detection to prevent infinite recursion in type stability analysis
 
 ### Improved
 - Enhanced accuracy of stability analysis to match compiler plugin behavior
+- Better handling of complex function type aliases and deeply nested generic types
 
 ---
 
