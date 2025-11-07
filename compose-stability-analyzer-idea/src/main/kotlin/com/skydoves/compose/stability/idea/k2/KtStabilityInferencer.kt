@@ -598,12 +598,51 @@ internal class KtStabilityInferencer {
   }
 
   /**
-   * TODO: Read @StabilityInferred parameters field using K2 Analysis API.
-   * Returns null (conservative RUNTIME) until reliable API is found.
+   * Reads the @StabilityInferred annotation's parameters field.
+   *
+   * @StabilityInferred is added by the Compose compiler to classes from other modules
+   * to indicate their stability:
+   * - parameters = 0: Class is stable
+   * - parameters > 0: Class needs runtime stability check
+   * - null: Annotation not present
+   *
+   * This is crucial for cross-module stability: classes from other modules should be
+   * UNSTABLE unless annotated with @Stable/@Immutable or @StabilityInferred(parameters=0).
    */
   context(KaSession)
   private fun KaClassSymbol.getStabilityInferredParameters(): Int? {
-    return null
+    val stabilityInferredFqName = "androidx.compose.runtime.internal.StabilityInferred"
+
+    // Find @StabilityInferred annotation
+    val annotation = annotations.firstOrNull { annotation ->
+      annotation.classId?.asSingleFqName()?.asString() == stabilityInferredFqName
+    } ?: return null
+
+    // Try to read the 'parameters' field
+    // The annotation has a single field: parameters: Int
+    val parametersArgument = annotation.arguments.firstOrNull { arg ->
+      arg.name.asString() == "parameters"
+    }
+
+    // Extract the Int value from the constant expression
+    return try {
+      when (val expression = parametersArgument?.expression) {
+        is org.jetbrains.kotlin.analysis.api.annotations.KaAnnotationValue.ConstantValue -> {
+          // Get the constant value as Int
+          (expression.value.value as? Int) ?: run {
+            // If we can't extract the value, be conservative and return null
+            null
+          }
+        }
+        else -> {
+          // Unknown expression type, be conservative
+          null
+        }
+      }
+    } catch (e: Exception) {
+      // If reading fails, be conservative and return null
+      null
+    }
   }
 
   /**
