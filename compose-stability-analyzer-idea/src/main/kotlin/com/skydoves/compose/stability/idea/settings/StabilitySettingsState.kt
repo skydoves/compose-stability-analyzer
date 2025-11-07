@@ -59,6 +59,12 @@ public class StabilitySettingsState : PersistentStateComponent<StabilitySettings
   public var showGutterIconsOnlyForUnskippable: Boolean = false
 
   /**
+   * Show gutter icons in test source sets.
+   * When disabled, gutter icons will not appear for composables in test directories.
+   */
+  public var showGutterIconsInTests: Boolean = false
+
+  /**
    * Show warning annotations (underlines and tooltips) for unstable composables and parameters.
    */
   public var showWarnings: Boolean = true

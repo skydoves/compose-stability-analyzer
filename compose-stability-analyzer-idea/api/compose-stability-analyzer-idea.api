@@ -96,6 +96,7 @@ public final class com/skydoves/compose/stability/idea/settings/StabilitySetting
 	public final fun getRuntimeGutterColorRGB ()I
 	public final fun getRuntimeHintColorRGB ()I
 	public final fun getShowGutterIcons ()Z
+	public final fun getShowGutterIconsInTests ()Z
 	public final fun getShowGutterIconsOnlyForUnskippable ()Z
 	public final fun getShowInlineHints ()Z
 	public final fun getShowOnlyUnstableHints ()Z
@@ -115,6 +116,7 @@ public final class com/skydoves/compose/stability/idea/settings/StabilitySetting
 	public final fun setRuntimeGutterColorRGB (I)V
 	public final fun setRuntimeHintColorRGB (I)V
 	public final fun setShowGutterIcons (Z)V
+	public final fun setShowGutterIconsInTests (Z)V
 	public final fun setShowGutterIconsOnlyForUnskippable (Z)V
 	public final fun setShowInlineHints (Z)V
 	public final fun setShowOnlyUnstableHints (Z)V

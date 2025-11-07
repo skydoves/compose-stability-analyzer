@@ -78,6 +78,14 @@ public class StabilitySettingsConfigurable : BoundConfigurable("Compose Stabilit
               .bindSelected(settings::showGutterIconsOnlyForUnskippable)
               .comment("When enabled, only unskippable composables will show gutter icons")
           }
+
+          row {
+            checkBox("Show in test source sets")
+              .bindSelected(settings::showGutterIconsInTests)
+              .comment(
+                "When enabled, gutter icons will appear in test directories (disabled by default)",
+              )
+          }
         }
 
         row {

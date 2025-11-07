@@ -4,9 +4,15 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- New setting: "Show in test source sets" for gutter icons (Issue #21)
+- Gutter icons are now hidden in test directories by default (can be enabled in settings)
+
 ### Fixed
 - Fixed typealias detection for Composable function types (Issue #16)
 - Typealiases like `typealias SettingsButtons = @Composable (PlayerUiState) -> Unit` now correctly expand to their underlying function types before stability analysis
+- Fixed ImmutableList/ImmutableSet/ImmutableMap showing as unstable in test code (Issue #21)
+- Added fallback type resolution by simple name for immutable collections when FQN resolution fails in test source sets
 
 ---
 

@@ -292,6 +292,27 @@ internal class KtStabilityInferencer {
       }
     }
 
+    // 13b. Fallback check for immutable collections by simple name (for test code where FQN might not resolve)
+    if (simpleName.contains("Immutable") || simpleName.contains("Persistent")) {
+      // Double-check it's actually an immutable collection type
+      if (simpleName in setOf(
+          "ImmutableList",
+          "ImmutableSet",
+          "ImmutableMap",
+          "ImmutableCollection",
+          "PersistentList",
+          "PersistentSet",
+          "PersistentMap",
+          "PersistentCollection",
+        )
+      ) {
+        return KtStability.Certain(
+          stable = true,
+          reason = "Immutable collection (resolved by simple name)",
+        )
+      }
+    }
+
     // 14. Standard collections (List, Set, Map) - RUNTIME check needed
     if (fqName != null && StabilityAnalysisConstants.isStandardCollection(fqName)) {
       return KtStability.Runtime(className = fqName)

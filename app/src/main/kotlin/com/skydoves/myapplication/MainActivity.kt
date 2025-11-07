@@ -209,6 +209,7 @@ fun UnstableUser.Test(stableUser2: StableUser) {
 fun Test(
   myClass2: MyClass2,
   normalClass: NormalClass,
+  immutableList: ImmutableList<String>,
 ) {
 }
 

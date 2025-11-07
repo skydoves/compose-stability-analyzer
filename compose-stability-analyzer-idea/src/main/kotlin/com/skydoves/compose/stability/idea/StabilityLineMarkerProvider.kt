@@ -18,6 +18,7 @@ package com.skydoves.compose.stability.idea
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
 import com.intellij.openapi.editor.markup.GutterIconRenderer
+import com.intellij.openapi.roots.TestSourcesFilter
 import com.intellij.psi.PsiElement
 import com.intellij.util.ui.ColorIcon
 import com.intellij.util.ui.JBUI
@@ -51,6 +52,18 @@ public class StabilityLineMarkerProvider : LineMarkerProvider {
 
     if (function.isPreview()) {
       return null
+    }
+
+    // Check if we should show gutter icons in test code
+    if (!settings.showGutterIconsInTests) {
+      val containingFile = function.containingFile.virtualFile
+      if (containingFile != null) {
+        val project = function.project
+        // Check if the file is in a test source set
+        if (TestSourcesFilter.isTestSources(containingFile, project)) {
+          return null
+        }
+      }
     }
 
     val analysis = try {
