@@ -123,7 +123,7 @@ This is incredibly useful for:
 Add the dependency below to your `libs.versions.toml` file:
 
 ```toml
-stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.4.2" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.5.0" }
 ```
 
 Next, apply the plugin on your root's `build.gradle.kts` file like below:
@@ -138,6 +138,7 @@ It’s **strongly recommended to use the exact same Kotlin version** as this lib
 
 | Stability Analyzer | Kotlin |
 |--------------------|-------------|
+| 0.5.0              | 2.2.21 |
 | 0.4.2              | 2.2.21 |
 | 0.4.1              | 2.2.21 |
 | 0.4.0              | 2.2.21 |
