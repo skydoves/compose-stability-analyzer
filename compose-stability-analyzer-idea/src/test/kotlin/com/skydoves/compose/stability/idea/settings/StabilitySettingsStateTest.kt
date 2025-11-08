@@ -41,7 +41,7 @@ class StabilitySettingsStateTest {
     assertTrue(settings.showGutterIcons)
     assertFalse(settings.showGutterIconsOnlyForUnskippable)
     assertTrue(settings.showWarnings)
-    assertFalse(settings.isStrongSkippingEnabled)
+    assertTrue(settings.isStrongSkippingEnabled)
     assertEquals("", settings.ignoredTypePatterns)
     assertEquals("", settings.stabilityConfigurationPath)
   }

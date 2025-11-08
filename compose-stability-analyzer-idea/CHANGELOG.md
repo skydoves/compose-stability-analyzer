@@ -4,28 +4,46 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
 ## [Unreleased]
 
+---
+
+## [0.5.0] - 2025-11-08
+
 ### Added
 - **New Compose Stability Tool Window** - View all composables in your project at a glance (Issue #14)
   - Tree view grouped by module -> package -> file
-  - Color-coded stability indicators (green for stable, red for unstable)
-  - Stability counts at each level shown as (total: XS, YU, ZR) where S=Stable, U=Unstable, R=Runtime
+  - Color-coded stability indicators (green for skippable, yellow for non-skippable)
+  - Stability counts shown as (XS, YNS) where S=Skippable, NS=Non-skippable (zero counts are hidden for cleaner UI)
   - Details pane showing composable information and parameter stability
   - Double-click navigation to source code location
   - Filter buttons to show All, Skippable, or Unskippable composables
   - Refresh button to re-analyze the project
   - Appears as a dedicated tool window on the right side of the IDE with custom icon
   - Access via View -> Tool Windows -> Compose Stability or click the icon on the right toolbar
+- **Interactive empty state guide** - Step-by-step instructions when no composables are found
+  - Clear setup instructions for first-time users
+  - Clickable GitHub link for documentation and support
 - New setting: "Show in test source sets" for gutter icons (Issue #21)
 - Gutter icons are now hidden in test directories by default (can be enabled in settings)
 - Support for reading @StabilityInferred annotation parameters for cross-module stability detection (Issue #18)
 
+### Improved
+- **Enhanced UI/UX for Tool Window**
+  - Changed terminology from "runtime count" to more intuitive "S (Skippable)" and "NS (Non-skippable)"
+  - Non-skippable items now use yellow color instead of red for better visual hierarchy
+  - Zero counts are automatically hidden (e.g., "(2S, 0NS)" displays as "(2S)")
+  - Centered stability icon in tool window for better visual alignment
+- **Performance optimization** - Tool window now reads pre-computed stability information from JSON files instead of re-analyzing all files
+  - Significantly faster load times for large projects
+  - Reduced CPU usage when opening the tool window
+
 ### Fixed
+- Fixed double-click navigation to source code in tool window
 - Fixed typealias detection for Composable function types (Issue #16)
-- Typealiases like `typealias SettingsButtons = @Composable (PlayerUiState) -> Unit` now correctly expand to their underlying function types before stability analysis
+  - Typealiases like `typealias SettingsButtons = @Composable (PlayerUiState) -> Unit` now correctly expand to their underlying function types before stability analysis
 - Fixed ImmutableList/ImmutableSet/ImmutableMap showing as unstable in test code (Issue #21)
-- Added fallback type resolution by simple name for immutable collections when FQN resolution fails in test source sets
+  - Added fallback type resolution by simple name for immutable collections when FQN resolution fails in test source sets
 - Improved cross-module stability detection by reading @StabilityInferred(parameters) annotation (Issue #18)
-- Classes from other modules now correctly marked as UNSTABLE unless annotated with @Stable/@Immutable or @StabilityInferred(parameters=0)
+  - Classes from other modules now correctly marked as UNSTABLE unless annotated with @Stable/@Immutable or @StabilityInferred(parameters=0)
 
 ---
 

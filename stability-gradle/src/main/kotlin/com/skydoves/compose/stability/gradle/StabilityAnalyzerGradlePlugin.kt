@@ -45,7 +45,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
     // This version should match the version in gradle.properties
     // Update this when bumping the library version
-    private const val VERSION = "0.4.3"
+    private const val VERSION = "0.5.0"
 
     // Compiler option keys
     private const val OPTION_ENABLED = "enabled"
