@@ -4,6 +4,10 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
 ## [Unreleased]
 
+---
+
+## [0.5.1] - 2025-11-10
+
 ### Added
 - **wasmJs target support** - Added WebAssembly JavaScript (wasmJs) target to stability-runtime module (Issue #32)
   - Enables Kotlin Multiplatform projects to use wasmJs alongside other targets (Android, iOS, Desktop, macOS)
@@ -16,7 +20,7 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Abstract classes with `@Immutable` or `@Stable` annotations now correctly analyzed for stability
   - Sealed classes with `@Immutable`/`@Stable` now properly propagate stability to subclasses
   - Example: `@Immutable sealed class StableSealedClass` with `data class Stable(...)` subclass now correctly shows as STABLE instead of RUNTIME
-  - IDE plugin now matches compiler plugin behavior for sealed class hierarchies
+  - Both IDE plugin and compiler plugin now consistently handle sealed class hierarchies with stability annotations
 
 ---
 
