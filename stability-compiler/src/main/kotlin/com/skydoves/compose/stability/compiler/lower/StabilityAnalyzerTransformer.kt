@@ -395,20 +395,25 @@ public class StabilityAnalyzerTransformer(
     }
 
     // 16. Abstract classes - cannot determine (RUNTIME)
-    //     EXCEPT sealed classes which are handled by property analysis
+    //     EXCEPT: sealed classes with @Stable/@Immutable annotations
+    //     Issue #31: @Immutable sealed classes should be trusted as stable
     if (clazz.modality == org.jetbrains.kotlin.descriptors.Modality.ABSTRACT) {
-      // Check if this is a sealed class (sealed classes are abstract but stable if no mutable props)
+      // Check if this is a sealed class (sealed classes are abstract but stable if annotated)
       val isSealed = try {
         clazz.sealedSubclasses.isNotEmpty()
       } catch (e: Exception) {
         false
       }
 
-      // Only mark as RUNTIME if it's NOT a sealed class
-      if (!isSealed) {
+      // Check if it has @Stable or @Immutable annotation
+      val hasStabilityAnnotation = clazz.hasAnnotation(stableFqName) ||
+        clazz.hasAnnotation(immutableFqName)
+
+      // Only mark as RUNTIME if it's NOT a sealed class AND doesn't have stability annotation
+      if (!isSealed && !hasStabilityAnnotation) {
         return ParameterStability.RUNTIME
       }
-      // Sealed classes continue to property analysis
+      // Sealed classes and annotated abstract classes continue to property analysis
     }
 
     // 18. Regular classes - analyze properties first before checking @StabilityInferred
@@ -434,6 +439,29 @@ public class StabilityAnalyzerTransformer(
    * Matches K2 implementation logic.
    */
   private fun analyzeClassProperties(clazz: IrClass, fqName: String?): ParameterStability {
+    // Issue #31: Check if parent sealed class has @Immutable/@Stable
+    val parentHasStabilityAnnotation = clazz.superTypes.any { superType ->
+      val superClassSymbol = superType.classOrNull
+      if (superClassSymbol != null) {
+        val superClass = superClassSymbol.owner
+        // Check if superclass is sealed AND has stability annotation
+        val isSealed = try {
+          superClass.sealedSubclasses.isNotEmpty()
+        } catch (e: Exception) {
+          false
+        }
+        val hasAnnotation = superClass.hasAnnotation(stableFqName) ||
+          superClass.hasAnnotation(immutableFqName)
+        isSealed && hasAnnotation
+      } else {
+        false
+      }
+    }
+
+    if (parentHasStabilityAnnotation) {
+      return ParameterStability.STABLE
+    }
+
     // Check superclass stability first (matches IDE plugin logic)
     val superClassStability = analyzeSuperclassStability(clazz)
 

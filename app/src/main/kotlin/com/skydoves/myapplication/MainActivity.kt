@@ -49,6 +49,8 @@ import androidx.lifecycle.ViewModel
 import com.skydoves.myapplication.models.ImmutableData
 import com.skydoves.myapplication.models.MyClass2
 import com.skydoves.myapplication.models.NormalClass
+import com.skydoves.myapplication.models.NormalSealedClass
+import com.skydoves.myapplication.models.StableSealedClass
 import com.skydoves.myapplication.models.StableUser
 import com.skydoves.myapplication.models.UnstableUser
 import kotlinx.collections.immutable.ImmutableList
@@ -162,6 +164,8 @@ fun Icon(
   title: String,
   painter: Painter,
   users: List<StableUser>,
+  normalSealedClass: NormalSealedClass.Normal,
+  stableSealedClass: StableSealedClass.Stable,
   elevation: CardElevation = CardDefaults.cardElevation(),
   unstableUser: UnstableUser,
 ) {

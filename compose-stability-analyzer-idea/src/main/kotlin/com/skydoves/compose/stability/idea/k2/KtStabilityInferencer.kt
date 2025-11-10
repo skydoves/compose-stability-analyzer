@@ -368,14 +368,28 @@ internal class KtStabilityInferencer {
     }
 
     // 19. Abstract classes - cannot determine (RUNTIME)
+    // EXCEPT: Sealed classes with @Stable/@Immutable should be analyzed like regular classes
+    // Issue #31: Sealed classes with @Immutable/@Stable should propagate stability to subclasses
     if (classSymbol.modality == KaSymbolModality.ABSTRACT) {
-      return KtStability.Runtime(
-        className = fqName ?: simpleName,
-        reason = "Abstract class - actual implementation could be mutable",
-      )
+      // Check if this abstract class has @Stable or @Immutable annotation
+      // If it does, it should be analyzed (not immediately returned as RUNTIME)
+      val hasStabilityAnnotation = classSymbol.annotations.any { annotation ->
+        val annotationFqName = annotation.classId?.asSingleFqName()?.asString()
+        annotationFqName == "androidx.compose.runtime.Stable" ||
+          annotationFqName == "androidx.compose.runtime.Immutable"
+      }
+
+      // Only return RUNTIME if it doesn't have stability annotations
+      if (!hasStabilityAnnotation) {
+        return KtStability.Runtime(
+          className = fqName ?: simpleName,
+          reason = "Abstract class - actual implementation could be mutable",
+        )
+      }
+      // Abstract classes with @Stable/@Immutable continue to property analysis
     }
 
-    // 20. Regular classes - analyze properties first before checking @StabilityInferred
+    // 20. Regular classes (and sealed classes) - analyze properties first before checking @StabilityInferred
     val propertyStability = analyzeClassProperties(classSymbol, currentlyAnalyzing)
 
     return when {
@@ -411,6 +425,31 @@ internal class KtStabilityInferencer {
     classSymbol: KaClassSymbol,
     currentlyAnalyzing: Set<KaClassLikeSymbol>,
   ): KtStability {
+    // Issue #31: Check if parent sealed class has @Immutable/@Stable
+    val parentHasStabilityAnnotation = classSymbol.superTypes.any { superType ->
+      val superClassSymbol = superType.expandedSymbol as? KaClassSymbol
+      if (superClassSymbol != null) {
+        // Check if superclass is sealed (has sealed subclasses)
+        val isSealed = superClassSymbol.modality == KaSymbolModality.SEALED
+        // Check if it has @Stable or @Immutable annotation
+        val hasAnnotation = superClassSymbol.annotations.any { annotation ->
+          val annotationFqName = annotation.classId?.asSingleFqName()?.asString()
+          annotationFqName == "androidx.compose.runtime.Stable" ||
+            annotationFqName == "androidx.compose.runtime.Immutable"
+        }
+        isSealed && hasAnnotation
+      } else {
+        false
+      }
+    }
+
+    if (parentHasStabilityAnnotation) {
+      return KtStability.Certain(
+        stable = true,
+        reason = "Subclass of @Immutable/@Stable sealed class",
+      )
+    }
+
     // Check superclass stability first
     val superClassStability = analyzeSuperclassStability(classSymbol, currentlyAnalyzing)
 

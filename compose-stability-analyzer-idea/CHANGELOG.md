@@ -11,6 +11,13 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Implemented `DefaultRecompositionLogger` for wasmJs using `println()` for browser console output
   - wasmJs target placed directly under common hierarchy (separate from skia group) for proper source set resolution
 
+### Fixed
+- **Fixed sealed class stability inheritance** (Issue #31)
+  - Abstract classes with `@Immutable` or `@Stable` annotations now correctly analyzed for stability
+  - Sealed classes with `@Immutable`/`@Stable` now properly propagate stability to subclasses
+  - Example: `@Immutable sealed class StableSealedClass` with `data class Stable(...)` subclass now correctly shows as STABLE instead of RUNTIME
+  - IDE plugin now matches compiler plugin behavior for sealed class hierarchies
+
 ---
 
 ## [0.5.0] - 2025-11-08

@@ -73,6 +73,15 @@ class StableClass(
   }
 }
 
+sealed class NormalSealedClass {
+  data class Normal(val names: List<String>) : NormalSealedClass()
+}
+
+@Immutable
+sealed class StableSealedClass {
+  data class Stable(val names: List<String>) : StableSealedClass()
+}
+
 /**
  * Class with mixed stability properties.
  * Should be unstable due to mutableList.
