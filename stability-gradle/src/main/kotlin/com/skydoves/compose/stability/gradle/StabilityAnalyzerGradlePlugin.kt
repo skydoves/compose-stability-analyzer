@@ -89,9 +89,11 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       ignoredClasses.set(extension.stabilityValidation.ignoredClasses)
     }
 
-    // Make check task depend on stabilityCheck if enabled
-    target.tasks.named("check") {
-      dependsOn(stabilityCheckTask)
+    // Make check task depend on stabilityCheck if enabled (only if check task exists)
+    target.plugins.withId("base") {
+      target.tasks.named("check") {
+        dependsOn(stabilityCheckTask)
+      }
     }
 
     // Configure after project evaluation
@@ -211,6 +213,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
   /**
    * Configure task dependencies for stability dump and check tasks.
+   * Uses lazy configuration to avoid eager task resolution and Gradle 9.x compatibility issues.
    */
   private fun configureTaskDependencies(
     project: Project,
@@ -218,21 +221,46 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     stabilityDumpTask: org.gradle.api.tasks.TaskProvider<StabilityDumpTask>,
     stabilityCheckTask: org.gradle.api.tasks.TaskProvider<StabilityCheckTask>,
   ) {
-    val includeTests = extension.stabilityValidation.includeTests.get()
+    // Get the includeTests provider for lazy evaluation
+    val includeTestsProvider = extension.stabilityValidation.includeTests
 
-    project.tasks.matching { task ->
-      val isKotlinCompile = task.name.startsWith("compile") && task.name.contains("Kotlin")
-      val isTestTask = task.name.lowercase().let {
-        it.contains("test") || it.contains("androidtest") || it.contains("unittest")
-      }
+    // Configure dependencies lazily using TaskProvider
+    stabilityDumpTask.configure {
+      // Use provider to lazily collect Kotlin compile task names
+      dependsOn(
+        project.provider {
+          val includeTests = includeTestsProvider.get()
+          project.tasks.matching { task ->
+            val isKotlinCompile = task.name.startsWith("compile") && task.name.contains("Kotlin")
+            val isTestTask = task.name.lowercase().let {
+              it.contains("test") || it.contains("androidtest") || it.contains("unittest")
+            }
+            // Include task if it's a Kotlin compile task and either:
+            // 1. includeTests is true, OR
+            // 2. it's not a test task
+            isKotlinCompile && (includeTests || !isTestTask)
+          }
+        },
+      )
+    }
 
-      // Include task if it's a Kotlin compile task and either:
-      // 1. includeTests is true, OR
-      // 2. it's not a test task
-      isKotlinCompile && (includeTests || !isTestTask)
-    }.all {
-      stabilityDumpTask.get().dependsOn(this)
-      stabilityCheckTask.get().dependsOn(this)
+    stabilityCheckTask.configure {
+      // Use provider to lazily collect Kotlin compile task names
+      dependsOn(
+        project.provider {
+          val includeTests = includeTestsProvider.get()
+          project.tasks.matching { task ->
+            val isKotlinCompile = task.name.startsWith("compile") && task.name.contains("Kotlin")
+            val isTestTask = task.name.lowercase().let {
+              it.contains("test") || it.contains("androidtest") || it.contains("unittest")
+            }
+            // Include task if it's a Kotlin compile task and either:
+            // 1. includeTests is true, OR
+            // 2. it's not a test task
+            isKotlinCompile && (includeTests || !isTestTask)
+          }
+        },
+      )
     }
   }
 
