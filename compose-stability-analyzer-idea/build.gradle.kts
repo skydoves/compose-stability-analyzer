@@ -71,6 +71,27 @@ intellijPlatform {
             </ul>
         """.trimIndent()
     changeNotes = """
+            <b>0.5.1</b>
+            <ul>
+                <li><b>Added wasmJs target support</b> - Runtime module now supports WebAssembly JavaScript for Compose Multiplatform web apps (Issue #32)</li>
+                <li><b>Fixed sealed class stability inheritance</b> - Sealed classes with @Immutable/@Stable annotations now properly propagate stability to subclasses (Issue #31)</li>
+                <li>Abstract classes with stability annotations are now correctly analyzed</li>
+                <li>Both IDE plugin and compiler plugin handle sealed class hierarchies consistently</li>
+            </ul>
+            <b>0.5.0</b>
+            <ul>
+                <li><b>Breaking: Minimum IDE version updated to 2024.2+ (build 242+)</b></li>
+                <li><b>New Compose Stability Tool Window</b> - View all composables in your project at a glance (Issue #14)</li>
+                <li>Tree view grouped by module → package → file with color-coded stability indicators</li>
+                <li>Details pane with parameter stability, double-click navigation to source</li>
+                <li>Filter buttons for All/Skippable/Unskippable composables</li>
+                <li>Performance optimization - Tool window reads pre-computed JSON files instead of re-analyzing</li>
+                <li>Fixed PluginException in IntelliJ IDEA 2025.2.4 (Issue #33)</li>
+                <li>Fixed typealias detection for Composable function types (Issue #16)</li>
+                <li>New setting: "Show in test source sets" for gutter icons (Issue #21)</li>
+                <li>Improved cross-module stability detection with @StabilityInferred annotation (Issue #18)</li>
+                <li>Extended compatibility to IntelliJ IDEA 2025.3 (build 253)</li>
+            </ul>
             <b>0.4.0</b>
             <ul>
                 <li>Added ProGuard consumer rules for automatic R8/ProGuard compatibility</li>
@@ -129,7 +150,6 @@ intellijPlatform {
 
   pluginVerification {
     ides {
-      // Verify compatibility with recommended IDE versions
       recommended()
     }
   }
