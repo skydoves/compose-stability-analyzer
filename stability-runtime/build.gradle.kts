@@ -32,11 +32,16 @@ kotlin {
   macosX64()
   macosArm64()
 
+  wasmJs {
+    browser()
+  }
+
   @Suppress("OPT_IN_USAGE")
   applyHierarchyTemplate {
     common {
       withAndroidTarget()
       withJvm()
+      withWasmJs()
       group("skia") {
         group("darwin") {
           group("apple") {

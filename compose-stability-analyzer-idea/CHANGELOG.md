@@ -4,6 +4,13 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **wasmJs target support** - Added WebAssembly JavaScript (wasmJs) target to stability-runtime module (Issue #32)
+  - Enables Kotlin Multiplatform projects to use wasmJs alongside other targets (Android, iOS, Desktop, macOS)
+  - Runtime module now publishes wasmJs artifacts (klib) for Compose Multiplatform web applications
+  - Implemented `DefaultRecompositionLogger` for wasmJs using `println()` for browser console output
+  - wasmJs target placed directly under common hierarchy (separate from skia group) for proper source set resolution
+
 ---
 
 ## [0.5.0] - 2025-11-08
