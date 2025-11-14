@@ -45,7 +45,7 @@ This plugin provides real-time visual feedback about your composables' stability
 - **3. Inline Parameter Hints**: Badges next to parameters showing their stability status.
 - **4. Code Inspections**: Quick fixes and warnings for unstable composables.
 
-> **Note**: You don’t need to make every composable function skippable or all parameters stable, these are not direct indicators of performance optimization. The goal of this plugin isn’t to encourage over-focusing on stability, but rather to help you explore how Compose’s stability mechanisms work and use them as tools for examining and debugging composables that may have performance issues.
+> **Note**: You don’t need to make every composable function skippable or all parameters stable, these are not direct indicators of performance optimization. The goal of this plugin isn’t to encourage over-focusing on stability, but rather to help you explore how Compose’s stability mechanisms work and use them as tools for examining and debugging composables that may have performance issues. For more information, check out [Compose Stability Analyzer: Real-Time Stability Insights for Jetpack Compose](https://medium.com/proandroiddev/compose-stability-analyzer-real-time-stability-insights-for-jetpack-compose-1399924a0a64).
 
 ### How to Install in Android Studio
 
