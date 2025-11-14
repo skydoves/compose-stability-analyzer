@@ -44,8 +44,10 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import com.skydoves.compose.stability.runtime.IgnoreStabilityReport
 import com.skydoves.myapplication.models.ImmutableData
 import com.skydoves.myapplication.models.MyClass2
 import com.skydoves.myapplication.models.NormalClass
@@ -356,9 +358,9 @@ fun StableUserCardPreview() {
 /**
  * Example: Debug composable excluded from stability reports.
  */
-@com.skydoves.compose.stability.runtime.IgnoreStabilityReport
+@Preview
 @Composable
-fun DebugInfoPanel() {
+fun DebugInfoPanelPreview() {
   Card {
     Column(modifier = Modifier.padding(16.dp)) {
       Text("Debug Information", fontWeight = FontWeight.Bold)

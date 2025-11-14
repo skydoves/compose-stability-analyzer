@@ -41,7 +41,7 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 
 public class StabilityAnalyzerTransformer(
-  private val context: IrPluginContext,
+  context: IrPluginContext,
   private val stabilityCollector: StabilityInfoCollector? = null,
 ) : IrElementTransformerVoidWithContext() {
 
@@ -52,6 +52,7 @@ public class StabilityAnalyzerTransformer(
     FqName("com.skydoves.compose.stability.runtime.TraceRecomposition")
   private val ignoreStabilityReportFqName =
     FqName("com.skydoves.compose.stability.runtime.IgnoreStabilityReport")
+  private val previewFqName = FqName("androidx.compose.ui.tooling.preview.Preview")
 
   private val irBuilder = RecompositionIrBuilder(context)
   private var irBuilderInitialized = false
@@ -71,8 +72,9 @@ public class StabilityAnalyzerTransformer(
       return super.visitFunctionNew(declaration)
     }
 
-    // Skip stability reporting if function has @IgnoreStabilityReport annotation
-    val shouldIgnoreReport = declaration.hasAnnotation(ignoreStabilityReportFqName)
+    // Skip stability reporting if function has @IgnoreStabilityReport annotation or @Preview annotation
+    val shouldIgnoreReport = declaration.hasAnnotation(ignoreStabilityReportFqName) ||
+      hasPreviewAnnotation(declaration)
 
     // Collect stability information if collector is available and not ignored
     if (!shouldIgnoreReport) {
@@ -599,6 +601,35 @@ public class StabilityAnalyzerTransformer(
   private fun isKnownStableType(type: IrType): Boolean {
     val fqName = type.classFqName?.asString() ?: return false
     return fqName in KNOWN_STABLE_TYPES
+  }
+
+  /**
+   * Check if a function has @Preview annotation (directly or via meta-annotation).
+   * This includes:
+   * - Direct @Preview annotation
+   * - Custom annotations that are meta-annotated with @Preview
+   */
+  private fun hasPreviewAnnotation(function: IrFunction): Boolean {
+    // Check direct @Preview annotation
+    if (function.hasAnnotation(previewFqName)) {
+      return true
+    }
+
+    // Check for meta-annotations (annotations on annotations)
+    for (annotation in function.annotations) {
+      try {
+        val annotationType = annotation.type
+        val annotationClass = annotationType.classOrNull?.owner
+        if (annotationClass != null && annotationClass.hasAnnotation(previewFqName)) {
+          return true
+        }
+      } catch (e: Exception) {
+        // Skip annotations that can't be resolved
+        continue
+      }
+    }
+
+    return false
   }
 
   /**
