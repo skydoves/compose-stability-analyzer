@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.gradle.api.publish.maven.MavenPublication
+
 import org.gradle.jvm.tasks.Jar
 
 plugins {
@@ -21,7 +21,6 @@ plugins {
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.shadow)
   alias(libs.plugins.nexus.plugin)
-  `maven-publish`
 }
 
 kotlin {
@@ -54,10 +53,8 @@ java {
   targetCompatibility = JavaVersion.VERSION_11
 }
 
-// Configure shadowJar to embed kotlinx.serialization
 tasks.shadowJar {
   archiveClassifier.set("all")
-  // Merge all runtime dependencies (including kotlinx-serialization)
   configurations = listOf(project.configurations.runtimeClasspath.get())
 
   // Don't relocate - K/Native compiler needs original package names
