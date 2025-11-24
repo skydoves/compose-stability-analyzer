@@ -6,6 +6,41 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
 ---
 
+## [0.6.0] - 2025-11-24
+
+### Added
+- **Per-project stability configuration file support** (Issue #60)
+  - Each project can now specify its own stability configuration file path
+  - Project-level settings take precedence over global settings
+  - Configuration stored in project workspace (not shared across projects)
+  - Access via Settings -> Tools -> Compose Stability Analyzer -> Project Configuration
+  - Useful for teams with different stability patterns across multiple projects
+- **Runtime gutter icon for runtime-only composables**
+  - Composables with only RUNTIME parameters now show yellow gutter icon instead of red
+  - Clear visual distinction between unstable (red) and runtime (yellow) stability
+  - Detailed tooltip explains that stability is determined at runtime
+  - Tooltip includes information about potential skippability changes between library versions
+- **Generic type argument inference at compile time**
+  - Generic types like `UiResult<Unit>` now correctly inferred as STABLE when type arguments are stable
+  - Previously, generic types were marked as RUNTIME even with stable type arguments
+  - Example: `MyComposable(result: UiResult<Unit>)` - now shows `Unit` is stable, so parameter is stable
+  - Supports nested generics and multiple type arguments
+  - More accurate stability analysis reduces false positives for generic wrapper types
+
+### Fixed
+- **Kotlin 2.3.0-RC compatibility** (Issue #59)
+  - Fixed `AbstractMethodError` for `getPluginId()` when using Kotlin 2.3.0-RC
+  - Added `pluginId` property to `StabilityAnalyzerPluginRegistrar` for forward compatibility
+  - Plugin now works with both Kotlin 2.2.x and upcoming Kotlin 2.3.x
+
+### Improved
+- Enhanced tooltip information for runtime parameters
+  - Parameter breakdown now shows stable, runtime, and unstable counts separately
+  - Lists runtime parameters with clear explanation of runtime stability behavior
+  - Explains that skippability may change between library versions or when implementations change
+
+---
+
 ## [0.5.3] - 2025-11-18
 
 ### Fixed
