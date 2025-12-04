@@ -163,10 +163,21 @@ public class StabilityToolWindow(private val project: Project) {
   }
 
   private fun applyFilter() {
+    // Get ignored patterns from settings
+    val settings = com.skydoves.compose.stability.idea.settings.StabilitySettingsState.getInstance()
+    val ignoredPatterns = settings.getIgnoredPatternsAsRegex()
+
+    // Filter composables based on current filter type and ignored patterns
     val filteredComposables = when (currentFilter) {
       FilterType.ALL -> allComposables
       FilterType.SKIPPABLE -> allComposables.filter { it.isSkippable }
       FilterType.UNSKIPPABLE -> allComposables.filter { !it.isSkippable }
+    }.map { composable ->
+      // Filter out ignored parameters
+      val filteredParameters = composable.parameters.filter { param ->
+        !shouldIgnoreParameter(param.type, ignoredPatterns)
+      }
+      composable.copy(parameters = filteredParameters)
     }
 
     val stats = StabilityStats(
@@ -177,6 +188,13 @@ public class StabilityToolWindow(private val project: Project) {
 
     val results = ComposableStabilityResults(filteredComposables, stats)
     updateTree(results)
+  }
+
+  /**
+   * Check if a parameter type should be ignored based on user-configured patterns.
+   */
+  private fun shouldIgnoreParameter(typeName: String, ignoredPatterns: List<Regex>): Boolean {
+    return ignoredPatterns.any { pattern -> pattern.matches(typeName) }
   }
 
   private fun navigateToSource(composable: ComposableInfo) {
