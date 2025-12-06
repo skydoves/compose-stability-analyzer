@@ -2,7 +2,39 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
-## [Unreleased]
+## [0.6.1] - 2025-12-06
+
+### Added
+- **Settings icon in tool window toolbar**
+  - Added gear icon to tool window toolbar for quick access to plugin settings
+  - Opens Settings → Tools → Compose Stability Analyzer when clicked
+  - Provides easier access to configuration without navigating through IDE menus
+
+### Fixed
+- **Tool window now respects ignored type patterns** (Issue #74)
+  - Fixed inconsistency where ignored type patterns worked for inline hints but not tool window
+  - Parameters matching ignore patterns are now filtered from tool window display
+  - Provides consistent behavior across all plugin features (gutter icons, inline hints, warnings, and tool window)
+  - When users configure type patterns to ignore in Settings, those types are now properly excluded from the tool window panel
+- **Fixed WASM build failures with Gradle task dependencies** (Issue #70)
+  - Excluded WASM infrastructure tasks (sync, webpack, executable, link, assemble) from task dependency matching
+  - Resolves errors like "wasmJsBrowserProductionWebpack uses output from wasmJsDevelopmentExecutableCompileSync without declaring dependency"
+  - WASM projects now build successfully without task dependency violations
+- **Fixed top-level property display in tool window and stability files** (Issue #67)
+  - Properties no longer show as `<get-propertyName>` in tool window and stability reports
+  - Correctly extracts property names from getter functions
+  - File attribution now shows correct file instead of "Unknown.kt"
+
+### Improved
+- **Updated tool window icon to monochrome style**
+  - Changed from colored icon to monochrome design for better consistency with IntelliJ UI
+  - Follows IntelliJ platform design guidelines for tool window icons
+- **Updated dependencies**
+  - Android Lint API: 31.13.0 → 31.13.1
+  - Nexus Plugin: 0.34.0 → 0.35.0
+  - Android Gradle Plugin: 8.13.0 → 8.13.1
+  - Compose BOM: 2025.10.01 → 2025.12.00
+  - JetBrains Compose: 1.9.2 → 1.9.3
 
 ---
 
@@ -26,12 +58,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Example: `MyComposable(result: UiResult<Unit>)` - now shows `Unit` is stable, so parameter is stable
   - Supports nested generics and multiple type arguments
   - More accurate stability analysis reduces false positives for generic wrapper types
-
-### Fixed
-- **Kotlin 2.3.0-RC compatibility** (Issue #59)
-  - Fixed `AbstractMethodError` for `getPluginId()` when using Kotlin 2.3.0-RC
-  - Added `pluginId` property to `StabilityAnalyzerPluginRegistrar` for forward compatibility
-  - Plugin now works with both Kotlin 2.2.x and upcoming Kotlin 2.3.x
 
 ### Improved
 - Enhanced tooltip information for runtime parameters
