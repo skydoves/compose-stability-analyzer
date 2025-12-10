@@ -74,6 +74,7 @@ intellijPlatform {
             <b>0.6.2</b>
             <ul>
                 <li><b>Fixed property source file location and navigation in tool window</b> (Issue #67) - Properties now show correct file name and double-click navigation works</li>
+                <li><b>Improved ignored type pattern handling in tool window</b> (Issue #74) - Ignored parameters display as stable and composable skippability is recalculated accordingly</li>
             </ul>
             <b>0.6.1</b>
             <ul>

@@ -15,6 +15,13 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Double-clicking on property names in tool window now navigates to correct source location
   - Extended source location search to include `KtProperty` declarations in addition to `KtNamedFunction`
 
+### Improved
+- **Enhanced tool window handling of ignored type patterns** (Issue #74)
+  - Ignored parameters are now displayed as stable instead of being hidden completely
+  - Composable skippability is recalculated based on processed parameters after applying ignore patterns
+  - Composables with only ignored unstable parameters now correctly show as skippable
+  - Provides better visibility of composable signatures while respecting ignore patterns
+
 ---
 
 ## [0.6.1] - 2025-12-06
