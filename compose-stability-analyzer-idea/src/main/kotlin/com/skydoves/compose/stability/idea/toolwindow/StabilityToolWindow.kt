@@ -167,17 +167,35 @@ public class StabilityToolWindow(private val project: Project) {
     val settings = com.skydoves.compose.stability.idea.settings.StabilitySettingsState.getInstance()
     val ignoredPatterns = settings.getIgnoredPatternsAsRegex()
 
-    // Filter composables based on current filter type and ignored patterns
-    val filteredComposables = when (currentFilter) {
-      FilterType.ALL -> allComposables
-      FilterType.SKIPPABLE -> allComposables.filter { it.isSkippable }
-      FilterType.UNSKIPPABLE -> allComposables.filter { !it.isSkippable }
-    }.map { composable ->
-      // Filter out ignored parameters
-      val filteredParameters = composable.parameters.filter { param ->
-        !shouldIgnoreParameter(param.type, ignoredPatterns)
+    // Process all composables: mark ignored parameters as stable and recalculate skippability
+    val processedComposables = allComposables.map { composable ->
+      // Mark ignored parameters as stable instead of removing them
+      val processedParameters = composable.parameters.map { param ->
+        if (shouldIgnoreParameter(param.type, ignoredPatterns)) {
+          // Treat ignored parameters as stable
+          param.copy(isStable = true, isRuntime = false)
+        } else {
+          param
+        }
       }
-      composable.copy(parameters = filteredParameters)
+
+      // Recalculate skippability: a composable is skippable if all parameters are stable
+      // (after applying ignore patterns)
+      val allParametersStable = processedParameters.all { it.isStable }
+      val isSkippable = composable.isRestartable &&
+        (processedParameters.isEmpty() || allParametersStable)
+
+      composable.copy(
+        parameters = processedParameters,
+        isSkippable = isSkippable,
+      )
+    }
+
+    // Filter composables based on current filter type
+    val filteredComposables = when (currentFilter) {
+      FilterType.ALL -> processedComposables
+      FilterType.SKIPPABLE -> processedComposables.filter { it.isSkippable }
+      FilterType.UNSKIPPABLE -> processedComposables.filter { !it.isSkippable }
     }
 
     val stats = StabilityStats(
