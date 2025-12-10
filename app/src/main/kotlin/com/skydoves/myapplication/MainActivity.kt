@@ -74,6 +74,10 @@ class MainActivity : ComponentActivity() {
   }
 }
 
+private val String.Companion.ComposableValue
+  @Composable
+  get() = "ComposableValue"
+
 data class UiResult<T>(
   val data: T,
   val isPending: Boolean,
