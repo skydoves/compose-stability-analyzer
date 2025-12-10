@@ -71,12 +71,16 @@ intellijPlatform {
             </ul>
         """.trimIndent()
     changeNotes = """
+            <b>0.6.2</b>
+            <ul>
+                <li><b>Fixed property source file location and navigation in tool window</b> (Issue #67) - Properties now show correct file name and double-click navigation works</li>
+            </ul>
             <b>0.6.1</b>
             <ul>
                 <li><b>Added Settings icon in tool window toolbar</b> - Quick access to plugin settings via gear icon</li>
                 <li><b>Fixed tool window ignore pattern filtering</b> (Issue #74) - Tool window now respects ignored type patterns</li>
                 <li><b>Fixed WASM build failures</b> (Issue #70) - Excluded WASM infrastructure tasks from dependency matching</li>
-                <li><b>Fixed top-level property display</b> (Issue #67) - Properties no longer show as &lt;get-propertyName&gt;</li>
+                <li><b>Fixed property name display</b> (Issue #67) - Properties no longer show as <get-propertyName></li>
                 <li>Updated tool window icon to monochrome style for better UI consistency</li>
                 <li>Updated dependencies: Lint API, Nexus Plugin, AGP, Compose BOM, JetBrains Compose</li>
             </ul>

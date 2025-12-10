@@ -2,6 +2,21 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [Unreleased]
+
+---
+
+## [0.6.2] - 2025-12-10
+
+### Fixed
+- **Fixed property source file location and navigation in tool window** (Issue #67)
+  - Tool window now correctly identifies source file for composable properties
+  - Properties no longer show "Unknown.kt" as file name
+  - Double-clicking on property names in tool window now navigates to correct source location
+  - Extended source location search to include `KtProperty` declarations in addition to `KtNamedFunction`
+
+---
+
 ## [0.6.1] - 2025-12-06
 
 ### Added
@@ -20,10 +35,10 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Excluded WASM infrastructure tasks (sync, webpack, executable, link, assemble) from task dependency matching
   - Resolves errors like "wasmJsBrowserProductionWebpack uses output from wasmJsDevelopmentExecutableCompileSync without declaring dependency"
   - WASM projects now build successfully without task dependency violations
-- **Fixed top-level property display in tool window and stability files** (Issue #67)
+- **Fixed property name display in tool window and stability files** (Issue #67)
   - Properties no longer show as `<get-propertyName>` in tool window and stability reports
-  - Correctly extracts property names from getter functions
-  - File attribution now shows correct file instead of "Unknown.kt"
+  - Correctly extracts property names from getter functions in compiler plugin
+  - Improved readability of property-based composables
 
 ### Improved
 - **Updated tool window icon to monochrome style**

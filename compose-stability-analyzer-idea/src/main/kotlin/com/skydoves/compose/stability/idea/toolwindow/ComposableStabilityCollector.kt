@@ -28,6 +28,7 @@ import com.skydoves.compose.stability.idea.settings.StabilitySettingsState
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtProperty
 import java.io.File
 
 /**
@@ -156,12 +157,27 @@ public class ComposableStabilityCollector(private val project: Project) {
           continue
         }
 
+        // Search for named functions
         ktFile.declarations.filterIsInstance<KtNamedFunction>().forEach { function ->
           if (function.name == simpleName) {
             val line = try {
               val document = com.intellij.psi.PsiDocumentManager.getInstance(project)
                 .getDocument(ktFile)
               document?.getLineNumber(function.textOffset)?.plus(1) ?: 0
+            } catch (e: Exception) {
+              0
+            }
+            return Triple(virtualFile.path, virtualFile.name, line)
+          }
+        }
+
+        // Search for properties (for composable properties/getters)
+        ktFile.declarations.filterIsInstance<KtProperty>().forEach { property ->
+          if (property.name == simpleName) {
+            val line = try {
+              val document = com.intellij.psi.PsiDocumentManager.getInstance(project)
+                .getDocument(ktFile)
+              document?.getLineNumber(property.textOffset)?.plus(1) ?: 0
             } catch (e: Exception) {
               0
             }
