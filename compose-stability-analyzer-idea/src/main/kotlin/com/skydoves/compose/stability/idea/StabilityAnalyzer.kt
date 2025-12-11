@@ -571,6 +571,25 @@ internal object StabilityAnalyzer {
                 "Annotated with @Stable or @Immutable",
               )
             }
+
+            // Cross-module types without @Stable/@Immutable/@StabilityInferred are UNSTABLE
+            // Classes from other modules must be explicitly annotated to be considered stable
+            if (isFromDifferentModule(classDescriptor)) {
+              // Check for @StabilityInferred annotation
+              val stabilityInferredFqName = "androidx.compose.runtime.internal.StabilityInferred"
+              val stabilityInferred = classDescriptor.annotations.firstOrNull { annotation ->
+                annotation.fqName?.asString() == stabilityInferredFqName
+              }
+              if (stabilityInferred == null) {
+                // No @Stable, @Immutable, or @StabilityInferred annotation
+                return StabilityResult(
+                  ParameterStability.UNSTABLE,
+                  "External class without stability annotation",
+                )
+              }
+              // If has @StabilityInferred, we would need to check the parameters value
+              // For now, we'll let it continue to property analysis
+            }
           }
         }
       } catch (_: IllegalStateException) {
@@ -1007,6 +1026,26 @@ internal object StabilityAnalyzer {
     val classDescriptor = constructor.declarationDescriptor as? ClassDescriptor ?: return false
     val simpleName = classDescriptor.name.asString()
     return StabilityAnalysisConstants.isKnownStableBySimpleName(simpleName)
+  }
+
+  /**
+   * Checks if a ClassDescriptor is from a different module (external dependency or library).
+   * Classes from other modules must be explicitly annotated with @Stable/@Immutable
+   * or @StabilityInferred to be considered stable, since we can't see their
+   * implementation details.
+   */
+  private fun isFromDifferentModule(classDescriptor: ClassDescriptor): Boolean {
+    return try {
+      // Classes from external modules are typically not from source
+      // and have a different containingDeclaration
+      classDescriptor.containingDeclaration.toString().let { container ->
+        container.contains("library") ||
+          container.contains("external") ||
+          container.contains("compiled")
+      }
+    } catch (e: Exception) {
+      false
+    }
   }
 }
 

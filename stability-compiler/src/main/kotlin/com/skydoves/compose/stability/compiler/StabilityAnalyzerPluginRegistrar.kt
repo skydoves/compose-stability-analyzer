@@ -40,6 +40,11 @@ public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
       "",
     )
 
+    val projectDependencies = configuration.get(
+      StabilityAnalyzerConfigurationKeys.KEY_PROJECT_DEPENDENCIES,
+      "",
+    )
+
     // Register FIR extensions for frontend analysis (K2)
     FirExtensionRegistrarAdapter.registerExtension(
       StabilityAnalyzerFirExtensionRegistrar(),
@@ -47,7 +52,10 @@ public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
 
     // Register IR generation extension for backend transformations
     IrGenerationExtension.registerExtension(
-      StabilityAnalyzerIrGenerationExtension(stabilityOutputDir),
+      StabilityAnalyzerIrGenerationExtension(
+        stabilityOutputDir = stabilityOutputDir,
+        projectDependencies = projectDependencies,
+      ),
     )
   }
 }

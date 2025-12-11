@@ -2,10 +2,6 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
-## [Unreleased]
-
----
-
 ## [0.6.2] - 2025-12-10
 
 ### Fixed
@@ -21,8 +17,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Composable skippability is recalculated based on processed parameters after applying ignore patterns
   - Composables with only ignored unstable parameters now correctly show as skippable
   - Provides better visibility of composable signatures while respecting ignore patterns
-
----
 
 ## [0.6.1] - 2025-12-06
 
@@ -58,8 +52,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Compose BOM: 2025.10.01 → 2025.12.00
   - JetBrains Compose: 1.9.2 → 1.9.3
 
----
-
 ## [0.6.0] - 2025-11-24
 
 ### Added
@@ -87,8 +79,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Lists runtime parameters with clear explanation of runtime stability behavior
   - Explains that skippability may change between library versions or when implementations change
 
----
-
 ## [0.5.3] - 2025-11-18
 
 ### Fixed
@@ -102,8 +92,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Tasks no longer access `Task.project` during execution, preventing "unsupported at execution time" errors
   - Gradle builds with `--configuration-cache` flag now work correctly
 
----
-
 ## [0.5.2] - 2025-11-13
 
 ### Fixed
@@ -114,8 +102,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Logger classes only kept if explicitly used via `ComposeStabilityAnalyzer.setLogger()`
   - Compile-time classes (`StabilityInfo`, `ComposableInfo`, `ParameterInfo`) now removed by R8
   - This fix dramatically reduces release APK size when using the plugin
-
----
 
 ## [0.5.1] - 2025-11-10
 
@@ -132,8 +118,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Sealed classes with `@Immutable`/`@Stable` now properly propagate stability to subclasses
   - Example: `@Immutable sealed class StableSealedClass` with `data class Stable(...)` subclass now correctly shows as STABLE instead of RUNTIME
   - Both IDE plugin and compiler plugin now consistently handle sealed class hierarchies with stability annotations
-
----
 
 ## [0.5.0] - 2025-11-08
 
@@ -187,8 +171,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Classes from other modules now correctly marked as UNSTABLE unless annotated with @Stable/@Immutable or @StabilityInferred(parameters=0)
 - Extended plugin compatibility range to support IntelliJ IDEA 2025.3 (build 253)
 
----
-
 ## [0.4.2] - 2025-11-03
 
 ### Fixed
@@ -201,8 +183,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 - Enhanced cycle detection for recursive type analysis
 - Better handling of complex function type aliases and deeply nested generics
 - Consistent stability analysis behavior with compiler plugin
-
----
 
 ## [0.4.1] - 2025-11-02
 
@@ -218,8 +198,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 - Enhanced accuracy of stability analysis to match compiler plugin behavior
 - Better handling of complex function type aliases and deeply nested generic types
 - @Parcelize-annotated classes with stable properties are now correctly identified as STABLE
-
----
 
 ## [0.4.0] - 2025-11-02
 
@@ -238,8 +216,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 - Fixed stability inference for nested data classes
 - Improved analysis accuracy for edge cases
 
----
-
 ## [0.3.0] - 2025-10-28
 
 ### Added
@@ -257,8 +233,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 - Fixed analysis of @Composable functions with default parameters
 - Improved stability detection for complex parameter types
 
----
-
 ## [0.2.3] - 2025-10-23
 
 ### Changed
@@ -268,8 +242,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 ### Fixed
 - Fixed compiler test compatibility issues with Kotlin 2.2.21
 
----
-
 ## [0.2.2] - 2025-10-20
 
 ### Changed
@@ -277,16 +249,12 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 - Updated build configuration to match landscapist project structure
 - Improved project consistency and maintainability
 
----
-
 ## [0.2.1] - 2025-10-15
 
 ### Fixed
 - Fixed K2 API compatibility for Android Studio AI-243 and older IDE versions
 - Improved graceful fallback to PSI analyzer when K2 Analysis API is unavailable
 - Better error handling for unsupported IDE versions
-
----
 
 ## [0.2.0] - 2025-10-10
 
@@ -303,8 +271,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 ### Changed
 - Migrated from PSI-based analysis to K2 Analysis API (with automatic fallback)
 
----
-
 ## [0.1.0] - 2025-10-01
 
 ### Added
@@ -320,8 +286,6 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 - Fixed nullable type stability analysis
 - Fixed interface type detection
 - Improved stability inference accuracy
-
----
 
 ## Legend
 

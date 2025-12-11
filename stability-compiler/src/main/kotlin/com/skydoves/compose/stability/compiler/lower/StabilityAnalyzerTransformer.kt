@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -41,8 +42,9 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 
 public class StabilityAnalyzerTransformer(
-  context: IrPluginContext,
+  private val pluginContext: IrPluginContext,
   private val stabilityCollector: StabilityInfoCollector? = null,
+  private val projectDependencies: List<String> = emptyList(),
 ) : IrElementTransformerVoidWithContext() {
 
   private val composableFqName = FqName("androidx.compose.runtime.Composable")
@@ -54,7 +56,7 @@ public class StabilityAnalyzerTransformer(
     FqName("com.skydoves.compose.stability.runtime.IgnoreStabilityReport")
   private val previewFqName = FqName("androidx.compose.ui.tooling.preview.Preview")
 
-  private val irBuilder = RecompositionIrBuilder(context)
+  private val irBuilder = RecompositionIrBuilder(pluginContext)
   private var irBuilderInitialized = false
 
   // Cycle detection for recursive types
@@ -339,6 +341,9 @@ public class StabilityAnalyzerTransformer(
       return ParameterStability.STABLE
     }
 
+    // 5. Get class for further checks
+    val clazz = classSymbol.owner
+
     // 6. Primitives are always stable
     if (type.isPrimitiveType()) {
       return ParameterStability.STABLE
@@ -372,11 +377,9 @@ public class StabilityAnalyzerTransformer(
     }
 
     // 12. Value classes (inline classes) - stability depends on underlying type
-    if (classSymbol.owner.isValueClass()) {
-      return analyzeValueClass(classSymbol.owner)
+    if (clazz.isValueClass()) {
+      return analyzeValueClass(clazz)
     }
-
-    val clazz = classSymbol.owner
 
     // 13. Enum classes are always stable
     if (clazz.isEnumClassIr()) {
@@ -437,6 +440,11 @@ public class StabilityAnalyzerTransformer(
         return ParameterStability.RUNTIME
       }
       // Sealed classes and annotated abstract classes continue to property analysis
+    }
+
+    // 17. Cross-module types require explicit @Stable/@Immutable/@StabilityInferred
+    if (isFromDifferentModule(clazz) && !type.hasStableAnnotation()) {
+      return ParameterStability.UNSTABLE
     }
 
     // 18. Regular classes - analyze properties first before checking @StabilityInferred
@@ -873,5 +881,36 @@ public class StabilityAnalyzerTransformer(
       "com.google.protobuf.GeneratedMessageLite",
       "com.google.protobuf.MessageLite",
     )
+  }
+
+  /**
+   * Checks if a class is from a different module or external library.
+   * Detects: (1) External JARs/AARs via IR origins, (2) Other Gradle modules via package matching
+   */
+  private fun isFromDifferentModule(clazz: IrClass): Boolean {
+    return try {
+      val classFqName = clazz.kotlinFqName.asString()
+
+      // Check 1: External library classes (from compiled JARs/AARs)
+      val origin = clazz.origin
+      if (origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
+        origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
+      ) {
+        return true
+      }
+
+      // Check 2: Multi-module project dependencies (via package matching)
+      if (projectDependencies.isNotEmpty()) {
+        for (dependencyModule in projectDependencies) {
+          if (classFqName.startsWith("$dependencyModule.")) {
+            return true
+          }
+        }
+      }
+
+      false
+    } catch (e: Exception) {
+      false
+    }
   }
 }

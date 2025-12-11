@@ -28,6 +28,9 @@ public object StabilityAnalyzerConfigurationKeys {
 
   public val KEY_STABILITY_OUTPUT_DIR: CompilerConfigurationKey<String> =
     CompilerConfigurationKey<String>("stabilityOutputDir")
+
+  public val KEY_PROJECT_DEPENDENCIES: CompilerConfigurationKey<String> =
+    CompilerConfigurationKey<String>("projectDependencies")
 }
 
 @OptIn(ExperimentalCompilerApi::class)
@@ -49,6 +52,13 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
       description = "Output directory for stability information",
       required = false,
     )
+
+    public val OPTION_PROJECT_DEPENDENCIES: CliOption = CliOption(
+      optionName = "projectDependencies",
+      valueDescription = "<module1,module2,...>",
+      description = "Comma-separated list of project module names",
+      required = false,
+    )
   }
 
   override val pluginId: String = PLUGIN_ID
@@ -56,6 +66,7 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
   override val pluginOptions: Collection<AbstractCliOption> = listOf(
     OPTION_ENABLED,
     OPTION_STABILITY_OUTPUT_DIR,
+    OPTION_PROJECT_DEPENDENCIES,
   )
 
   override fun processOption(
@@ -71,6 +82,11 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
 
       OPTION_STABILITY_OUTPUT_DIR -> configuration.put(
         StabilityAnalyzerConfigurationKeys.KEY_STABILITY_OUTPUT_DIR,
+        value,
+      )
+
+      OPTION_PROJECT_DEPENDENCIES -> configuration.put(
+        StabilityAnalyzerConfigurationKeys.KEY_PROJECT_DEPENDENCIES,
         value,
       )
     }

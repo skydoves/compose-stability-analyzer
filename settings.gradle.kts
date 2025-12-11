@@ -27,4 +27,5 @@ include(
   ":compose-stability-analyzer-idea",
   ":compiler-tests",
   ":app",
+  ":app-model"
 )

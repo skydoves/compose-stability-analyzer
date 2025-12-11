@@ -15,7 +15,9 @@
  */
 package com.skydoves.compose.stability.idea.k2
 
+import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ProjectFileIndex
 import com.skydoves.compose.stability.idea.StabilityAnalysisConstants
 import com.skydoves.compose.stability.idea.StabilityConstants
 import com.skydoves.compose.stability.idea.settings.StabilityProjectSettingsState
@@ -57,7 +59,10 @@ import org.jetbrains.kotlin.analysis.api.types.KaTypeNullability
  * 20. Regular classes - property analysis (returns STABLE/UNSTABLE if definitive)
  * 21. @StabilityInferred (RUNTIME - only for uncertain cases)
  */
-internal class KtStabilityInferencer(private val project: Project? = null) {
+internal class KtStabilityInferencer(
+  private val project: Project? = null,
+  private val usageSiteModule: Module? = null,
+) {
 
   private val settings: StabilitySettingsState
     get() = StabilitySettingsState.getInstance()
@@ -462,6 +467,29 @@ internal class KtStabilityInferencer(private val project: Project? = null) {
       // Abstract classes with @Stable/@Immutable continue to property analysis
     }
 
+    // 19b. Cross-module types without @Stable/@Immutable/@StabilityInferred are UNSTABLE
+    // Classes from other modules must be explicitly annotated to be considered stable
+    // This prevents assuming stability for classes where we can't see the implementation
+    // IMPORTANT: This check comes AFTER all built-in stable types (primitives, String, etc.)
+    if (classSymbol.isFromDifferentModule()) {
+      // Check if it has @StabilityInferred annotation
+      val stabilityInferredParams = classSymbol.getStabilityInferredParameters()
+      if (stabilityInferredParams == null) {
+        // No @Stable, @Immutable, or @StabilityInferred annotation
+        return KtStability.Certain(
+          stable = false,
+          reason = "External class without stability annotation",
+        )
+      } else if (stabilityInferredParams > 0) {
+        // Has @StabilityInferred but with unstable parameters
+        return KtStability.Runtime(
+          className = fqName ?: simpleName,
+          reason = "External class with @StabilityInferred(parameters=$stabilityInferredParams)",
+        )
+      }
+      // If stabilityInferredParams == 0, continue to other checks
+    }
+
     // 20. Regular classes (and sealed classes) - analyze properties first before checking @StabilityInferred
     val propertyStability = analyzeClassProperties(classSymbol, currentlyAnalyzing)
 
@@ -787,6 +815,40 @@ internal class KtStabilityInferencer(private val project: Project? = null) {
     // Check for @JvmInline annotation (modern value classes)
     return annotations.any { annotation ->
       annotation.classId?.asSingleFqName()?.asString() == "kotlin.jvm.JvmInline"
+    }
+  }
+
+  /**
+   * Checks if a class is from a different module or external library.
+   * Detects: (1) External JARs/AARs via origins, (2) Other modules via module comparison.
+   */
+  context(KaSession)
+  private fun KaClassSymbol.isFromDifferentModule(): Boolean {
+    return try {
+      // Check 1: External library classes (compiled JARs/AARs)
+      val origin = origin
+      val originName = origin.toString()
+      val isFromLibrary = originName.contains("LIBRARY") && !originName.contains("SOURCE")
+
+      if (isFromLibrary) {
+        return true
+      }
+
+      // Check 2: Classes from other project modules
+      val classFile = psi?.containingFile?.virtualFile
+      if (classFile != null && project != null && usageSiteModule != null) {
+        val classModule = ProjectFileIndex.getInstance(project).getModuleForFile(
+          classFile,
+        )
+
+        if (classModule != null && classModule != usageSiteModule) {
+          return true
+        }
+      }
+
+      false
+    } catch (e: Exception) {
+      false
     }
   }
 }

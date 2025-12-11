@@ -15,6 +15,7 @@
  */
 package com.skydoves.compose.stability.idea.k2
 
+import com.intellij.openapi.roots.ProjectFileIndex
 import com.skydoves.compose.stability.idea.StabilityConstants
 import com.skydoves.compose.stability.idea.hasAnnotation
 import com.skydoves.compose.stability.idea.settings.StabilitySettingsState
@@ -72,7 +73,13 @@ internal object StabilityAnalyzerK2 {
   private fun analyzeWithK2Session(function: KtNamedFunction): ComposableStabilityInfo {
     // Get function symbol
     val functionSymbol = function.symbol
-    val inferencer = KtStabilityInferencer(function.project)
+
+    // Get the module containing this composable function (usage site)
+    val usageSiteModule = ProjectFileIndex.getInstance(function.project).getModuleForFile(
+      function.containingKtFile.virtualFile,
+    )
+
+    val inferencer = KtStabilityInferencer(function.project, usageSiteModule)
 
     // Analyze value parameters
     val parameters = functionSymbol.valueParameters.map { param ->

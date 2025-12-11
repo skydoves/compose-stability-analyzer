@@ -24,6 +24,7 @@ import java.io.File
 
 public class StabilityAnalyzerIrGenerationExtension(
   private val stabilityOutputDir: String,
+  private val projectDependencies: String,
 ) : IrGenerationExtension {
 
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
@@ -35,10 +36,18 @@ public class StabilityAnalyzerIrGenerationExtension(
       null
     }
 
+    // Parse project dependencies from comma-separated string
+    val dependencyModules = if (projectDependencies.isNotEmpty()) {
+      projectDependencies.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    } else {
+      emptyList()
+    }
+
     // Create and run the stability analyzer transformer
     val transformer = StabilityAnalyzerTransformer(
-      context = pluginContext,
+      pluginContext = pluginContext,
       stabilityCollector = collector,
+      projectDependencies = dependencyModules,
     )
 
     moduleFragment.transformChildrenVoid(transformer)

@@ -50,6 +50,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     // Compiler option keys
     private const val OPTION_ENABLED = "enabled"
     private const val OPTION_STABILITY_OUTPUT_DIR = "stabilityOutputDir"
+    private const val OPTION_PROJECT_DEPENDENCIES = "projectDependencies"
   }
 
   override fun apply(target: Project) {
@@ -151,6 +152,8 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     val extension = project.extensions.getByType(StabilityAnalyzerExtension::class.java)
 
     return project.provider {
+      val projectDependencies = collectProjectDependencies(project)
+
       listOf(
         SubpluginOption(
           key = OPTION_ENABLED,
@@ -159,6 +162,10 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         SubpluginOption(
           key = OPTION_STABILITY_OUTPUT_DIR,
           value = project.layout.buildDirectory.dir("stability").get().asFile.absolutePath,
+        ),
+        SubpluginOption(
+          key = OPTION_PROJECT_DEPENDENCIES,
+          value = projectDependencies.joinToString(","),
         ),
       )
     }
@@ -301,6 +308,83 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     return compilationName.contains("test") ||
       compilationName.contains("androidtest") ||
       compilationName.contains("unittest")
+  }
+
+  /**
+   * Collects package names from project dependencies for cross-module detection.
+   * Used by compiler plugin to identify classes from other Gradle modules.
+   */
+  private fun collectProjectDependencies(project: Project): List<String> {
+    return try {
+      val dependencies = mutableSetOf<String>()
+
+      project.configurations.forEach { config ->
+        config.dependencies.forEach { dependency ->
+          if (dependency is org.gradle.api.artifacts.ProjectDependency) {
+            val dependentProject = dependency.dependencyProject
+            val packageName = extractPackageName(dependentProject)
+            if (packageName.isNotEmpty()) {
+              dependencies.add(packageName)
+            }
+          }
+        }
+      }
+
+      dependencies.toList()
+    } catch (e: Exception) {
+      emptyList()
+    }
+  }
+
+  /**
+   * Extracts package name from a project using: group property, source files, or project path.
+   */
+  private fun extractPackageName(project: Project): String {
+    return try {
+      // Strategy 1: Use the group property if set
+      val group = project.group.toString()
+      if (group.isNotEmpty() && group != "unspecified") {
+        return group
+      }
+
+      // Strategy 2: Try to find package from source files
+      val kotlinSources = project.projectDir.resolve("src/main/kotlin")
+      if (kotlinSources.exists()) {
+        val packageFromSource = findPackageFromSourceDir(kotlinSources)
+        if (packageFromSource.isNotEmpty()) {
+          return packageFromSource
+        }
+      }
+
+      // Strategy 3: Use project path as fallback (e.g., :app-model -> app.model)
+      val projectPath = project.path
+        .removePrefix(":")
+        .replace("-", ".")
+        .replace("/", ".")
+      projectPath
+    } catch (e: Exception) {
+      ""
+    }
+  }
+
+  /**
+   * Finds the base package name from a source directory by reading the first .kt file.
+   */
+  private fun findPackageFromSourceDir(dir: java.io.File): String {
+    return try {
+      dir.walkTopDown()
+        .filter { it.extension == "kt" }
+        .firstOrNull()
+        ?.let { file ->
+          file.readLines()
+            .firstOrNull { it.trim().startsWith("package ") }
+            ?.removePrefix("package ")
+            ?.trim()
+            ?.removeSuffix(";")
+        } ?: ""
+    } catch (e: Exception) {
+      ""
+    }
   }
 
   /**
