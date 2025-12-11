@@ -47,7 +47,10 @@ class StabilityTestConfigurator(testServices: TestServices) :
 
     // Register IR generation extension for backend transformations
     IrGenerationExtension.registerExtension(
-      StabilityAnalyzerIrGenerationExtension(""),
+      StabilityAnalyzerIrGenerationExtension(
+        stabilityOutputDir = "",
+        projectDependencies = "",
+      ),
     )
   }
 }
