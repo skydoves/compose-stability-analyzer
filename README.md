@@ -191,8 +191,8 @@ Sync your project to complete the setup.
 It’s **strongly recommended to use the exact same Kotlin version** as this library. Using a different Kotlin version may lead to compilation errors during the build process.
 
 | Stability Analyzer | Kotlin |
-|-------------------|-------------|
-| 0.4.0~0.6.1       | 2.2.21 |
+|--------------------|-------------|
+| 0.4.0~0.6.1        | 2.2.21 |
 
 ### TraceRecomposition Annotation
 
