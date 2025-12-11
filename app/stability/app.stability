@@ -212,6 +212,13 @@ public fun com.skydoves.myapplication.Test8(items: kotlinx.collections.immutable
     - items: STABLE (known stable type)
 
 @Composable
+public fun com.skydoves.myapplication.ThirdPartyCard(thirdPartyModel: com.skydoves.myapplication.model.ThirdPartyModel): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - thirdPartyModel: UNSTABLE (has mutable properties or unstable members)
+
+@Composable
 public fun com.skydoves.myapplication.TrackedActionButton(text: kotlin.String, onClick: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
