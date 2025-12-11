@@ -27,6 +27,12 @@ public fun com.skydoves.myapplication.Card(modifier: androidx.compose.ui.Modifie
     - content: STABLE (function type)
 
 @Composable
+private fun com.skydoves.myapplication.ComposableValue(): kotlin.String
+  skippable: true
+  restartable: true
+  params:
+
+@Composable
 public fun com.skydoves.myapplication.CorrectUsage(): kotlin.Unit
   skippable: true
   restartable: true
