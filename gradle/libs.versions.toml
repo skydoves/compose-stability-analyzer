@@ -14,6 +14,7 @@ androidxActivity = "1.11.0"
 androidxComposeBom = "2025.12.00"
 jetbrains-compose = "1.9.3"
 compose-stability-analyzer = "0.6.1"
+runtimeAnnotation = "1.9.0"
 spotless = "6.21.0"
 shadow = "8.1.1"
 
@@ -23,6 +24,7 @@ androidx-activity-compose = { group = "androidx.activity", name = "activity-comp
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "androidxComposeBom" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
+androidx-compose-runtime-annotation = { module = "androidx.compose.runtime:runtime-annotation", version.ref = "runtimeAnnotation" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }

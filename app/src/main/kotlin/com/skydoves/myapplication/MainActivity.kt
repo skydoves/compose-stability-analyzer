@@ -48,6 +48,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import com.skydoves.myapplication.model.ThirdPartyModel
+import com.skydoves.myapplication.model.ThirdPartyModelStable
 import com.skydoves.myapplication.models.ImmutableData
 import com.skydoves.myapplication.models.MyClass2
 import com.skydoves.myapplication.models.NormalClass
@@ -165,12 +166,15 @@ fun StableUserCard(user: StableUser) {
 }
 
 @Composable
-fun ThirdPartyCard(thirdPartyModel: ThirdPartyModel) {
+fun ThirdPartyCard(
+  thirdPartyModel: ThirdPartyModel,
+  thirdPartyModelStable: ThirdPartyModelStable,
+) {
   Card {
     Column(modifier = Modifier.padding(16.dp)) {
       Text("Stable User")
       Text("Name: ${thirdPartyModel.name}")
-      Text("Age: ${thirdPartyModel.count}")
+      Text("Age: ${thirdPartyModelStable.count}")
     }
   }
 }

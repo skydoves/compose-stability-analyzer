@@ -11,3 +11,16 @@ public final class com/skydoves/myapplication/model/ThirdPartyModel {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/skydoves/myapplication/model/ThirdPartyModelStable {
+	public fun <init> (Ljava/lang/String;I)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()I
+	public final fun copy (Ljava/lang/String;I)Lcom/skydoves/myapplication/model/ThirdPartyModelStable;
+	public static synthetic fun copy$default (Lcom/skydoves/myapplication/model/ThirdPartyModelStable;Ljava/lang/String;IILjava/lang/Object;)Lcom/skydoves/myapplication/model/ThirdPartyModelStable;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCount ()I
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
