@@ -45,7 +45,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
     // This version should match the version in gradle.properties
     // Update this when bumping the library version
-    private const val VERSION = "0.6.2"
+    private const val VERSION = "0.6.3"
 
     // Compiler option keys
     private const val OPTION_ENABLED = "enabled"
@@ -318,14 +318,13 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     return try {
       val dependencies = mutableSetOf<String>()
 
-      project.configurations.forEach { config ->
-        config.dependencies.forEach { dependency ->
-          if (dependency is org.gradle.api.artifacts.ProjectDependency) {
-            val dependentProject = dependency.dependencyProject
-            val packageName = extractPackageName(dependentProject)
-            if (packageName.isNotEmpty()) {
-              dependencies.add(packageName)
-            }
+      // Collect packages from all other subprojects
+      // This is a conservative approach: mark all cross-module classes as requiring annotations
+      project.rootProject.allprojects.forEach { subproject ->
+        if (subproject != project && subproject.name != project.rootProject.name) {
+          val packageName = extractPackageName(subproject)
+          if (packageName.isNotEmpty()) {
+            dependencies.add(packageName)
           }
         }
       }

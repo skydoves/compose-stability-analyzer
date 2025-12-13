@@ -192,7 +192,7 @@ It’s **strongly recommended to use the exact same Kotlin version** as this lib
 
 | Stability Analyzer | Kotlin |
 |--------------------|-------------|
-| 0.4.0~0.6.2        | 2.2.21 |
+| 0.4.0~0.6.3        | 2.2.21 |
 
 ### TraceRecomposition Annotation
 
