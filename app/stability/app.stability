@@ -213,10 +213,10 @@ public fun com.skydoves.myapplication.Test8(items: kotlinx.collections.immutable
 
 @Composable
 public fun com.skydoves.myapplication.ThirdPartyCard(thirdPartyModel: com.skydoves.myapplication.model.ThirdPartyModel, thirdPartyModelStable: com.skydoves.myapplication.model.ThirdPartyModelStable): kotlin.Unit
-  skippable: true
+  skippable: false
   restartable: true
   params:
-    - thirdPartyModel: STABLE (class with no mutable properties)
+    - thirdPartyModel: UNSTABLE (has mutable properties or unstable members)
     - thirdPartyModelStable: STABLE (marked @Stable or @Immutable)
 
 @Composable
