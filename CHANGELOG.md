@@ -5,18 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.2] - 2025-12-13
+## [0.6.3] - 2025-12-13
 
 ### Added
 - **Cross-module stability detection** - Classes from other Gradle modules now require explicit stability annotations
   - Compiler plugin: Detects cross-module types via IR origins and package matching
-  - Gradle plugin: Automatically collects project dependencies and passes them to compiler
+  - Gradle plugin: Automatically collects all subproject packages for cross-module detection
   - IDE plugin: Uses IntelliJ module system to identify cross-module boundaries
   - Classes from different modules marked as UNSTABLE unless annotated with @Stable/@Immutable/@StabilityInferred
   - Prevents accidentally assuming stability for types where implementation details aren't visible
   - Provides consistent behavior across compiler plugin, IDE plugin, and stability validation
 
 ### Fixed
+- **Fixed Gradle compatibility issues**
+  - Removed deprecated `getDependencyProject()` usage for broader Gradle version compatibility
+  - Implemented portable dependency collection that works across all Gradle versions
 - **Fixed compiler tests compatibility**
   - Updated StabilityTestConfigurator to pass new projectDependencies parameter
   - All compiler tests now passing with cross-module detection enabled
@@ -31,6 +34,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Composable skippability recalculated based on processed parameters
   - Better visibility of composable signatures while respecting ignore patterns
 - **Compacted code comments** for better readability across all cross-module detection implementations
+
+## [0.6.2] - 2025-12-10
+
+### Fixed
+- **Fixed property source file location and navigation in tool window** (Issue #67)
+  - Tool window now correctly identifies source file for composable properties
+  - Properties no longer show "Unknown.kt" as file name
+  - Double-clicking on property names navigates to correct source location
+  - Extended source location search to include `KtProperty` declarations
+
+### Improved
+- **Enhanced tool window handling of ignored type patterns** (Issue #74)
+  - Ignored parameters now displayed as stable instead of being hidden completely
+  - Composable skippability is recalculated based on processed parameters
+  - Provides better visibility of composable signatures while respecting ignore patterns
 
 ## [0.6.1] - 2025-12-06
 

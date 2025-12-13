@@ -2,17 +2,20 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
-## [0.6.2] - 2025-12-13
+## [0.6.3] - 2025-12-13
 
 ### Added
 - **Cross-module stability detection** - Classes from other modules now require explicit stability annotations
   - Classes from different Gradle modules are marked as UNSTABLE unless annotated with @Stable/@Immutable/@StabilityInferred
-  - Gradle plugin automatically detects project dependencies and passes them to compiler plugin
+  - Gradle plugin automatically collects all subproject packages for cross-module detection
   - IDE plugin uses IntelliJ module system to identify cross-module types
   - Prevents accidentally assuming stability for classes where implementation details aren't visible
   - Both compiler plugin and IDE plugin now consistently handle cross-module boundaries
 
 ### Fixed
+- **Fixed Gradle compatibility issues**
+  - Removed deprecated `getDependencyProject()` usage for broader Gradle version compatibility
+  - Implemented portable dependency collection that works across all Gradle versions
 - **Fixed property source file location and navigation in tool window** (Issue #67)
   - Tool window now correctly identifies source file for composable properties
   - Properties no longer show "Unknown.kt" as file name
@@ -21,6 +24,23 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 - **Fixed compiler tests compatibility with new cross-module detection**
   - Updated test configurator to pass projectDependencies parameter
   - All compiler tests now passing with cross-module detection enabled
+
+### Improved
+- **Enhanced tool window handling of ignored type patterns** (Issue #74)
+  - Ignored parameters are now displayed as stable instead of being hidden completely
+  - Composable skippability is recalculated based on processed parameters after applying ignore patterns
+  - Composables with only ignored unstable parameters now correctly show as skippable
+  - Provides better visibility of composable signatures while respecting ignore patterns
+- **Compacted code comments** for better readability across all cross-module detection implementations
+
+## [0.6.2] - 2025-12-10
+
+### Fixed
+- **Fixed property source file location and navigation in tool window** (Issue #67)
+  - Tool window now correctly identifies source file for composable properties
+  - Properties no longer show "Unknown.kt" as file name
+  - Double-clicking on property names in tool window now navigates to correct source location
+  - Extended source location search to include `KtProperty` declarations in addition to `KtNamedFunction`
 
 ### Improved
 - **Enhanced tool window handling of ignored type patterns** (Issue #74)
