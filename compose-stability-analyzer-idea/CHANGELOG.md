@@ -2,7 +2,15 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
-## [0.6.2] - 2025-12-10
+## [0.6.2] - 2025-12-13
+
+### Added
+- **Cross-module stability detection** - Classes from other modules now require explicit stability annotations
+  - Classes from different Gradle modules are marked as UNSTABLE unless annotated with @Stable/@Immutable/@StabilityInferred
+  - Gradle plugin automatically detects project dependencies and passes them to compiler plugin
+  - IDE plugin uses IntelliJ module system to identify cross-module types
+  - Prevents accidentally assuming stability for classes where implementation details aren't visible
+  - Both compiler plugin and IDE plugin now consistently handle cross-module boundaries
 
 ### Fixed
 - **Fixed property source file location and navigation in tool window** (Issue #67)
@@ -10,6 +18,9 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Properties no longer show "Unknown.kt" as file name
   - Double-clicking on property names in tool window now navigates to correct source location
   - Extended source location search to include `KtProperty` declarations in addition to `KtNamedFunction`
+- **Fixed compiler tests compatibility with new cross-module detection**
+  - Updated test configurator to pass projectDependencies parameter
+  - All compiler tests now passing with cross-module detection enabled
 
 ### Improved
 - **Enhanced tool window handling of ignored type patterns** (Issue #74)

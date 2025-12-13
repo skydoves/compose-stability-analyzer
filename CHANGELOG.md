@@ -1,0 +1,183 @@
+# Compose Stability Analyzer - Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.6.2] - 2025-12-13
+
+### Added
+- **Cross-module stability detection** - Classes from other Gradle modules now require explicit stability annotations
+  - Compiler plugin: Detects cross-module types via IR origins and package matching
+  - Gradle plugin: Automatically collects project dependencies and passes them to compiler
+  - IDE plugin: Uses IntelliJ module system to identify cross-module boundaries
+  - Classes from different modules marked as UNSTABLE unless annotated with @Stable/@Immutable/@StabilityInferred
+  - Prevents accidentally assuming stability for types where implementation details aren't visible
+  - Provides consistent behavior across compiler plugin, IDE plugin, and stability validation
+
+### Fixed
+- **Fixed compiler tests compatibility**
+  - Updated StabilityTestConfigurator to pass new projectDependencies parameter
+  - All compiler tests now passing with cross-module detection enabled
+- **Fixed property source file location and navigation in tool window** (Issue #67)
+  - Tool window now correctly identifies source file for composable properties
+  - Properties no longer show "Unknown.kt" as file name
+  - Double-clicking on property names navigates to correct source location
+
+### Improved
+- **Enhanced tool window handling of ignored type patterns** (Issue #74)
+  - Ignored parameters displayed as stable instead of hidden
+  - Composable skippability recalculated based on processed parameters
+  - Better visibility of composable signatures while respecting ignore patterns
+- **Compacted code comments** for better readability across all cross-module detection implementations
+
+## [0.6.1] - 2025-12-06
+
+### Added
+- Settings icon in IDE plugin tool window toolbar for quick access to configuration
+- Support for ignored type patterns in tool window
+
+### Fixed
+- Tool window now respects ignored type patterns (Issue #74)
+- WASM build failures with Gradle task dependencies (Issue #70)
+- Property name display showing as `<get-propertyName>` (Issue #67)
+
+### Improved
+- Updated tool window icon to monochrome style
+- Updated dependencies (Android Lint, Nexus Plugin, AGP, Compose BOM)
+
+## [0.6.0] - 2025-11-24
+
+### Added
+- Per-project stability configuration file support (Issue #60)
+- Runtime gutter icon for runtime-only composables
+- Generic type argument inference at compile time
+
+### Improved
+- Enhanced tooltip information for runtime parameters
+- Better visual distinction between unstable and runtime stability
+
+## [0.5.3] - 2025-11-18
+
+### Fixed
+- iOS native compilation with kotlinx.serialization (Issue #48)
+- Gradle Configuration Cache compatibility (Issue #41)
+
+## [0.5.2] - 2025-11-13
+
+### Fixed
+- APK size increase in release builds (Issue #39)
+- Optimized ProGuard rules to reduce APK size
+
+## [0.5.1] - 2025-11-10
+
+### Added
+- wasmJs target support for Kotlin Multiplatform
+
+### Fixed
+- Sealed class stability inheritance (Issue #31)
+
+## [0.5.0] - 2025-11-08
+
+### Breaking Changes
+- Minimum IDE version updated to IntelliJ IDEA 2024.2+ (build 242+)
+
+### Added
+- New Compose Stability Tool Window (Issue #14)
+- Interactive empty state guide
+- Show in test source sets setting (Issue #21)
+- @StabilityInferred annotation parameter support (Issue #18)
+
+### Improved
+- Enhanced UI/UX for Tool Window
+- Performance optimization using pre-computed JSON files
+- Added IntelliJ Plugin Verifier integration
+
+### Fixed
+- PluginException in IntelliJ IDEA 2025.2.4 (Issue #33)
+- Typealias detection for Composable function types (Issue #16)
+- ImmutableList/Set/Map detection in test code (Issue #21)
+
+## [0.4.2] - 2025-11-03
+
+### Fixed
+- @Parcelize data classes stability detection (Issue #3)
+- StackOverflowError with recursive types (Issue #11)
+- Compose shape types stability analysis
+
+## [0.4.1] - 2025-11-02
+
+### Fixed
+- Stability analysis for Compose shape types
+- StackOverflowError with recursive types
+- False positive warnings for @Parcelize classes
+
+## [0.4.0] - 2025-11-02
+
+### Added
+- ProGuard consumer rules for R8/ProGuard compatibility
+- Comprehensive compiler-tests module
+- Enhanced documentation for stability validation
+
+### Improved
+- @TraceRecomposition visualization
+- Stability analysis for complex generics
+
+## [0.3.0] - 2025-10-28
+
+### Added
+- @IgnoreStabilityReport annotation
+- Runtime and Gradle module unit tests
+- Stability validation workflow (stabilityDump and stabilityCheck tasks)
+- IDE quick fixes for @TraceRecomposition
+
+## [0.2.3] - 2025-10-23
+
+### Fixed
+- Compiler test compatibility with Kotlin 2.2.21
+
+## [0.2.2] - 2025-10-20
+
+### Changed
+- Unified maven publishing configuration
+
+## [0.2.1] - 2025-10-15
+
+### Fixed
+- K2 API compatibility for Android Studio AI-243
+- Graceful fallback to PSI analyzer
+
+## [0.2.0] - 2025-10-10
+
+### Added
+- K2 Analysis API support
+- Enhanced @Preview detection
+- IntelliJ IDEA 2025.2 support
+
+## [0.1.0] - 2025-10-01
+
+### Added
+- Initial release
+- Hover documentation
+- Gutter icons
+- Inline hints
+- Code inspections and quick fixes
+
+## Legend
+
+- **Added** - New features
+- **Changed** - Changes in existing functionality
+- **Deprecated** - Soon-to-be removed features
+- **Removed** - Removed features
+- **Fixed** - Bug fixes
+- **Improved** - Enhancements to existing features
+- **Security** - Security-related changes
+- **Breaking Changes** - Breaking changes requiring migration
+
+## Links
+
+- [GitHub Repository](https://github.com/skydoves/compose-stability-analyzer)
+- [Issue Tracker](https://github.com/skydoves/compose-stability-analyzer/issues)
+- [Documentation](https://github.com/skydoves/compose-stability-analyzer/blob/main/README.md)
+- [IDE Plugin Changelog](compose-stability-analyzer-idea/CHANGELOG.md)
