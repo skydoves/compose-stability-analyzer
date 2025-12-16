@@ -2,6 +2,20 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.6.4] - 2025-12-16
+
+### Fixed
+- **Fixed "Wrong plugin option format: null" compilation error** (Issue #87)
+  - Changed Gradle plugin cross-module detection to use file-based approach
+  - Project dependencies now written to `build/stability/project-dependencies.txt` instead of passed as string
+  - Resolves build failures in multi-module projects introduced in 0.6.3
+  - Gradle/compiler plugin cross-module detection now fully functional
+  - IDE plugin cross-module detection continues to work as before
+
+### Improved
+- More robust cross-module dependency passing mechanism in Gradle plugin
+- Better compatibility with multi-module Android projects
+
 ## [0.6.3] - 2025-12-13
 
 ### Added

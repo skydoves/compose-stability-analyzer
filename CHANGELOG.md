@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.4] - 2025-12-16
+
+### Fixed
+- **Fixed "Wrong plugin option format: null" compilation error** (Issue #87)
+  - Changed cross-module detection to use file-based approach instead of string-based SubpluginOption
+  - Project dependencies now written to `build/stability/project-dependencies.txt` (one package per line)
+  - Compiler plugin reads dependencies from file instead of parsing comma-separated string
+  - Resolves build failures in multi-module projects introduced in 0.6.3
+  - Users experiencing compilation errors with 0.6.3 should upgrade to 0.6.4
+
+### Improved
+- More robust cross-module dependency passing mechanism
+- Better handling of empty dependency lists
+- Follows common patterns used by other Kotlin compiler plugins
+
 ## [0.6.3] - 2025-12-13
 
 ### Added
