@@ -55,8 +55,8 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
 
     public val OPTION_PROJECT_DEPENDENCIES: CliOption = CliOption(
       optionName = "projectDependencies",
-      valueDescription = "<module1,module2,...>",
-      description = "Comma-separated list of project module names",
+      valueDescription = "<path>",
+      description = "Path to file containing project module names (one per line)",
       required = false,
     )
   }

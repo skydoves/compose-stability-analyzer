@@ -36,9 +36,20 @@ public class StabilityAnalyzerIrGenerationExtension(
       null
     }
 
-    // Parse project dependencies from comma-separated string
+    // Read project dependencies from file (projectDependencies is now a file path)
     val dependencyModules = if (projectDependencies.isNotEmpty()) {
-      projectDependencies.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+      try {
+        val dependenciesFile = File(projectDependencies)
+        if (dependenciesFile.exists()) {
+          dependenciesFile.readLines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+        } else {
+          emptyList()
+        }
+      } catch (e: Exception) {
+        emptyList()
+      }
     } else {
       emptyList()
     }
