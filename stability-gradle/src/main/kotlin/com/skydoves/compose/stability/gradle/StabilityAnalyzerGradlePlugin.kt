@@ -154,6 +154,12 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     return project.provider {
       val projectDependencies = collectProjectDependencies(project)
 
+      // Write project dependencies to a file to avoid empty string issues with SubpluginOption
+      val stabilityDir = project.layout.buildDirectory.dir("stability").get().asFile
+      stabilityDir.mkdirs()
+      val dependenciesFile = java.io.File(stabilityDir, "project-dependencies.txt")
+      dependenciesFile.writeText(projectDependencies.joinToString("\n"))
+
       listOf(
         SubpluginOption(
           key = OPTION_ENABLED,
@@ -161,11 +167,11 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         ),
         SubpluginOption(
           key = OPTION_STABILITY_OUTPUT_DIR,
-          value = project.layout.buildDirectory.dir("stability").get().asFile.absolutePath,
+          value = stabilityDir.absolutePath,
         ),
         SubpluginOption(
           key = OPTION_PROJECT_DEPENDENCIES,
-          value = projectDependencies.joinToString(","),
+          value = dependenciesFile.absolutePath,
         ),
       )
     }
