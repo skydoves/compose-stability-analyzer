@@ -27,6 +27,7 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityCheckTask :
 	public abstract fun getIgnoredClasses ()Lorg/gradle/api/provider/ListProperty;
 	public abstract fun getIgnoredPackages ()Lorg/gradle/api/provider/ListProperty;
 	public abstract fun getProjectName ()Lorg/gradle/api/provider/Property;
+	public abstract fun getQuietCheck ()Lorg/gradle/api/provider/Property;
 	public abstract fun getStabilityDir ()Lorg/gradle/api/file/DirectoryProperty;
 	public abstract fun getStabilityInputFile ()Lorg/gradle/api/file/RegularFileProperty;
 }
@@ -50,5 +51,6 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityValidationC
 	public final fun getIgnoredProjects ()Lorg/gradle/api/provider/ListProperty;
 	public final fun getIncludeTests ()Lorg/gradle/api/provider/Property;
 	public final fun getOutputDir ()Lorg/gradle/api/file/DirectoryProperty;
+	public final fun getQuietCheck ()Lorg/gradle/api/provider/Property;
 }
 

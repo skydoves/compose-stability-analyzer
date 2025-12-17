@@ -91,6 +91,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
       ignoredClasses.set(extension.stabilityValidation.ignoredClasses)
       failOnStabilityChange.set(extension.stabilityValidation.failOnStabilityChange)
+      quietCheck.set(extension.stabilityValidation.quietCheck)
     }
 
     // Make check task depend on stabilityCheck if enabled (only if check task exists)

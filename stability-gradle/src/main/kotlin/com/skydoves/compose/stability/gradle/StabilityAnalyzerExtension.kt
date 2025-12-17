@@ -140,4 +140,24 @@ public abstract class StabilityValidationConfig @Inject constructor(
    */
   public val failOnStabilityChange: Property<Boolean> =
     objects.property(Boolean::class.javaObjectType).convention(true)
+
+  /**
+   * Whether to suppress success messages from stability checks.
+   * When true, "✅ Stability check passed." messages will be hidden for modules that pass.
+   * Errors and warnings will still be shown.
+   *
+   * This is useful in multi-module projects to reduce log noise when many modules pass checks.
+   * Default: false (success messages shown)
+   *
+   * Example:
+   * ```
+   * composeStabilityAnalyzer {
+   *   stabilityValidation {
+   *     quietCheck.set(true) // Suppress success messages
+   *   }
+   * }
+   * ```
+   */
+  public val quietCheck: Property<Boolean> =
+    objects.property(Boolean::class.javaObjectType).convention(false)
 }

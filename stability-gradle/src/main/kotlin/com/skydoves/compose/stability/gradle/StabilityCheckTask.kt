@@ -68,6 +68,12 @@ public abstract class StabilityCheckTask : DefaultTask() {
   @get:Input
   public abstract val failOnStabilityChange: Property<Boolean>
 
+  /**
+   * Whether to suppress success messages when checks pass.
+   */
+  @get:Input
+  public abstract val quietCheck: Property<Boolean>
+
   init {
     group = "verification"
     description = "Check composable stability against reference file"
@@ -135,7 +141,10 @@ public abstract class StabilityCheckTask : DefaultTask() {
         logger.lifecycle("✓ Stability check completed with warnings (failOnStabilityChange=false)")
       }
     } else {
-      logger.lifecycle("✅ Stability check passed.")
+      // Only show success message if quietCheck is false
+      if (!quietCheck.get()) {
+        logger.lifecycle("✅ Stability check passed.")
+      }
     }
   }
 
