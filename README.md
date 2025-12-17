@@ -170,7 +170,7 @@ This is incredibly useful for:
 First, add the plugin to the `[plugins]` section of your `libs.versions.toml` file:
 
 ```toml
-stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.6.4" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.6.5" }
 ```
 
 Then, apply it to your root `build.gradle.kts` with `apply false`:
