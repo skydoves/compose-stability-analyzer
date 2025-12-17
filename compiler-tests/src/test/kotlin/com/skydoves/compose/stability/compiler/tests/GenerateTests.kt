@@ -15,7 +15,7 @@
  */
 package com.skydoves.compose.stability.compiler.tests
 
-import org.jetbrains.kotlin.generators.generateTestGroupSuiteWithJUnit5
+import org.jetbrains.kotlin.generators.dsl.junit5.generateTestGroupSuiteWithJUnit5
 
 /**
  * Main function to generate test classes from test data files.

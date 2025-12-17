@@ -116,7 +116,7 @@ public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerIrGe
 
 public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerPluginRegistrar : org/jetbrains/kotlin/compiler/plugin/CompilerPluginRegistrar {
 	public fun <init> ()V
-	public final fun getPluginId ()Ljava/lang/String;
+	public fun getPluginId ()Ljava/lang/String;
 	public fun getSupportsK2 ()Z
 	public fun registerExtensions (Lorg/jetbrains/kotlin/compiler/plugin/CompilerPluginRegistrar$ExtensionStorage;Lorg/jetbrains/kotlin/config/CompilerConfiguration;)V
 }
