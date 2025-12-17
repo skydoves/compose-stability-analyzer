@@ -71,6 +71,7 @@ class TraceRecompositionDetectorTest : LintDetectorTest() {
           """,
         ).indented(),
       )
+      .allowMissingSdk()
       .run()
       .expect(
         """
@@ -103,6 +104,7 @@ class TraceRecompositionDetectorTest : LintDetectorTest() {
           """,
         ).indented(),
       )
+      .allowMissingSdk()
       .run()
       .expectClean()
   }
@@ -128,6 +130,7 @@ class TraceRecompositionDetectorTest : LintDetectorTest() {
           """,
         ).indented(),
       )
+      .allowMissingSdk()
       .run()
       .expectClean()
   }
@@ -148,6 +151,7 @@ class TraceRecompositionDetectorTest : LintDetectorTest() {
           """,
         ).indented(),
       )
+      .allowMissingSdk()
       .run()
       .expectClean()
   }
