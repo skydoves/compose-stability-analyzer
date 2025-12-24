@@ -70,7 +70,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       StabilityDumpTask::class.java,
     ) {
       projectName.set(target.name)
-      stabilityInputFile.set(
+      stabilityInputFiles.setFrom(
         target.layout.buildDirectory.file("stability/stability-info.json"),
       )
       outputDir.set(extension.stabilityValidation.outputDir)
