@@ -39,7 +39,7 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityDumpTask : 
 	public abstract fun getIgnoredPackages ()Lorg/gradle/api/provider/ListProperty;
 	public abstract fun getOutputDir ()Lorg/gradle/api/file/DirectoryProperty;
 	public abstract fun getProjectName ()Lorg/gradle/api/provider/Property;
-	public abstract fun getStabilityInputFile ()Lorg/gradle/api/file/RegularFileProperty;
+	public abstract fun getStabilityInputFiles ()Lorg/gradle/api/file/ConfigurableFileCollection;
 }
 
 public abstract class com/skydoves/compose/stability/gradle/StabilityValidationConfig {
