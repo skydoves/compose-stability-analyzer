@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.6] - 2025-12-24
+
+### Fixed
+- **Fixed stabilityDump task incorrectly marked as UP-TO-DATE**
+  - Task now properly tracks the `stability-info.json` input file for up-to-date checks
+  - Changed from `@Internal` to `@InputFiles` annotation on input file property
+  - Ensures stability files are regenerated when compiler output changes
+  - Fixes issue where running `./gradlew stabilityDump` would skip execution even when stability files were missing
+  - Task now correctly runs after `clean` or when stability output is deleted
+
 ## [0.6.5] - 2025-12-17
 
 ### Added
