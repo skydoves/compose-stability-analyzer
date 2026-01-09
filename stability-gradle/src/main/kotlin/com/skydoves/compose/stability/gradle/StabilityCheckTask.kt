@@ -74,6 +74,12 @@ public abstract class StabilityCheckTask : DefaultTask() {
   @get:Input
   public abstract val quietCheck: Property<Boolean>
 
+  /**
+   * Suffix to the generated stability file
+   */
+  @get:Input
+  public abstract val stabilityFileSuffix: Property<String>
+
   init {
     group = "verification"
     description = "Check composable stability against reference file"
@@ -104,11 +110,17 @@ public abstract class StabilityCheckTask : DefaultTask() {
       return
     }
 
-    val referenceFile = stabilityDirectory.resolve("${projectName.get()}.stability")
+    val stabilityFileName = if (stabilityFileSuffix.isPresent) {
+      "${projectName.get()}-${stabilityFileSuffix.get()}"
+    } else {
+      project.name
+    }
+
+    val referenceFile = stabilityDirectory.resolve("$stabilityFileName.stability")
     if (!referenceFile.exists()) {
       // Directory exists but file doesn't - unusual but handle gracefully
       logger.lifecycle(
-        "ℹ️  No stability baseline found for :${projectName.get()}, skipping stability check",
+        "ℹ️  No stability baseline found for :$stabilityFileName, skipping stability check",
       )
       logger.lifecycle(
         "    Run './gradlew :${projectName.get()}:stabilityDump' to create the baseline",

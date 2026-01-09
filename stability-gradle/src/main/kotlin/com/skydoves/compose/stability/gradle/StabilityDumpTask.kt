@@ -63,6 +63,12 @@ public abstract class StabilityDumpTask : DefaultTask() {
   @get:Input
   public abstract val projectName: Property<String>
 
+  /**
+   * Suffix to the generated stability file
+   */
+  @get:Input
+  public abstract val stabilityFileSuffix: Property<String>
+
   init {
     group = "verification"
     description = "Dump composable stability information to stability file"
@@ -81,7 +87,13 @@ public abstract class StabilityDumpTask : DefaultTask() {
     val outputDirectory = outputDir.get().asFile
     outputDirectory.mkdirs()
 
-    val outputFile = outputDirectory.resolve("${projectName.get()}.stability")
+    val stabilityFileName = if (stabilityFileSuffix.isPresent) {
+      "${projectName.get()}-${stabilityFileSuffix.get()}"
+    } else {
+      project.name
+    }
+
+    val outputFile = outputDirectory.resolve("$stabilityFileName.stability")
     val stabilityInfo = parseStabilityInfo(inputFile)
     val filtered = filterStabilityInfo(
       stabilityInfo,
