@@ -171,4 +171,13 @@ public abstract class StabilityValidationConfig @Inject constructor(
    */
   public val ignoreNonRegressiveChanges: Property<Boolean> =
     objects.property(Boolean::class.javaObjectType).convention(false)
+
+  /**
+   * When true, plugin will still run normally even with the baseline missing, treating it
+   * as an empty baseline
+   *
+   * Default: false
+   */
+  public val allowMissingBaseline: Property<Boolean> =
+    objects.property(Boolean::class.javaObjectType).convention(false)
 }

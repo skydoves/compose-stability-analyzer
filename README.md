@@ -790,6 +790,9 @@ composeStabilityAnalyzer {
       
         // Do not report any stable changes from the baseline (default: false)
         ignoreNonRegressiveChanges.set(false)
+      
+        // Allow the check to run, even if the baseline does not exist (default: false)
+        allowMissingBaseline.set(false)
     }
 }
 ```

@@ -23,6 +23,7 @@ public final class com/skydoves/compose/stability/gradle/StabilityAnalyzerGradle
 public abstract class com/skydoves/compose/stability/gradle/StabilityCheckTask : org/gradle/api/DefaultTask {
 	public fun <init> ()V
 	public final fun check ()V
+	public abstract fun getAllowMissingBaseline ()Lorg/gradle/api/provider/Property;
 	public abstract fun getFailOnStabilityChange ()Lorg/gradle/api/provider/Property;
 	public abstract fun getIgnoreNonRegressiveChanges ()Lorg/gradle/api/provider/Property;
 	public abstract fun getIgnoredClasses ()Lorg/gradle/api/provider/ListProperty;
@@ -47,6 +48,7 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityDumpTask : 
 
 public abstract class com/skydoves/compose/stability/gradle/StabilityValidationConfig {
 	public fun <init> (Lorg/gradle/api/file/ProjectLayout;Lorg/gradle/api/model/ObjectFactory;)V
+	public final fun getAllowMissingBaseline ()Lorg/gradle/api/provider/Property;
 	public final fun getEnabled ()Lorg/gradle/api/provider/Property;
 	public final fun getFailOnStabilityChange ()Lorg/gradle/api/provider/Property;
 	public final fun getIgnoreNonRegressiveChanges ()Lorg/gradle/api/provider/Property;
