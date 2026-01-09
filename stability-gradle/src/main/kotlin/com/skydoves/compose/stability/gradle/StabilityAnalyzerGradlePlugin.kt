@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.Companion.COMMON_MAIN_
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetContainer
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 /**
  * Gradle plugin for Compose Stability Analyzer.
@@ -72,6 +73,11 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       registerTasksAndroid(target, extension, androidComponents)
     }
 
+    // Add output parameter to the Kotlin tasks to ensure it is compatible with the Build Cache
+    target.tasks.withType(KotlinCompile::class.java).configureEach {
+      val stabilityDir = target.layout.buildDirectory.dir("stability").get()
+      outputs.dir(stabilityDir).optional(false)
+    }
   }
 
   private fun registerTasksNonAndroid(
@@ -98,7 +104,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       StabilityCheckTask::class.java,
     ) {
       projectName.set(target.name)
-      stabilityInputFile.set(
+      stabilityInputFiles.from(
         target.layout.buildDirectory.file("stability/stability-info.json"),
       )
       stabilityDir.set(extension.stabilityValidation.outputDir)
@@ -161,7 +167,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         StabilityCheckTask::class.java,
       ) {
         projectName.set(target.name)
-        stabilityInputFile.set(
+        stabilityInputFiles.from(
           target.layout.buildDirectory.file("stability/stability-info.json"),
         )
         stabilityDir.set(extension.stabilityValidation.outputDir)
@@ -331,7 +337,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     stabilityDumpTask: org.gradle.api.tasks.TaskProvider<StabilityDumpTask>,
     stabilityCheckTask: org.gradle.api.tasks.TaskProvider<StabilityCheckTask>,
 
-  ) {
+    ) {
     // Get the includeTests provider for lazy evaluation
     val includeTestsProvider = extension.stabilityValidation.includeTests
 
@@ -342,31 +348,29 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         project.provider {
           val includeTests = includeTestsProvider.get()
           project.tasks.matching { task ->
-            val taskName = task.name
-            val taskNameLower = taskName.lowercase()
-
-            // Match only actual Kotlin compilation tasks, excluding infrastructure tasks
-            val isKotlinCompile = taskName.startsWith("compile") &&
-              taskName.contains("Kotlin") &&
-              // Exclude wasm-specific sync/webpack/executable tasks
-              !taskNameLower.contains("sync") &&
-              !taskNameLower.contains("webpack") &&
-              !taskNameLower.contains("executable") &&
-              !taskNameLower.contains("link") &&
-              !taskNameLower.contains("assemble")
-
-            val isTestTask = taskNameLower.let {
-              it.contains("test") || it.contains("androidtest") || it.contains("unittest")
-            }
-
-            // Include task if it's a Kotlin compile task and either:
-            // 1. includeTests is true, OR
-            // 2. it's not a test task
-            isKotlinCompile && (includeTests || !isTestTask) &&
-              (filter == null || taskName.contains(filter))
+            isKotlinTaskApplicable(task.name, includeTests) &&
+              (filter == null || task.name.contains(filter))
           }
         },
       )
+
+      if (filter != null) {
+        // For now, stability check compiler plugin still creates the same files
+        // for different variant tasks. That means that even though our variant task
+        // is not dependent on the other-variant kotlin tasks, it is still implicitly coupled
+        // with them as it reads the same files. To mitigate for this,
+        // we tell Gradle that this task must run after any kotlin tasks, even
+        // if their variant does not match ours
+        mustRunAfter(
+          project.provider {
+            val includeTests = includeTestsProvider.get()
+            project.tasks.matching { task ->
+              isKotlinTaskApplicable(task.name, includeTests) &&
+                !task.name.contains(filter)
+            }
+          },
+        )
+      }
     }
 
     stabilityCheckTask.configure {
@@ -375,32 +379,55 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         project.provider {
           val includeTests = includeTestsProvider.get()
           project.tasks.matching { task ->
-            val taskName = task.name
-            val taskNameLower = taskName.lowercase()
-
-            // Match only actual Kotlin compilation tasks, excluding infrastructure tasks
-            val isKotlinCompile = taskName.startsWith("compile") &&
-              taskName.contains("Kotlin") &&
-              // Exclude wasm-specific sync/webpack/executable tasks
-              !taskNameLower.contains("sync") &&
-              !taskNameLower.contains("webpack") &&
-              !taskNameLower.contains("executable") &&
-              !taskNameLower.contains("link") &&
-              !taskNameLower.contains("assemble")
-
-            val isTestTask = taskNameLower.let {
-              it.contains("test") || it.contains("androidtest") || it.contains("unittest")
-            }
-
-            // Include task if it's a Kotlin compile task and either:
-            // 1. includeTests is true, OR
-            // 2. it's not a test task
-            isKotlinCompile && (includeTests || !isTestTask) &&
-              (filter == null || taskName.contains(filter))
+            isKotlinTaskApplicable(task.name, includeTests) &&
+              (filter == null || task.name.contains(filter))
           }
         },
       )
+
+      if (filter != null) {
+        // For now, stability check compiler plugin still creates the same files
+        // for different variant tasks. That means that even though our variant task
+        // is not dependent on the other-variant kotlin tasks, it is still implicitly coupled
+        // with them as it reads the same files. To mitigate for this,
+        // we tell Gradle that this task must run after any kotlin tasks, even
+        // if their variant does not match ours
+        mustRunAfter(
+            project.provider {
+              val includeTests = includeTestsProvider.get()
+              project.tasks.matching { task ->
+                isKotlinTaskApplicable(
+                  task.name,
+                  includeTests
+                )
+              }
+            },
+        )
+      }
     }
+  }
+
+  private fun isKotlinTaskApplicable(taskName: String, includeTests: Boolean): Boolean {
+    val taskNameLower = taskName.lowercase()
+
+    // Match only actual Kotlin compilation tasks, excluding infrastructure tasks
+    val isKotlinCompile = taskName.startsWith("compile") &&
+      taskName.contains("Kotlin") &&
+      // Exclude wasm-specific sync/webpack/executable tasks
+      !taskNameLower.contains("sync") &&
+      !taskNameLower.contains("webpack") &&
+      !taskNameLower.contains("executable") &&
+      !taskNameLower.contains("link") &&
+      !taskNameLower.contains("assemble")
+
+    val isTestTask = taskNameLower.let {
+      it.contains("test") || it.contains("androidtest") || it.contains("unittest")
+    }
+
+    // Include task if it's a Kotlin compile task and either:
+    // 1. includeTests is true, OR
+    // 2. it's not a test task
+    return isKotlinCompile && (includeTests || !isTestTask)
   }
 
   /**

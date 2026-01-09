@@ -17,12 +17,19 @@ package com.skydoves.compose.stability.gradle
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
 /**
@@ -35,13 +42,13 @@ public abstract class StabilityCheckTask : DefaultTask() {
   /**
    * Input file containing current stability information from compiler.
    */
-  @get:Internal
-  public abstract val stabilityInputFile: RegularFileProperty
+  @get:InputFiles
+  public abstract val stabilityInputFiles: ConfigurableFileCollection
 
   /**
    * Directory containing the reference stability file.
    */
-  @get:Internal
+  @get:InputDirectory
   public abstract val stabilityDir: DirectoryProperty
 
   /**
@@ -87,7 +94,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
 
   @TaskAction
   public fun check() {
-    val inputFile = stabilityInputFile.orNull?.asFile
+    val inputFile = stabilityInputFiles.files.firstOrNull()
     if (inputFile == null || !inputFile.exists()) {
       // If the file doesn't exist, it means the module has no composable functions
       // This is expected for modules like activities or utilities without composables
