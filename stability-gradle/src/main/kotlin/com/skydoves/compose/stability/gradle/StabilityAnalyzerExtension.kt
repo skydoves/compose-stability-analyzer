@@ -160,4 +160,15 @@ public abstract class StabilityValidationConfig @Inject constructor(
    */
   public val quietCheck: Property<Boolean> =
     objects.property(Boolean::class.javaObjectType).convention(false)
+
+  /**
+   * Whether to ignore any stable changes from the baseline.
+   *
+   * When set to true, any new stable parameters, stable functions or removed parameters/functions
+   * will not be reported.
+   *
+   * Default: false
+   */
+  public val ignoreNonRegressiveChanges: Property<Boolean> =
+    objects.property(Boolean::class.javaObjectType).convention(false)
 }

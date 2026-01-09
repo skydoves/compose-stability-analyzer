@@ -24,6 +24,7 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityCheckTask :
 	public fun <init> ()V
 	public final fun check ()V
 	public abstract fun getFailOnStabilityChange ()Lorg/gradle/api/provider/Property;
+	public abstract fun getIgnoreNonRegressiveChanges ()Lorg/gradle/api/provider/Property;
 	public abstract fun getIgnoredClasses ()Lorg/gradle/api/provider/ListProperty;
 	public abstract fun getIgnoredPackages ()Lorg/gradle/api/provider/ListProperty;
 	public abstract fun getProjectName ()Lorg/gradle/api/provider/Property;
@@ -48,6 +49,7 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityValidationC
 	public fun <init> (Lorg/gradle/api/file/ProjectLayout;Lorg/gradle/api/model/ObjectFactory;)V
 	public final fun getEnabled ()Lorg/gradle/api/provider/Property;
 	public final fun getFailOnStabilityChange ()Lorg/gradle/api/provider/Property;
+	public final fun getIgnoreNonRegressiveChanges ()Lorg/gradle/api/provider/Property;
 	public final fun getIgnoredClasses ()Lorg/gradle/api/provider/ListProperty;
 	public final fun getIgnoredPackages ()Lorg/gradle/api/provider/ListProperty;
 	public final fun getIgnoredProjects ()Lorg/gradle/api/provider/ListProperty;

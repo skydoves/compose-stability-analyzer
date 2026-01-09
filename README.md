@@ -787,6 +787,9 @@ composeStabilityAnalyzer {
 
         // Control build failure behavior on stability changes (default: true)
         failOnStabilityChange.set(true)
+      
+        // Do not report any stable changes from the baseline (default: false)
+        ignoreNonRegressiveChanges.set(false)
     }
 }
 ```
