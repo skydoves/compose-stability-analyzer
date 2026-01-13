@@ -116,7 +116,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
     val stabilityFileName = if (stabilityFileSuffix.isPresent) {
       "${projectName.get()}-${stabilityFileSuffix.get()}"
     } else {
-      project.name
+      projectName.get()
     }
 
     val referenceFile = stabilityDirectory.resolve("$stabilityFileName.stability")

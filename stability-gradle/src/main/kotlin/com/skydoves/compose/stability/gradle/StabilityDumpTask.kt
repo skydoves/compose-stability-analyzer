@@ -92,7 +92,7 @@ public abstract class StabilityDumpTask : DefaultTask() {
     val stabilityFileName = if (stabilityFileSuffix.isPresent) {
       "${projectName.get()}-${stabilityFileSuffix.get()}"
     } else {
-      project.name
+      projectName.get()
     }
 
     val outputFile = outputDirectory.resolve("$stabilityFileName.stability")
