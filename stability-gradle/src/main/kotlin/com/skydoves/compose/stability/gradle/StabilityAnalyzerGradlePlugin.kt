@@ -395,7 +395,8 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
               isKotlinTaskApplicable(
                 task.name,
                 includeTests,
-              )
+              ) &&
+                !task.name.contains(filter)
             }
           },
         )
