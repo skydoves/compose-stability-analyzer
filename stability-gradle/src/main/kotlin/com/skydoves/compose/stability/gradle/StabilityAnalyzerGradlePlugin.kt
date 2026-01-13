@@ -337,7 +337,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     stabilityDumpTask: org.gradle.api.tasks.TaskProvider<StabilityDumpTask>,
     stabilityCheckTask: org.gradle.api.tasks.TaskProvider<StabilityCheckTask>,
 
-    ) {
+  ) {
     // Get the includeTests provider for lazy evaluation
     val includeTestsProvider = extension.stabilityValidation.includeTests
 
@@ -351,7 +351,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
               (filter == null || task.name.contains(filter))
           }
         },
-        )
+      )
 
       if (filter != null) {
         // For now, stability check compiler plugin still creates the same files
@@ -394,7 +394,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
             project.tasks.matching { task ->
               isKotlinTaskApplicable(
                 task.name,
-                includeTests
+                includeTests,
               )
             }
           },
