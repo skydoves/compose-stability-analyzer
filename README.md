@@ -541,6 +541,11 @@ Think of it like this:
 
 > **Note**: Keep in mind that, all these Gradle tasks should be done **after compile your project**.
 
+### Android
+
+For Android projects, variant-specific tasks will be created, such as `debugStabilityDump`.
+You can use those to only compile one variant of your module.
+
 ### Step 1: Create a Stability Baseline
 
 First, you need to generate a baseline—a snapshot of your current composables' stability.
