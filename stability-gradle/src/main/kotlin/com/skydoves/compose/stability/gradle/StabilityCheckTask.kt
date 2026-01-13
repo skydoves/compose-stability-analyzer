@@ -24,6 +24,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 
 /**
@@ -79,6 +80,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
    * Suffix to the generated stability file
    */
   @get:Input
+  @get:Optional
   public abstract val stabilityFileSuffix: Property<String>
 
   init {

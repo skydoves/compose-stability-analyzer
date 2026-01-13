@@ -76,7 +76,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     // Add output parameter to the Kotlin tasks to ensure it is compatible with the Build Cache
     target.tasks.withType(KotlinCompile::class.java).configureEach {
       val stabilityDir = target.layout.buildDirectory.dir("stability").get()
-      outputs.dir(stabilityDir).optional(false)
+      outputs.dir(stabilityDir).optional(true)
     }
   }
 
