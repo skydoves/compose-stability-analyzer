@@ -345,14 +345,13 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     stabilityDumpTask.configure {
       // Use provider to lazily collect Kotlin compile task names
       dependsOn(
-        project.provider {
-          val includeTests = includeTestsProvider.get()
+        includeTestsProvider.map { includeTests ->
           project.tasks.matching { task ->
             isKotlinTaskApplicable(task.name, includeTests) &&
               (filter == null || task.name.contains(filter))
           }
         },
-      )
+        )
 
       if (filter != null) {
         // For now, stability check compiler plugin still creates the same files
@@ -362,8 +361,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         // we tell Gradle that this task must run after any kotlin tasks, even
         // if their variant does not match ours
         mustRunAfter(
-          project.provider {
-            val includeTests = includeTestsProvider.get()
+          includeTestsProvider.map { includeTests ->
             project.tasks.matching { task ->
               isKotlinTaskApplicable(task.name, includeTests) &&
                 !task.name.contains(filter)
@@ -376,8 +374,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     stabilityCheckTask.configure {
       // Use provider to lazily collect Kotlin compile task names
       dependsOn(
-        project.provider {
-          val includeTests = includeTestsProvider.get()
+        includeTestsProvider.map { includeTests ->
           project.tasks.matching { task ->
             isKotlinTaskApplicable(task.name, includeTests) &&
               (filter == null || task.name.contains(filter))
@@ -393,15 +390,14 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         // we tell Gradle that this task must run after any kotlin tasks, even
         // if their variant does not match ours
         mustRunAfter(
-            project.provider {
-              val includeTests = includeTestsProvider.get()
-              project.tasks.matching { task ->
-                isKotlinTaskApplicable(
-                  task.name,
-                  includeTests
-                )
-              }
-            },
+          includeTestsProvider.map { includeTests ->
+            project.tasks.matching { task ->
+              isKotlinTaskApplicable(
+                task.name,
+                includeTests
+              )
+            }
+          },
         )
       }
     }
