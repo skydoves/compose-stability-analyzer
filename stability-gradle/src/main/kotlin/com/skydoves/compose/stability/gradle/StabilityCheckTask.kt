@@ -151,7 +151,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
         currentStability,
         referenceStability,
         ignoreNonRegressiveChanges.get(),
-        getCustomStableTypesAsRegex()
+        getCustomStableTypesAsRegex(),
       )
 
     if (differences.isNotEmpty()) {
@@ -521,8 +521,15 @@ public abstract class StabilityCheckTask : DefaultTask() {
 internal sealed class StabilityDifference {
   public abstract fun format(): String
 
-  public data class NewFunction(val name: String) : StabilityDifference() {
-    override fun format(): String = "+ $name (new composable)"
+  public data class NewFunction(
+    val name: String,
+    val parameters: List<ParameterInfo>,
+  ) : StabilityDifference() {
+    override fun format(): String {
+      val endColon = if (parameters.isEmpty()) "" else ":"
+      return "+ $name (new composable)$endColon\n" +
+        "${parameters.joinToString("\n") { "    ${it.name}: ${it.stability}" }}"
+    }
   }
 
   public data class RemovedFunction(val name: String) : StabilityDifference() {
