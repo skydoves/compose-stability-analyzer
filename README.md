@@ -793,6 +793,11 @@ composeStabilityAnalyzer {
       
         // Allow the check to run, even if the baseline does not exist (default: false)
         allowMissingBaseline.set(false)
+
+        // Add stability configuration file
+        // Matches compose's identical property 
+        // (see https://developer.android.com/develop/ui/compose/performance/stability/fix#configuration-file)
+        stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
     }
 }
 ```

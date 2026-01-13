@@ -70,6 +70,66 @@ class StabilityComparisonTest {
   }
 
   @Test
+  fun testCompareStability_newFunctionWithRegressionFilteringAndStableRegex() {
+    val current = mapOf(
+      "com.example.New1" to createEntry(
+        "com.example.New1",
+        skippable = false,
+        params = listOf(
+          ParameterInfo("a", "com.skydoves.compose.stability.First", "UNSTABLE"),
+          ParameterInfo("b", "com.skydoves.compose.stability.Second", "UNSTABLE"),
+        ),
+      ),
+      "com.example.New2" to createEntry(
+        "com.example.New2", skippable = false,
+        params = listOf(
+          ParameterInfo("c", "com.skydoves.compose.stability.Third", "UNSTABLE"),
+        ),
+      ),
+    )
+
+    val reference = emptyMap<String, StabilityEntry>()
+
+    val differences = compareStability(
+      current,
+      reference,
+      ignoreNonRegressiveChanges = true,
+      forceStableTypes = listOf(Regex.fromLiteral("com.skydoves.compose.stability.Third")),
+    )
+
+    assertEquals(1, differences.size)
+    assertTrue(differences[0] is StabilityDifference.NewFunction)
+    assertEquals("com.example.New1", (differences[0] as StabilityDifference.NewFunction).name)
+  }
+
+  @Test
+  fun testCompareStability_newFunctionWithRegressionFilteringAndStableRegex2() {
+    val current = mapOf(
+      "com.example.New1" to createEntry(
+        "com.example.New1",
+        skippable = false,
+        params = listOf(
+          ParameterInfo("a", "com.skydoves.compose.stability.First", "UNSTABLE"),
+          ParameterInfo("b", "com.skydoves.compose.stability.Second", "UNSTABLE"),
+        ),
+      ),
+    )
+
+    val reference = emptyMap<String, StabilityEntry>()
+
+    val differences = compareStability(
+      current,
+      reference,
+      ignoreNonRegressiveChanges = true,
+      forceStableTypes = listOf(Regex.fromLiteral("com.skydoves.compose.stability.Second")),
+    )
+
+    assertEquals(1, differences.size)
+    assertTrue(differences[0] is StabilityDifference.NewFunction)
+    assertEquals("com.example.New1", (differences[0] as StabilityDifference.NewFunction).name)
+  }
+
+  @Test
   fun testCompareStability_removedFunction() {
     val current = mapOf(
       "com.example.Remaining" to createEntry("com.example.Remaining"),
@@ -142,6 +202,46 @@ class StabilityComparisonTest {
     assertEquals("com.example.Test", diff.function)
     assertEquals(true, diff.from)
     assertEquals(false, diff.to)
+  }
+
+  @Test
+  fun testCompareStability_skippabilityChanged_trueToFalse_withRegressionFiltering_StableRegex() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        skippable = false,
+        params = listOf(
+          ParameterInfo(
+            "a",
+            "com.skydoves.compose.stability.Third",
+            "UNSTABLE",
+          ),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        skippable = true,
+        params = listOf(
+          ParameterInfo(
+            "a",
+            "com.skydoves.compose.stability.First",
+            "UNSTABLE",
+          ),
+        ),
+      ),
+    )
+
+    val differences = compareStability(
+      current,
+      reference,
+      ignoreNonRegressiveChanges = true,
+      forceStableTypes = listOf(Regex.fromLiteral("com.skydoves.compose.stability.Third")),
+    )
+
+    assertEquals(0, differences.size)
   }
 
   @Test
@@ -270,6 +370,39 @@ class StabilityComparisonTest {
   }
 
   @Test
+  fun testCompareStability_parameterCountChanged_withRegressionFilteringSomeUnstableStableRegex() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "String", "STABLE"),
+          ParameterInfo("b", "Int", "STABLE"),
+          ParameterInfo("c", "Boolean", "UNSTABLE"),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "String", "STABLE"),
+          ParameterInfo("b", "Int", "STABLE"),
+        ),
+      ),
+    )
+
+    val differences = compareStability(
+      current,
+      reference,
+      ignoreNonRegressiveChanges = true,
+      forceStableTypes = listOf(Regex.fromLiteral("Boolean")),
+    )
+
+    assertEquals(0, differences.size)
+  }
+
+  @Test
   fun testCompareStability_parameterStabilityChanged() {
     val current = mapOf(
       "com.example.Test" to createEntry(
@@ -355,6 +488,36 @@ class StabilityComparisonTest {
   }
 
   @Test
+  fun testCompareStability_parameterStabilityChangedToUnstableWithRegressionFilteringStableRegex() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("user", "User", "UNSTABLE"),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("user", "User", "STABLE"),
+        ),
+      ),
+    )
+
+    val differences = compareStability(
+      current,
+      reference,
+      ignoreNonRegressiveChanges = true,
+      forceStableTypes = listOf(Regex.fromLiteral("User")),
+    )
+
+    assertEquals(0, differences.size)
+  }
+
+  @Test
   fun testCompareStability_multipleParameterStabilityChanges() {
     val current = mapOf(
       "com.example.Test" to createEntry(
@@ -408,6 +571,42 @@ class StabilityComparisonTest {
 
     assertEquals(2, differences.size)
     assertTrue(differences.all { it is StabilityDifference.ParameterStabilityChanged })
+  }
+
+  @Test
+  fun testCompareStability_multipleParameterStabilityChangesToUnstableWithRegFilterStableRegex() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "A", "UNSTABLE"),
+          ParameterInfo("b", "B", "UNSTABLE"),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "A", "STABLE"),
+          ParameterInfo("b", "B", "STABLE"),
+        ),
+      ),
+    )
+
+    val differences = compareStability(
+      current,
+      reference,
+      ignoreNonRegressiveChanges = true,
+      forceStableTypes = listOf(Regex.fromLiteral("A")),
+    )
+
+    assertEquals(1, differences.size)
+    assertEquals(
+      StabilityDifference.ParameterStabilityChanged("com.example.Test", "b", "STABLE", "UNSTABLE"),
+      differences.first(),
+    )
   }
 
   @Test

@@ -18,6 +18,7 @@ package com.skydoves.compose.stability.gradle
 import org.gradle.api.Action
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.ProjectLayout
+import org.gradle.api.file.RegularFile
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
@@ -173,11 +174,17 @@ public abstract class StabilityValidationConfig @Inject constructor(
     objects.property(Boolean::class.javaObjectType).convention(false)
 
   /**
-   * When true, plugin will still run normally even with the baseline missing, treating it
-   * as an empty baseline
+   * List of paths to stability configuration files.
    *
-   * Default: false
+   * For more information, see this link:
+   *  - [AndroidX stability configuration file](https://developer.android.com/develop/ui/compose/performance/stability/fix#configuration-file)
+   *
+   * Default: empty
    */
   public val allowMissingBaseline: Property<Boolean> =
     objects.property(Boolean::class.javaObjectType).convention(false)
+
+  public val stabilityConfigurationFiles: ListProperty<RegularFile> = objects
+    .listProperty(RegularFile::class.java)
+    .convention(emptyList())
 }

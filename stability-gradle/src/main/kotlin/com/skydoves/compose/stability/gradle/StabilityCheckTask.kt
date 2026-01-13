@@ -18,6 +18,7 @@ package com.skydoves.compose.stability.gradle
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
@@ -90,6 +91,9 @@ public abstract class StabilityCheckTask : DefaultTask() {
   @get:Input
   public abstract val allowMissingBaseline: Property<Boolean>
 
+  @get:InputFiles
+  public abstract val stabilityConfigurationFiles: ListProperty<RegularFile>
+
   init {
     group = "verification"
     description = "Check composable stability against reference file"
@@ -143,7 +147,12 @@ public abstract class StabilityCheckTask : DefaultTask() {
     val currentStability = parseStabilityFromCompiler(inputFile)
     val referenceStability = parseStabilityFile(referenceFile)
     val differences =
-      compareStability(currentStability, referenceStability, ignoreNonRegressiveChanges.get())
+      compareStability(
+        currentStability,
+        referenceStability,
+        ignoreNonRegressiveChanges.get(),
+        getCustomStableTypesAsRegex()
+      )
 
     if (differences.isNotEmpty()) {
       val message = buildString {
@@ -464,6 +473,45 @@ public abstract class StabilityCheckTask : DefaultTask() {
     }
 
     return entries
+  }
+
+  /**
+   * Get custom stable type patterns from configuration file.
+   */
+  private fun getCustomStableTypesAsRegex(): List<Regex> {
+    return try {
+      stabilityConfigurationFiles.get().flatMap { stabilityConfigurationFile ->
+        val file = stabilityConfigurationFile.asFile
+        if (!file.exists() || !file.isFile) {
+          return emptyList()
+        }
+
+        // Parse the configuration file
+        val patterns = mutableListOf<String>()
+        file.readLines().forEach { line ->
+          val trimmed = line.trim()
+          // Skip empty lines and comments
+          if (trimmed.isNotEmpty() && !trimmed.startsWith("#")) {
+            patterns.add(trimmed)
+          }
+        }
+
+        // Convert patterns to regex
+        patterns.mapNotNull { pattern ->
+          try {
+            // Convert glob-style wildcards to regex
+            pattern
+              .replace(".", "\\.")
+              .replace("*", ".*")
+              .toRegex()
+          } catch (e: Exception) {
+            null // Skip invalid patterns
+          }
+        }
+      }
+    } catch (e: Exception) {
+      emptyList()
+    }
   }
 }
 
