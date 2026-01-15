@@ -107,7 +107,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       stabilityInputFiles.from(
         target.layout.buildDirectory.file("stability/stability-info.json"),
       )
-      stabilityDir.set(extension.stabilityValidation.outputDir)
+      stabilityReferenceFiles.from(extension.stabilityValidation.outputDir)
       ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
       ignoredClasses.set(extension.stabilityValidation.ignoredClasses)
       failOnStabilityChange.set(extension.stabilityValidation.failOnStabilityChange)
@@ -170,7 +170,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         stabilityInputFiles.from(
           target.layout.buildDirectory.file("stability/stability-info.json"),
         )
-        stabilityDir.set(extension.stabilityValidation.outputDir)
+        stabilityReferenceFiles.from(extension.stabilityValidation.outputDir)
         ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
         ignoredClasses.set(extension.stabilityValidation.ignoredClasses)
         failOnStabilityChange.set(extension.stabilityValidation.failOnStabilityChange)

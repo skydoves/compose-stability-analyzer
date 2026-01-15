@@ -43,8 +43,8 @@ public abstract class StabilityCheckTask : DefaultTask() {
   /**
    * Directory containing the reference stability file.
    */
-  @get:InputDirectory
-  public abstract val stabilityDir: DirectoryProperty
+  @get:InputFiles
+  public abstract val stabilityReferenceFiles: ConfigurableFileCollection
 
   /**
    * Packages to ignore.
@@ -100,8 +100,8 @@ public abstract class StabilityCheckTask : DefaultTask() {
       return
     }
 
-    val stabilityDirectory = stabilityDir.get().asFile
-    if (!stabilityDirectory.exists()) {
+    val stabilityReferenceFiles = stabilityReferenceFiles.asFileTree.files
+    if (stabilityReferenceFiles.isEmpty()) {
       // Directory doesn't exist - no baseline has been created yet
       // This is expected for new modules or before the first stabilityDump
       logger.lifecycle(
@@ -119,8 +119,8 @@ public abstract class StabilityCheckTask : DefaultTask() {
       projectName.get()
     }
 
-    val referenceFile = stabilityDirectory.resolve("$stabilityFileName.stability")
-    if (!referenceFile.exists()) {
+    val referenceFile = stabilityReferenceFiles.firstOrNull { it.endsWith("$stabilityFileName.stability") }
+    if (referenceFile?.exists() != true) {
       // Directory exists but file doesn't - unusual but handle gracefully
       logger.lifecycle(
         "ℹ️  No stability baseline found for :$stabilityFileName, skipping stability check",
