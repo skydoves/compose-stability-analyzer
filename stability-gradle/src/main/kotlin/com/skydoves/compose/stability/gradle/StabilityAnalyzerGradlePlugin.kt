@@ -201,8 +201,11 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
           stabilityDumpTask,
           stabilityCheckTask,
         )
-        addRuntimeDependency(target)
       }
+    }
+
+    target.afterEvaluate {
+      addRuntimeDependency(target)
     }
   }
 
