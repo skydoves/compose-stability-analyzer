@@ -17,12 +17,12 @@ package com.skydoves.compose.stability.gradle
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
-import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 
 /**
@@ -35,14 +35,14 @@ public abstract class StabilityCheckTask : DefaultTask() {
   /**
    * Input file containing current stability information from compiler.
    */
-  @get:Internal
-  public abstract val stabilityInputFile: RegularFileProperty
+  @get:InputFiles
+  public abstract val stabilityInputFiles: ConfigurableFileCollection
 
   /**
    * Directory containing the reference stability file.
    */
-  @get:Internal
-  public abstract val stabilityDir: DirectoryProperty
+  @get:InputFiles
+  public abstract val stabilityReferenceFiles: ConfigurableFileCollection
 
   /**
    * Packages to ignore.
@@ -74,6 +74,13 @@ public abstract class StabilityCheckTask : DefaultTask() {
   @get:Input
   public abstract val quietCheck: Property<Boolean>
 
+  /**
+   * Suffix to the generated stability file
+   */
+  @get:Input
+  @get:Optional
+  public abstract val stabilityFileSuffix: Property<String>
+
   init {
     group = "verification"
     description = "Check composable stability against reference file"
@@ -81,7 +88,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
 
   @TaskAction
   public fun check() {
-    val inputFile = stabilityInputFile.orNull?.asFile
+    val inputFile = stabilityInputFiles.files.firstOrNull()
     if (inputFile == null || !inputFile.exists()) {
       // If the file doesn't exist, it means the module has no composable functions
       // This is expected for modules like activities or utilities without composables
@@ -91,8 +98,8 @@ public abstract class StabilityCheckTask : DefaultTask() {
       return
     }
 
-    val stabilityDirectory = stabilityDir.get().asFile
-    if (!stabilityDirectory.exists()) {
+    val stabilityReferenceFiles = stabilityReferenceFiles.asFileTree.files
+    if (stabilityReferenceFiles.isEmpty()) {
       // Directory doesn't exist - no baseline has been created yet
       // This is expected for new modules or before the first stabilityDump
       logger.lifecycle(
@@ -104,11 +111,19 @@ public abstract class StabilityCheckTask : DefaultTask() {
       return
     }
 
-    val referenceFile = stabilityDirectory.resolve("${projectName.get()}.stability")
-    if (!referenceFile.exists()) {
+    val stabilityFileName = if (stabilityFileSuffix.isPresent) {
+      "${projectName.get()}-${stabilityFileSuffix.get()}"
+    } else {
+      projectName.get()
+    }
+
+    val referenceFile = stabilityReferenceFiles.firstOrNull {
+      it.endsWith("$stabilityFileName.stability")
+    }
+    if (referenceFile?.exists() != true) {
       // Directory exists but file doesn't - unusual but handle gracefully
       logger.lifecycle(
-        "ℹ️  No stability baseline found for :${projectName.get()}, skipping stability check",
+        "ℹ️  No stability baseline found for :$stabilityFileName, skipping stability check",
       )
       logger.lifecycle(
         "    Run './gradlew :${projectName.get()}:stabilityDump' to create the baseline",

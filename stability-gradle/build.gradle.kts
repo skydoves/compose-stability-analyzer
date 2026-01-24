@@ -30,6 +30,7 @@ kotlin {
 
 dependencies {
   compileOnly(kotlin("gradle-plugin", version = libs.versions.kotlin.get()))
+  implementation(libs.android.gradleApi)
 
   testImplementation(kotlin("test"))
   testImplementation(kotlin("test-junit"))
