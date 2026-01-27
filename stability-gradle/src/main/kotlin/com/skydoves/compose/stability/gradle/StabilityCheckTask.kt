@@ -81,6 +81,15 @@ public abstract class StabilityCheckTask : DefaultTask() {
   @get:Optional
   public abstract val stabilityFileSuffix: Property<String>
 
+  /**
+   * Whether to only report regressive changes
+   */
+  @get:Input
+  public abstract val ignoreNonRegressiveChanges: Property<Boolean>
+
+  @get:Input
+  public abstract val allowMissingBaseline: Property<Boolean>
+
   init {
     group = "verification"
     description = "Check composable stability against reference file"
@@ -99,7 +108,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
     }
 
     val stabilityReferenceFiles = stabilityReferenceFiles.asFileTree.files
-    if (stabilityReferenceFiles.isEmpty()) {
+    if (!allowMissingBaseline.get() && stabilityReferenceFiles.isEmpty()) {
       // Directory doesn't exist - no baseline has been created yet
       // This is expected for new modules or before the first stabilityDump
       logger.lifecycle(
@@ -120,7 +129,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
     val referenceFile = stabilityReferenceFiles.firstOrNull {
       it.endsWith("$stabilityFileName.stability")
     }
-    if (referenceFile?.exists() != true) {
+    if (!allowMissingBaseline.get() && referenceFile?.exists() != true) {
       // Directory exists but file doesn't - unusual but handle gracefully
       logger.lifecycle(
         "ℹ️  No stability baseline found for :$stabilityFileName, skipping stability check",
@@ -133,7 +142,8 @@ public abstract class StabilityCheckTask : DefaultTask() {
 
     val currentStability = parseStabilityFromCompiler(inputFile)
     val referenceStability = parseStabilityFile(referenceFile)
-    val differences = compareStability(currentStability, referenceStability)
+    val differences =
+      compareStability(currentStability, referenceStability, ignoreNonRegressiveChanges.get())
 
     if (differences.isNotEmpty()) {
       val message = buildString {
@@ -324,7 +334,11 @@ public abstract class StabilityCheckTask : DefaultTask() {
       .replace("\\t", "\t")
   }
 
-  private fun parseStabilityFile(file: java.io.File): Map<String, StabilityEntry> {
+  private fun parseStabilityFile(file: java.io.File?): Map<String, StabilityEntry> {
+    if (file?.exists() != true) {
+      return emptyMap()
+    }
+
     val entries = mutableMapOf<String, StabilityEntry>()
 
     var currentQualifiedName: String? = null
@@ -455,22 +469,34 @@ public abstract class StabilityCheckTask : DefaultTask() {
   private fun compareStability(
     current: Map<String, StabilityEntry>,
     reference: Map<String, StabilityEntry>,
+    ignoreNonRegressiveChanges: Boolean = false,
+
   ): List<StabilityDifference> {
     val differences = mutableListOf<StabilityDifference>()
 
+    // Check for new functions
     current.keys.subtract(reference.keys).forEach { functionName ->
-      differences.add(StabilityDifference.NewFunction(functionName))
+      if (!ignoreNonRegressiveChanges || !current.getValue(functionName).skippable) {
+        differences.add(StabilityDifference.NewFunction(functionName))
+      }
     }
 
-    reference.keys.subtract(current.keys).forEach { functionName ->
-      differences.add(StabilityDifference.RemovedFunction(functionName))
+    // Check for removed functions
+    if (!ignoreNonRegressiveChanges) {
+      reference.keys.subtract(current.keys).forEach { functionName ->
+        differences.add(StabilityDifference.RemovedFunction(functionName))
+      }
     }
 
+    // Check for changed stability
     current.keys.intersect(reference.keys).forEach { functionName ->
       val currentEntry = current[functionName]!!
       val referenceEntry = reference[functionName]!!
 
-      if (currentEntry.skippable != referenceEntry.skippable) {
+      // Check skippability change
+      if (currentEntry.skippable != referenceEntry.skippable &&
+        (!ignoreNonRegressiveChanges || !currentEntry.skippable)
+      ) {
         differences.add(
           StabilityDifference.SkippabilityChanged(
             functionName,
@@ -482,17 +508,24 @@ public abstract class StabilityCheckTask : DefaultTask() {
 
       // Check if parameter count changed
       if (currentEntry.parameters.size != referenceEntry.parameters.size) {
-        differences.add(
-          StabilityDifference.ParameterCountChanged(
-            functionName,
-            referenceEntry.parameters.size,
-            currentEntry.parameters.size,
-          ),
-        )
+        if (
+          !ignoreNonRegressiveChanges ||
+          currentEntry.parameters.any { it.stability != "STABLE" }
+        ) {
+          differences.add(
+            StabilityDifference.ParameterCountChanged(
+              functionName,
+              referenceEntry.parameters.size,
+              currentEntry.parameters.size,
+            ),
+          )
+        }
       } else {
         // Check parameter stability changes (only if count is the same)
         currentEntry.parameters.zip(referenceEntry.parameters).forEach { (current, ref) ->
-          if (current.stability != ref.stability) {
+          if (current.stability != ref.stability &&
+            (!ignoreNonRegressiveChanges || current.stability != "STABLE")
+          ) {
             differences.add(
               StabilityDifference.ParameterStabilityChanged(
                 functionName,

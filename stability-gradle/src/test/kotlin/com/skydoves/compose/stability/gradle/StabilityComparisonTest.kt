@@ -54,6 +54,22 @@ class StabilityComparisonTest {
   }
 
   @Test
+  fun testCompareStability_newFunctionWithRegressionFiltering() {
+    val current = mapOf(
+      "com.example.New1" to createEntry("com.example.New1", skippable = true),
+      "com.example.New2" to createEntry("com.example.New2", skippable = false),
+    )
+
+    val reference = emptyMap<String, StabilityEntry>()
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
+
+    assertEquals(1, differences.size)
+    assertTrue(differences[0] is StabilityDifference.NewFunction)
+    assertEquals("com.example.New2", (differences[0] as StabilityDifference.NewFunction).name)
+  }
+
+  @Test
   fun testCompareStability_removedFunction() {
     val current = mapOf(
       "com.example.Remaining" to createEntry("com.example.Remaining"),
@@ -75,6 +91,22 @@ class StabilityComparisonTest {
   }
 
   @Test
+  fun testCompareStability_removedFunctionWithRegressionFiltering() {
+    val current = mapOf(
+      "com.example.Remaining" to createEntry("com.example.Remaining"),
+    )
+
+    val reference = mapOf(
+      "com.example.Remaining" to createEntry("com.example.Remaining"),
+      "com.example.Removed" to createEntry("com.example.Removed"),
+    )
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
+
+    assertEquals(0, differences.size)
+  }
+
+  @Test
   fun testCompareStability_skippabilityChanged_trueToFalse() {
     val current = mapOf(
       "com.example.Test" to createEntry("com.example.Test", skippable = false),
@@ -85,6 +117,25 @@ class StabilityComparisonTest {
     )
 
     val differences = compareStability(current, reference)
+
+    assertEquals(1, differences.size)
+    val diff = differences[0] as StabilityDifference.SkippabilityChanged
+    assertEquals("com.example.Test", diff.function)
+    assertEquals(true, diff.from)
+    assertEquals(false, diff.to)
+  }
+
+  @Test
+  fun testCompareStability_skippabilityChanged_trueToFalse_withRegressionFiltering() {
+    val current = mapOf(
+      "com.example.Test" to createEntry("com.example.Test", skippable = false),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry("com.example.Test", skippable = true),
+    )
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
 
     assertEquals(1, differences.size)
     val diff = differences[0] as StabilityDifference.SkippabilityChanged
@@ -112,6 +163,21 @@ class StabilityComparisonTest {
   }
 
   @Test
+  fun testCompareStability_skippabilityChanged_falseToTrue_withRegressionFiltering() {
+    val current = mapOf(
+      "com.example.Test" to createEntry("com.example.Test", skippable = true),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry("com.example.Test", skippable = false),
+    )
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
+
+    assertEquals(0, differences.size)
+  }
+
+  @Test
   fun testCompareStability_parameterCountChanged() {
     val current = mapOf(
       "com.example.Test" to createEntry(
@@ -135,6 +201,66 @@ class StabilityComparisonTest {
     )
 
     val differences = compareStability(current, reference)
+
+    assertEquals(1, differences.size)
+    val diff = differences[0] as StabilityDifference.ParameterCountChanged
+    assertEquals("com.example.Test", diff.function)
+    assertEquals(2, diff.from)
+    assertEquals(3, diff.to)
+  }
+
+  @Test
+  fun testCompareStability_parameterCountChanged_withRegressionFilteringAllStable() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "String", "STABLE"),
+          ParameterInfo("b", "Int", "STABLE"),
+          ParameterInfo("c", "Boolean", "STABLE"),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "String", "STABLE"),
+          ParameterInfo("b", "Int", "STABLE"),
+        ),
+      ),
+    )
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
+
+    assertEquals(0, differences.size)
+  }
+
+  @Test
+  fun testCompareStability_parameterCountChanged_withRegressionFilteringSomeUnstable() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "String", "STABLE"),
+          ParameterInfo("b", "Int", "STABLE"),
+          ParameterInfo("c", "Boolean", "UNSTABLE"),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "String", "STABLE"),
+          ParameterInfo("b", "Int", "STABLE"),
+        ),
+      ),
+    )
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
 
     assertEquals(1, differences.size)
     val diff = differences[0] as StabilityDifference.ParameterCountChanged
@@ -174,6 +300,61 @@ class StabilityComparisonTest {
   }
 
   @Test
+  fun testCompareStability_parameterStabilityChangedToStableWithRegressionFiltering() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("user", "User", "STABLE"),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("user", "User", "UNSTABLE"),
+        ),
+      ),
+    )
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
+
+    assertEquals(0, differences.size)
+  }
+
+  @Test
+  fun testCompareStability_parameterStabilityChangedToUnstableWithRegressionFiltering() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("user", "User", "UNSTABLE"),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("user", "User", "STABLE"),
+        ),
+      ),
+    )
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
+
+    assertEquals(1, differences.size)
+    val diff = differences[0] as StabilityDifference.ParameterStabilityChanged
+    assertEquals("com.example.Test", diff.function)
+    assertEquals("user", diff.parameter)
+    assertEquals("STABLE", diff.from)
+    assertEquals("UNSTABLE", diff.to)
+  }
+
+  @Test
   fun testCompareStability_multipleParameterStabilityChanges() {
     val current = mapOf(
       "com.example.Test" to createEntry(
@@ -199,6 +380,90 @@ class StabilityComparisonTest {
 
     assertEquals(2, differences.size)
     assertTrue(differences.all { it is StabilityDifference.ParameterStabilityChanged })
+  }
+
+  @Test
+  fun testCompareStability_multipleParameterStabilityChangesToUnstableWithRegressionFiltering() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "A", "UNSTABLE"),
+          ParameterInfo("b", "B", "UNSTABLE"),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "A", "STABLE"),
+          ParameterInfo("b", "B", "STABLE"),
+        ),
+      ),
+    )
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
+
+    assertEquals(2, differences.size)
+    assertTrue(differences.all { it is StabilityDifference.ParameterStabilityChanged })
+  }
+
+  @Test
+  fun testCompareStability_multipleParameterStabilityChangesToStableWithRegressionFiltering() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "A", "STABLE"),
+          ParameterInfo("b", "B", "STABLE"),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "A", "UNSTABLE"),
+          ParameterInfo("b", "B", "UNSTABLE"),
+        ),
+      ),
+    )
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
+
+    assertEquals(0, differences.size)
+  }
+
+  @Test
+  fun testCompareStability_multipleParameterStabilityChangesToMixedWithRegressionFiltering() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "A", "STABLE"),
+          ParameterInfo("b", "B", "UNSTABLE"),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "A", "UNSTABLE"),
+          ParameterInfo("b", "B", "STABLE"),
+        ),
+      ),
+    )
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
+
+    assertEquals(1, differences.size)
+    val diff = differences[0] as StabilityDifference.ParameterStabilityChanged
+    assertEquals("b", diff.parameter)
   }
 
   @Test
@@ -253,6 +518,34 @@ class StabilityComparisonTest {
   }
 
   @Test
+  fun testCompareStability_onlyParameterCountChange_noStabilityChanges_withRegressionFiltering() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "String", "STABLE"),
+          ParameterInfo("b", "Int", "STABLE"),
+          ParameterInfo("c", "Boolean", "STABLE"),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("a", "String", "STABLE"),
+        ),
+      ),
+    )
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
+
+    // Should only report parameter count change, not individual parameter changes
+    assertEquals(0, differences.size)
+  }
+
+  @Test
   fun testCompareStability_stableToRuntime() {
     val current = mapOf(
       "com.example.Test" to createEntry(
@@ -273,6 +566,34 @@ class StabilityComparisonTest {
     )
 
     val differences = compareStability(current, reference)
+
+    assertEquals(1, differences.size)
+    val diff = differences[0] as StabilityDifference.ParameterStabilityChanged
+    assertEquals("STABLE", diff.from)
+    assertEquals("RUNTIME", diff.to)
+  }
+
+  @Test
+  fun testCompareStability_stableToRuntime_withRegressionFiltering() {
+    val current = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("value", "T", "RUNTIME"),
+        ),
+      ),
+    )
+
+    val reference = mapOf(
+      "com.example.Test" to createEntry(
+        "com.example.Test",
+        params = listOf(
+          ParameterInfo("value", "T", "STABLE"),
+        ),
+      ),
+    )
+
+    val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
 
     assertEquals(1, differences.size)
     val diff = differences[0] as StabilityDifference.ParameterStabilityChanged
@@ -335,17 +656,23 @@ class StabilityComparisonTest {
   private fun compareStability(
     current: Map<String, StabilityEntry>,
     reference: Map<String, StabilityEntry>,
+    ignoreNonRegressiveChanges: Boolean = false,
+
   ): List<StabilityDifference> {
     val differences = mutableListOf<StabilityDifference>()
 
     // Check for new functions
     current.keys.subtract(reference.keys).forEach { functionName ->
-      differences.add(StabilityDifference.NewFunction(functionName))
+      if (!ignoreNonRegressiveChanges || !current.getValue(functionName).skippable) {
+        differences.add(StabilityDifference.NewFunction(functionName))
+      }
     }
 
     // Check for removed functions
-    reference.keys.subtract(current.keys).forEach { functionName ->
-      differences.add(StabilityDifference.RemovedFunction(functionName))
+    if (!ignoreNonRegressiveChanges) {
+      reference.keys.subtract(current.keys).forEach { functionName ->
+        differences.add(StabilityDifference.RemovedFunction(functionName))
+      }
     }
 
     // Check for changed stability
@@ -354,7 +681,9 @@ class StabilityComparisonTest {
       val referenceEntry = reference[functionName]!!
 
       // Check skippability change
-      if (currentEntry.skippable != referenceEntry.skippable) {
+      if (currentEntry.skippable != referenceEntry.skippable &&
+        (!ignoreNonRegressiveChanges || !currentEntry.skippable)
+      ) {
         differences.add(
           StabilityDifference.SkippabilityChanged(
             functionName,
@@ -366,17 +695,23 @@ class StabilityComparisonTest {
 
       // Check if parameter count changed
       if (currentEntry.parameters.size != referenceEntry.parameters.size) {
-        differences.add(
-          StabilityDifference.ParameterCountChanged(
-            functionName,
-            referenceEntry.parameters.size,
-            currentEntry.parameters.size,
-          ),
-        )
+        if (!ignoreNonRegressiveChanges ||
+          currentEntry.parameters.any { it.stability != "STABLE" }
+        ) {
+          differences.add(
+            StabilityDifference.ParameterCountChanged(
+              functionName,
+              referenceEntry.parameters.size,
+              currentEntry.parameters.size,
+            ),
+          )
+        }
       } else {
         // Check parameter stability changes (only if count is the same)
         currentEntry.parameters.zip(referenceEntry.parameters).forEach { (current, ref) ->
-          if (current.stability != ref.stability) {
+          if (current.stability != ref.stability &&
+            (!ignoreNonRegressiveChanges || current.stability != "STABLE")
+          ) {
             differences.add(
               StabilityDifference.ParameterStabilityChanged(
                 functionName,
