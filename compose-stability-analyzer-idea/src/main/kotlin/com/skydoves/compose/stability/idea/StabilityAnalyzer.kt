@@ -401,19 +401,29 @@ internal object StabilityAnalyzer {
 
       if (typeElement is KtUserType) {
         val referenceExpression = typeElement.referenceExpression
-        val resolved = referenceExpression?.resolveMainReference()
-        if (resolved is KtTypeAlias) {
-          val aliasName = resolved.name ?: cleanType
+        val aliasCandidateName = referenceExpression?.text ?: simpleName
+
+        // In K2 mode, resolveMainReference() can throw; fall back to file-local lookup.
+        val resolvedAlias = runCatching {
+          referenceExpression?.resolveMainReference()
+        }.getOrNull() as? KtTypeAlias
+          ?: typeRef.containingKtFile.declarations
+            .filterIsInstance<KtTypeAlias>()
+            .firstOrNull { it.name == aliasCandidateName }
+
+        if (resolvedAlias != null) {
+          val aliasName = resolvedAlias.name ?: aliasCandidateName
+          val aliasKey = resolvedAlias.fqName?.asString() ?: aliasName
 
           // Prevent infinite recursion for circular typealiases
-          if (!visitedTypeAliases.add(aliasName)) {
+          if (!visitedTypeAliases.add(aliasKey)) {
             return StabilityResult(
               ParameterStability.RUNTIME,
               "Circular typealias expansion detected for $aliasName",
             )
           }
 
-          val expandedTypeRef = resolved.getTypeReference()
+          val expandedTypeRef = resolvedAlias.getTypeReference()
           if (expandedTypeRef != null) {
             val expandedText = expandedTypeRef.text ?: typeText
             val expandedResult = analyzeTypeViaPsiWithReason(

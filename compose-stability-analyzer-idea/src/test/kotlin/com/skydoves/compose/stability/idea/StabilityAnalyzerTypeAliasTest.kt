@@ -22,13 +22,45 @@ import com.skydoves.compose.stability.runtime.ParameterStability
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
+/**
+ * Regression tests for typealias expansion in stability analysis.
+ *
+ * These tests cover PSI fallback behavior (K1 compatibility / K2-unavailable scenarios) and
+ * K2 Analysis API behavior (when available).
+ */
 class StabilityAnalyzerTypeAliasTest : BasePlatformTestCase() {
 
+  /**
+   * Settings snapshot (to avoid leaking into other test classes)
+   */
+  private data class SettingsSnapshot(
+    val isStabilityCheckEnabled: Boolean,
+    val isStrongSkippingEnabled: Boolean,
+    val ignoredTypePatterns: String,
+    val stabilityConfigurationPath: String,
+  )
+
+  private lateinit var snapshot: SettingsSnapshot
+
+  /**
+   * Initializes plugin settings for analysis tests.
+   *
+   * We explicitly disable strong-skipping so stability classification for function types
+   * (including typealias-expanded function types) is exercised.
+   */
   override fun setUp() {
     super.setUp()
 
+    val state = StabilitySettingsState.getInstance()
+    snapshot = SettingsSnapshot(
+      isStabilityCheckEnabled = state.isStabilityCheckEnabled,
+      isStrongSkippingEnabled = state.isStrongSkippingEnabled,
+      ignoredTypePatterns = state.ignoredTypePatterns,
+      stabilityConfigurationPath = state.stabilityConfigurationPath,
+    )
+
     // Ensure analysis is enabled and avoid strong-skipping hiding bugs in function-type detection.
-    StabilitySettingsState.getInstance().apply {
+    state.apply {
       isStabilityCheckEnabled = true
       isStrongSkippingEnabled = false
       ignoredTypePatterns = ""
@@ -36,6 +68,27 @@ class StabilityAnalyzerTypeAliasTest : BasePlatformTestCase() {
     }
   }
 
+  /**
+   * Rolling back to previous state
+   */
+  override fun tearDown() {
+    try {
+      val state = StabilitySettingsState.getInstance()
+      state.apply {
+        isStabilityCheckEnabled = snapshot.isStabilityCheckEnabled
+        isStrongSkippingEnabled = snapshot.isStrongSkippingEnabled
+        ignoredTypePatterns = snapshot.ignoredTypePatterns
+        stabilityConfigurationPath = snapshot.stabilityConfigurationPath
+      }
+    } finally {
+      super.tearDown()
+    }
+  }
+
+  /**
+   * Ensures PSI-based analysis expands a typealias that points to a composable function type
+   * (e.g., `typealias ComposableAction = @Composable () -> Unit`) and treats it as stable.
+   */
   fun testPsiExpandsTypealiasToComposableFunctionType() {
     val file = myFixture.configureByText(
       "TypeAliasPsi.kt",
@@ -69,6 +122,12 @@ class StabilityAnalyzerTypeAliasTest : BasePlatformTestCase() {
     assertTrue(param.reason!!.contains("->"))
   }
 
+  /**
+   * Ensures analysis does not overflow/loop forever when encountering circular typealiases.
+   *
+   * Circular typealiases are invalid Kotlin, so frontends may refuse to resolve them.
+   * The key requirement is that we return a conservative RUNTIME result and never recurse.
+   */
   fun testPsiDetectsCircularTypealiasAndDoesNotOverflow() {
     val file = myFixture.configureByText(
       "TypeAliasCircular.kt",
@@ -101,6 +160,10 @@ class StabilityAnalyzerTypeAliasTest : BasePlatformTestCase() {
     )
   }
 
+  /**
+   * Ensures PSI-based analysis expands a plain function typealias (e.g., `typealias Action = () -> Unit`)
+   * and classifies it as stable.
+   */
   fun testPsiExpandsTypealiasToPlainFunctionType() {
     val file = myFixture.configureByText(
       "TypeAliasPlainFunction.kt",
@@ -130,6 +193,11 @@ class StabilityAnalyzerTypeAliasTest : BasePlatformTestCase() {
     assertTrue(param.reason!!.contains("->"))
   }
 
+  /**
+   * Ensures K2 Analysis API (when available) expands typealiases for composable function types.
+   *
+   * In environments without K2 Analysis API support, this test becomes a no-op.
+   */
   fun testK2ExpandsTypealiasToComposableFunctionTypeWhenAvailable() {
     val file = myFixture.configureByText(
       "TypeAliasK2.kt",
