@@ -483,7 +483,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
       stabilityConfigurationFiles.get().flatMap { stabilityConfigurationFile ->
         val file = stabilityConfigurationFile.asFile
         if (!file.exists() || !file.isFile) {
-          return emptyList()
+          return@flatMap emptyList()
         }
 
         // Parse the configuration file
