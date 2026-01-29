@@ -1160,7 +1160,6 @@ private fun KotlinType.expandTypeAliasIfNeeded(): KotlinType {
   }
 }
 
-
 /**
  * Extension function to check if a type is a function or suspend function type.
  */
@@ -1246,7 +1245,7 @@ private fun analyzeTypeByTextWithReason(typeText: String): StabilityResult {
       cleanType.startsWith("kotlinx.collections.immutable.ImmutableMap") ||
       cleanType.startsWith("kotlinx.collections.immutable.ImmutableCollection") ||
       cleanType.startsWith("kotlinx.collections.immutable.PersistentList") ||
-      cleanType.startsWith("kotlinx.collections.immutable.PersistKNOWN_STABLE_TYPE_NAMESentSet") ||
+      cleanType.startsWith("kotlinx.collections.immutable.PersistentSet") ||
       cleanType.startsWith("kotlinx.collections.immutable.PersistentMap") ||
       cleanType.startsWith("com.google.common.collect.ImmutableList") ||
       cleanType.startsWith("com.google.common.collect.ImmutableEnumMap") ||
