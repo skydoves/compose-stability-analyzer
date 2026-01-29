@@ -45,7 +45,7 @@ class StabilityDifferenceTest {
   fun testNewFunction_format_noColon() {
     val diff = StabilityDifference.NewFunction(
       "com.example.NewComposable",
-emptyList(),
+      emptyList(),
     )
 
     val formatted = diff.format()
