@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -361,6 +362,7 @@ internal object StabilityAnalyzer {
   private fun analyzeTypeViaPsiWithReason(
     typeRef: org.jetbrains.kotlin.psi.KtTypeReference?,
     typeText: String,
+    visitedTypeAliases: MutableSet<String> = mutableSetOf(),
   ): StabilityResult? {
     if (typeRef == null) return null
 
@@ -386,6 +388,58 @@ internal object StabilityAnalyzer {
         )
       }
 
+      // Expand typealiases before checking function/class stability.
+      // This is critical for aliases like:
+      //   typealias ComposableAction = @Composable () -> Unit
+      // where the usage site shows only "ComposableAction" (no "->" in text).
+      var typeElement = typeRef.typeElement
+
+      // Unwrap nullable types, we need to get the inner type
+      if (typeElement is org.jetbrains.kotlin.psi.KtNullableType) {
+        typeElement = typeElement.innerType
+      }
+
+      if (typeElement is KtUserType) {
+        val referenceExpression = typeElement.referenceExpression
+        val resolved = referenceExpression?.resolveMainReference()
+        if (resolved is KtTypeAlias) {
+          val aliasName = resolved.name ?: cleanType
+
+          // Prevent infinite recursion for circular typealiases
+          if (!visitedTypeAliases.add(aliasName)) {
+            return StabilityResult(
+              ParameterStability.RUNTIME,
+              "Circular typealias expansion detected for $aliasName",
+            )
+          }
+
+          val expandedTypeRef = resolved.getTypeReference()
+          if (expandedTypeRef != null) {
+            val expandedText = expandedTypeRef.text ?: typeText
+            val expandedResult = analyzeTypeViaPsiWithReason(
+              expandedTypeRef,
+              expandedText,
+              visitedTypeAliases,
+            )
+
+            if (expandedResult != null) {
+              val combinedReason = buildString {
+                append("Typealias ")
+                append(aliasName)
+                append(" expands to ")
+                append(expandedText)
+                expandedResult.reason?.let { r ->
+                  append(". ")
+                  append(r)
+                }
+              }
+              return StabilityResult(expandedResult.stability, combinedReason)
+            }
+          }
+          // If we can't expand, continue with regular analysis
+        }
+      }
+
       // Check for function types (including @Composable lambdas)
       if ("->" in cleanType) {
         return when {
@@ -402,7 +456,7 @@ internal object StabilityAnalyzer {
       }
 
       // First, try to navigate to the source declaration of the class
-      var typeElement = typeRef.typeElement
+      typeElement = typeRef.typeElement
 
       // Unwrap nullable types, we need to get the inner type
       if (typeElement is org.jetbrains.kotlin.psi.KtNullableType) {
@@ -735,51 +789,53 @@ internal object StabilityAnalyzer {
    * The order of analyzing is very important, "Never change this orders if possible".
    */
   private fun analyzeType(type: KotlinType): ParameterStability {
+    val expandedType = type.expandTypeAliasIfNeeded()
     return when {
       // Nullable types - MUST be checked first to strip nullability before other checks
-      type.isMarkedNullable -> analyzeType(type.makeNotNullable())
+      expandedType.isMarkedNullable -> analyzeType(expandedType.makeNotNullable())
 
       // Known stable types - check BEFORE value class analysis for external library types
-      type.isKnownStable() -> ParameterStability.STABLE
+      expandedType.isKnownStable() -> ParameterStability.STABLE
 
       // Check simple name for common Compose types (fallback for compiled external libraries)
-      type.isKnownStableBySimpleName() -> ParameterStability.STABLE
+      expandedType.isKnownStableBySimpleName() -> ParameterStability.STABLE
 
       // Check for @Stable or @Immutable annotations
-      type.hasStableAnnotation() -> ParameterStability.STABLE
+      expandedType.hasStableAnnotation() -> ParameterStability.STABLE
 
       // Primitives are always stable
-      KotlinBuiltIns.isPrimitiveType(type) -> ParameterStability.STABLE
+      KotlinBuiltIns.isPrimitiveType(expandedType) -> ParameterStability.STABLE
 
       // String is stable
-      KotlinBuiltIns.isString(type) -> ParameterStability.STABLE
+      KotlinBuiltIns.isString(expandedType) -> ParameterStability.STABLE
 
       // Unit and Nothing are stable
-      KotlinBuiltIns.isUnit(type) || KotlinBuiltIns.isNothing(type) -> ParameterStability.STABLE
+      KotlinBuiltIns.isUnit(expandedType) ||
+        KotlinBuiltIns.isNothing(expandedType) -> ParameterStability.STABLE
 
       // Functions are stable
-      type.isFunctionOrSuspendFunction() -> ParameterStability.STABLE
+      expandedType.isFunctionOrSuspendFunction() -> ParameterStability.STABLE
 
       // Check for mutable collections (always unstable)
-      type.isMutableCollection() -> ParameterStability.UNSTABLE
+      expandedType.isMutableCollection() -> ParameterStability.UNSTABLE
 
       // Standard collections (List, Set, Map) - these are interfaces, RUNTIME check needed
-      type.isStandardCollection() -> ParameterStability.RUNTIME
+      expandedType.isStandardCollection() -> ParameterStability.RUNTIME
 
       // Value classes (inline classes) - stability depends on underlying type
-      type.isValueClass() -> analyzeValueClass(type)
+      expandedType.isValueClass() -> analyzeValueClass(expandedType)
 
       // Enum classes are always stable
-      type.isEnum() -> ParameterStability.STABLE
+      expandedType.isEnum() -> ParameterStability.STABLE
 
       // Data classes - check properties
-      type.isDataClass() -> analyzeDataClass(type)
+      expandedType.isDataClass() -> analyzeDataClass(expandedType)
 
       // Interface types (including fun interfaces) - runtime check needed
-      type.isInterface() -> ParameterStability.RUNTIME
+      expandedType.isInterface() -> ParameterStability.RUNTIME
 
       // Regular classes - check properties (same logic as data classes)
-      type.isClass() -> analyzeClassProperties(type)
+      expandedType.isClass() -> analyzeClassProperties(expandedType)
 
       // Default to runtime checking for unknown types
       else -> ParameterStability.RUNTIME
@@ -1054,6 +1110,27 @@ internal object StabilityAnalyzer {
  */
 internal fun KtNamedFunction.hasAnnotation(shortName: String): Boolean {
   return annotationEntries.any { it.shortName?.asString() == shortName }
+}
+
+/**
+ * Attempts to expand typealiases (abbreviated types) to their underlying expanded type.
+ *
+ * In K1, typealiases are represented as AbbreviatedType. If we don't expand them,
+ * checks like function-type detection can fail for aliases such as:
+ *   typealias ComposableAction = @Composable () -> Unit
+ */
+private fun KotlinType.expandTypeAliasIfNeeded(): KotlinType {
+  return try {
+    val abbreviatedTypeClass = Class.forName("org.jetbrains.kotlin.types.AbbreviatedType")
+    if (!abbreviatedTypeClass.isInstance(this)) return this
+
+    val getExpanded = abbreviatedTypeClass.methods.firstOrNull { it.name == "getExpandedType" }
+      ?: return this
+
+    (getExpanded.invoke(this) as? KotlinType) ?: this
+  } catch (_: Throwable) {
+    this
+  }
 }
 
 /**
