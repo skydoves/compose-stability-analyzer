@@ -16,6 +16,7 @@
 package com.skydoves.compose.stability.idea.k2
 
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.skydoves.compose.stability.idea.StabilityAnalysisConstants
@@ -112,7 +113,9 @@ internal class KtStabilityInferencer(
 
     val expandedTypeString = try {
       expandedType.render(position = org.jetbrains.kotlin.types.Variance.INVARIANT)
-    } catch (_: Throwable) {
+    } catch (e: ProcessCanceledException) {
+      throw e
+    } catch (_: Exception) {
       originalTypeString
     }
 

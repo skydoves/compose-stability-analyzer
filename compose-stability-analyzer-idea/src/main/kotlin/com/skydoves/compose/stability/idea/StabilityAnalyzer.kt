@@ -452,7 +452,7 @@ internal object StabilityAnalyzer {
       }
 
       // Check for function types (including @Composable lambdas)
-      if ("->" in cleanType) {
+      if (cleanType.containsTopLevelArrow()) {
         return when {
           cleanType.contains("@Composable") -> StabilityResult(
             ParameterStability.STABLE,
@@ -1200,18 +1200,18 @@ private fun analyzeTypeByTextWithReason(typeText: String): StabilityResult {
       )
 
     // Function types with annotations (@Composable, etc.)
-    cleanType.contains("@Composable") && "->" in cleanType -> StabilityResult(
+    cleanType.contains("@Composable") && cleanType.containsTopLevelArrow() -> StabilityResult(
       ParameterStability.STABLE,
       StabilityConstants.Messages.COMPOSABLE_FUNCTION_STABLE,
     )
 
-    cleanType.startsWith("@") && "->" in cleanType -> StabilityResult(
+    cleanType.startsWith("@") && cleanType.containsTopLevelArrow() -> StabilityResult(
       ParameterStability.STABLE,
       StabilityConstants.Messages.FUNCTION_STABLE,
     )
 
     // Function types (including suspend)
-    cleanType.startsWith("(") && "->" in cleanType -> StabilityResult(
+    cleanType.startsWith("(") && cleanType.containsTopLevelArrow() -> StabilityResult(
       ParameterStability.STABLE,
       StabilityConstants.Messages.FUNCTION_STABLE,
     )
@@ -1294,3 +1294,18 @@ private val PRIMITIVE_TYPES: Set<String> = setOf(
   "Double",
   "Char",
 )
+
+/**
+ * Detect only “top-level” function arrows
+ */
+private fun String.containsTopLevelArrow(): Boolean {
+  var genericDepth = 0
+  for (i in 0 until length - 1) {
+    when (this[i]) {
+      '<' -> genericDepth++
+      '>' -> if (genericDepth > 0) genericDepth--
+    }
+    if (genericDepth == 0 && this[i] == '-' && this[i + 1] == '>') return true
+  }
+  return false
+}
