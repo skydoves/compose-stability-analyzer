@@ -174,6 +174,15 @@ public abstract class StabilityValidationConfig @Inject constructor(
     objects.property(Boolean::class.javaObjectType).convention(false)
 
   /**
+   * When true, plugin will still run normally even with the baseline missing, treating it
+   * as an empty baseline
+   *
+   * Default: false
+   */
+  public val allowMissingBaseline: Property<Boolean> =
+    objects.property(Boolean::class.javaObjectType).convention(false)
+
+  /**
    * List of paths to stability configuration files.
    *
    * For more information, see this link:
@@ -181,9 +190,6 @@ public abstract class StabilityValidationConfig @Inject constructor(
    *
    * Default: empty
    */
-  public val allowMissingBaseline: Property<Boolean> =
-    objects.property(Boolean::class.javaObjectType).convention(false)
-
   public val stabilityConfigurationFiles: ListProperty<RegularFile> = objects
     .listProperty(RegularFile::class.java)
     .convention(emptyList())
