@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
+import java.lang.reflect.InvocationTargetException
 
 /**
  * Helper class to hold stability result with reason.
@@ -1130,18 +1131,35 @@ internal fun KtNamedFunction.hasAnnotation(shortName: String): Boolean {
  *   typealias ComposableAction = @Composable () -> Unit
  */
 private fun KotlinType.expandTypeAliasIfNeeded(): KotlinType {
+  val abbreviatedTypeClass = try {
+    Class.forName("org.jetbrains.kotlin.types.AbbreviatedType")
+  } catch (_: ClassNotFoundException) {
+    return this
+  } catch (_: NoClassDefFoundError) {
+    return this
+  } catch (_: LinkageError) {
+    return this
+  }
+
+  if (!abbreviatedTypeClass.isInstance(this)) return this
+
+  val getExpanded = abbreviatedTypeClass.methods.firstOrNull {
+    it.name == "getExpandedType" && it.parameterCount == 0
+  } ?: return this
+
   return try {
-    val abbreviatedTypeClass = Class.forName("org.jetbrains.kotlin.types.AbbreviatedType")
-    if (!abbreviatedTypeClass.isInstance(this)) return this
-
-    val getExpanded = abbreviatedTypeClass.methods.firstOrNull { it.name == "getExpandedType" }
-      ?: return this
-
     (getExpanded.invoke(this) as? KotlinType) ?: this
-  } catch (_: Throwable) {
+  } catch (_: IllegalAccessException) {
+    this
+  } catch (_: IllegalArgumentException) {
+    this
+  } catch (_: InvocationTargetException) {
+    this
+  } catch (_: ClassCastException) {
     this
   }
 }
+
 
 /**
  * Extension function to check if a type is a function or suspend function type.
