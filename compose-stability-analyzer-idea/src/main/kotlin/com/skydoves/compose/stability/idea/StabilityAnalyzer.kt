@@ -18,6 +18,9 @@
 package com.skydoves.compose.stability.idea
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.psi.PsiManager
 import com.skydoves.compose.stability.idea.k2.StabilityAnalyzerK2
 import com.skydoves.compose.stability.idea.settings.StabilityProjectSettingsState
 import com.skydoves.compose.stability.idea.settings.StabilitySettingsState
@@ -26,15 +29,19 @@ import com.skydoves.compose.stability.runtime.ParameterStability
 import com.skydoves.compose.stability.runtime.ParameterStabilityInfo
 import com.skydoves.compose.stability.runtime.ReceiverKind
 import com.skydoves.compose.stability.runtime.ReceiverStabilityInfo
+import org.jetbrains.annotations.TestOnly
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.caches.resolve.resolveMainReference
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.nj2k.descendantsOfType
 import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -73,6 +80,15 @@ internal object StabilityAnalyzer {
    */
   private val ignoredPatterns: List<Regex>
     get() = settings.getIgnoredPatternsAsRegex()
+
+  @get:TestOnly
+  @set:TestOnly
+  internal var resolveMainReferenceOverride: ((KtReferenceExpression) -> Any?)? = null
+
+  @TestOnly
+  internal fun analyzePsiForTest(function: KtNamedFunction): ComposableStabilityInfo {
+    return analyzePsi(function)
+  }
 
   /**
    * Get custom stable type patterns from configuration file.
@@ -406,11 +422,11 @@ internal object StabilityAnalyzer {
 
         // In K2 mode, resolveMainReference() can throw; fall back to file-local lookup.
         val resolvedAlias = runCatching {
-          referenceExpression?.resolveMainReference()
+          referenceExpression?.let { ref ->
+            resolveMainReferenceOverride?.invoke(ref) ?: ref.resolveMainReference()
+          }
         }.getOrNull() as? KtTypeAlias
-          ?: typeRef.containingKtFile.declarations
-            .filterIsInstance<KtTypeAlias>()
-            .firstOrNull { it.name == aliasCandidateName }
+          ?: findTypeAliasFallback(typeRef, aliasCandidateName)
 
         if (resolvedAlias != null) {
           val aliasName = resolvedAlias.name ?: aliasCandidateName
@@ -667,6 +683,75 @@ internal object StabilityAnalyzer {
     }
 
     return null
+  }
+
+  private fun findTypeAliasFallback(
+    typeRef: org.jetbrains.kotlin.psi.KtTypeReference,
+    aliasName: String,
+  ): KtTypeAlias? {
+    val ktFile = typeRef.containingKtFile
+
+    // 1) File-local scan (fast, no IO)
+    ktFile.declarations
+      .descendantsOfType<KtTypeAlias>()
+      .firstOrNull { it.name == aliasName }
+      ?.let { return it }
+
+    // 2) If the type is imported, prefer matching by FQN.
+    val importedFqNameHint = ktFile.importDirectives
+      .mapNotNull { it.importedFqName?.asString() }
+      .firstOrNull { it.endsWith(".$aliasName") }
+
+    // 3) Project-wide scan (covers other files/modules when resolution fails)
+    return findTypeAliasInProject(
+      project = typeRef.project,
+      aliasName = aliasName,
+      fqNameHint = importedFqNameHint,
+    )
+  }
+
+  private fun findTypeAliasInProject(
+    project: Project,
+    aliasName: String,
+    fqNameHint: String?,
+  ): KtTypeAlias? {
+    val psiManager = PsiManager.getInstance(project)
+    val packageHint = fqNameHint?.substringBeforeLast('.', "")
+
+    var found: KtTypeAlias? = null
+
+    // Use content roots to avoid relying on stub indexes (stable in tests + dumb mode).
+    val roots = ProjectRootManager.getInstance(project).contentRoots
+
+    roots.forEach { root ->
+      VfsUtilCore.iterateChildrenRecursively(
+        root,
+        { vf -> vf.isDirectory || vf.extension == "kt" },
+      ) { vf ->
+        if (vf.isDirectory) return@iterateChildrenRecursively true
+
+        val psi = psiManager.findFile(vf) as? KtFile ?: return@iterateChildrenRecursively true
+        if (packageHint?.isNotEmpty() == true && psi.packageFqName.asString() != packageHint) {
+          return@iterateChildrenRecursively true
+        }
+
+        val alias = psi.declarations
+          .descendantsOfType<KtTypeAlias>()
+          .firstOrNull { it.name == aliasName }
+          ?: return@iterateChildrenRecursively true
+
+        if (fqNameHint == null || alias.fqName?.asString() == fqNameHint) {
+          found = alias
+          return@iterateChildrenRecursively false // stop traversal
+        }
+
+        true
+      }
+
+      if (found != null) return found
+    }
+
+    return found
   }
 
   /**
@@ -1130,6 +1215,7 @@ internal fun KtNamedFunction.hasAnnotation(shortName: String): Boolean {
  * checks like function-type detection can fail for aliases such as:
  *   typealias ComposableAction = @Composable () -> Unit
  */
+
 private fun KotlinType.expandTypeAliasIfNeeded(): KotlinType {
   val abbreviatedTypeClass = try {
     Class.forName("org.jetbrains.kotlin.types.AbbreviatedType")
