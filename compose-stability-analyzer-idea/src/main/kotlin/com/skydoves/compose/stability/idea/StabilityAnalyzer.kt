@@ -1297,7 +1297,7 @@ private val PRIMITIVE_TYPES: Set<String> = setOf(
 /**
  * Detect only “top-level” function arrows
  */
-private fun String.containsTopLevelArrow(): Boolean {
+internal fun String.containsTopLevelArrow(): Boolean {
   var genericDepth = 0
   for (i in 0 until length - 1) {
     when (this[i]) {
