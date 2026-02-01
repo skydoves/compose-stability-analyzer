@@ -470,12 +470,12 @@ class StabilityAnalyzerTypeAliasTest : BasePlatformTestCase() {
       "FallbackNestedAliasImported.kt",
       """
       package test
+      
+      import test.Aliases.Action
 
       object Aliases {
         typealias Action = () -> Unit
       }
-
-      import test.Aliases.Action
 
       fun Button(onClick: Action) { }
       """.trimIndent(),
