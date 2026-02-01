@@ -249,4 +249,59 @@ class StabilityAnalysisConstantsTest {
     assertTrue(StabilityAnalysisConstants.KNOWN_STABLE_TYPE_NAMES.contains("Pair"))
     assertTrue(StabilityAnalysisConstants.KNOWN_STABLE_TYPE_NAMES.contains("Triple"))
   }
+
+  @Test
+  fun testIsFunctionTypeBySimpleName_kotlinFunctionInterfaces() {
+    assertTrue(StabilityAnalysisConstants.isFunctionTypeBySimpleName("Function0"))
+    assertTrue(StabilityAnalysisConstants.isFunctionTypeBySimpleName("Function1"))
+    assertTrue(StabilityAnalysisConstants.isFunctionTypeBySimpleName("Function2"))
+    assertTrue(StabilityAnalysisConstants.isFunctionTypeBySimpleName("Function10"))
+    assertTrue(StabilityAnalysisConstants.isFunctionTypeBySimpleName("Function99"))
+  }
+
+  @Test
+  fun testIsFunctionTypeBySimpleName_kotlinSuspendFunctionInterfaces() {
+    assertTrue(StabilityAnalysisConstants.isFunctionTypeBySimpleName("SuspendFunction0"))
+    assertTrue(StabilityAnalysisConstants.isFunctionTypeBySimpleName("SuspendFunction1"))
+    assertTrue(StabilityAnalysisConstants.isFunctionTypeBySimpleName("SuspendFunction2"))
+    assertTrue(StabilityAnalysisConstants.isFunctionTypeBySimpleName("SuspendFunction10"))
+  }
+
+  @Test
+  fun testIsFunctionTypeBySimpleName_nonFunctionSimpleNames() {
+    assertFalse(StabilityAnalysisConstants.isFunctionTypeBySimpleName("Function"))
+    assertFalse(StabilityAnalysisConstants.isFunctionTypeBySimpleName("FunctionX"))
+    assertFalse(StabilityAnalysisConstants.isFunctionTypeBySimpleName("Function-1"))
+    assertFalse(StabilityAnalysisConstants.isFunctionTypeBySimpleName("SuspendFunction"))
+    assertFalse(StabilityAnalysisConstants.isFunctionTypeBySimpleName("SuspendFunctionX"))
+    assertFalse(StabilityAnalysisConstants.isFunctionTypeBySimpleName("KFunction"))
+    assertFalse(StabilityAnalysisConstants.isFunctionTypeBySimpleName("Int"))
+    assertFalse(StabilityAnalysisConstants.isFunctionTypeBySimpleName("ComposableAction"))
+  }
+
+  @Test
+  fun testIsFunctionType_composeComposableFunctions() {
+    assertTrue(
+      StabilityAnalysisConstants.isFunctionType(
+        "androidx.compose.runtime.internal.ComposableFunction0",
+      ),
+    )
+    assertTrue(
+      StabilityAnalysisConstants.isFunctionType(
+        "androidx.compose.runtime.internal.ComposableFunction1",
+      ),
+    )
+    assertTrue(
+      StabilityAnalysisConstants.isFunctionType(
+        "androidx.compose.runtime.internal.ComposableFunction2",
+      ),
+    )
+  }
+
+  @Test
+  fun testIsFunctionTypeBySimpleName_composeComposableFunctions() {
+    assertTrue(StabilityAnalysisConstants.isFunctionTypeBySimpleName("ComposableFunction0"))
+    assertTrue(StabilityAnalysisConstants.isFunctionTypeBySimpleName("ComposableFunction2"))
+    assertFalse(StabilityAnalysisConstants.isFunctionTypeBySimpleName("ComposableFunction"))
+  }
 }

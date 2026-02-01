@@ -95,9 +95,7 @@ class StabilityAnalyzerTypeAliasTest : BasePlatformTestCase() {
       """
         package test
 
-        // Local stub annotation; we don't need real Compose here because this is a PSI test.
-        @Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION)
-        annotation class Composable
+        import androidx.compose.runtime.Composable
 
         // The alias hides the real function type shape from the call-site.
         typealias ComposableAction = @Composable () -> Unit
@@ -133,9 +131,7 @@ class StabilityAnalyzerTypeAliasTest : BasePlatformTestCase() {
       """
         package test
 
-        // Declared but unused; included to match typical test scaffolding patterns.
-        @Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION)
-        annotation class Composable
+        import androidx.compose.runtime.Composable
 
         // Basic function type alias.
         typealias Action = () -> Unit
@@ -216,8 +212,7 @@ class StabilityAnalyzerTypeAliasTest : BasePlatformTestCase() {
       """
         package test
 
-        @Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION)
-        annotation class Composable
+        import androidx.compose.runtime.Composable
 
         // Mutable container -> should be unstable when analyzed as a class.
         class Holder<T>(var value: T)
@@ -240,6 +235,52 @@ class StabilityAnalyzerTypeAliasTest : BasePlatformTestCase() {
     // Holder has a mutable 'var' property -> should be UNSTABLE if we correctly analyze the class,
     // and not incorrectly short-circuit as a function type just because nested args contain "->".
     assertEquals(ParameterStability.UNSTABLE, param.stability)
+  }
+
+  /**
+   * Generic/parameterized composable function typealiases should be classified as STABLE.
+   *
+   * Examples:
+   * - typealias ComposableActionWithScope<T> = @Composable T.() -> Unit
+   * - typealias ComposableBiProcedure<T, K> = @Composable (T, K) -> Unit
+   * - typealias ComposableSupplier<T> = @Composable () -> T
+   *
+   * These expand to ComposableFunction0/1/2 with type arguments; we match the base interface
+   * and treat the parameter as a stable function type regardless of T, K.
+   */
+  fun testGenericComposableFunctionTypealiasesAreStable() {
+    val file = myFixture.configureByText(
+      "GenericComposableTypealiases.kt",
+      """
+        package test
+
+        import androidx.compose.runtime.Composable
+
+        typealias ComposableActionWithScope<T> = @Composable T.() -> Unit
+        typealias ComposableBiProcedure<T, K> = @Composable (T, K) -> Unit
+        typealias ComposableSupplier<T> = @Composable () -> T
+
+        @Composable
+        fun WithScope(content: ComposableActionWithScope<String>) { }
+
+        @Composable
+        fun BiProc(onPair: ComposableBiProcedure<Int, String>) { }
+
+        @Composable
+        fun Supplier(getValue: ComposableSupplier<Unit>) { }
+      """.trimIndent(),
+    ) as KtFile
+
+    myFixture.doHighlighting()
+
+    val functions = file.declarations.filterIsInstance<KtNamedFunction>()
+    val withScope = functions.single { it.name == "WithScope" }
+    val biProc = functions.single { it.name == "BiProc" }
+    val supplier = functions.single { it.name == "Supplier" }
+
+    assertEquals(ParameterStability.STABLE, analyzeParam(withScope, "content").stability)
+    assertEquals(ParameterStability.STABLE, analyzeParam(biProc, "onPair").stability)
+    assertEquals(ParameterStability.STABLE, analyzeParam(supplier, "getValue").stability)
   }
 
   /**
@@ -352,8 +393,7 @@ class StabilityAnalyzerTypeAliasTest : BasePlatformTestCase() {
       """
       package test
 
-      @Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION)
-      annotation class Composable
+      import androidx.compose.runtime.Composable
 
       typealias ComposableAction = @Composable () -> Unit
 
