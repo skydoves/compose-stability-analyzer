@@ -116,6 +116,11 @@ internal class KtStabilityInferencer(
       expandedType.render(position = org.jetbrains.kotlin.types.Variance.INVARIANT)
     } catch (e: ProcessCanceledException) {
       throw e
+    } catch (_: StackOverflowError) {
+      return KtStability.Runtime(
+        className = "Unknown",
+        reason = "Unable to render type due to complexity",
+      )
     } catch (_: Exception) {
       originalTypeString
     }
