@@ -184,7 +184,8 @@ internal class KtStabilityInferencer(
     val symbolSimpleName = classSymbol.name?.asString()
     if ((fqName != null && StabilityAnalysisConstants.isFunctionType(fqName)) ||
       (
-        symbolSimpleName != null &&
+        fqName == null &&
+          symbolSimpleName != null &&
           StabilityAnalysisConstants.isFunctionTypeBySimpleName(symbolSimpleName)
         )
     ) {
@@ -372,7 +373,7 @@ internal class KtStabilityInferencer(
 
     // 11. Functions are stable (fallback check - should be caught in ktStabilityOf)
     if ((fqName != null && StabilityAnalysisConstants.isFunctionType(fqName)) ||
-      StabilityAnalysisConstants.isFunctionTypeBySimpleName(simpleName)
+      (fqName == null && StabilityAnalysisConstants.isFunctionTypeBySimpleName(simpleName))
     ) {
       return KtStability.Certain(
         stable = true,
