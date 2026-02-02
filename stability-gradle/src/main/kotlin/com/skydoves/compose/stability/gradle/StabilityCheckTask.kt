@@ -525,11 +525,14 @@ internal sealed class StabilityDifference {
     val name: String,
     val parameters: List<ParameterInfo>,
   ) : StabilityDifference() {
-    override fun format(): String {
-      val endColon = if (parameters.isEmpty()) "" else ":"
-      return "+ $name (new composable)$endColon\n" +
-        "${parameters.joinToString("\n") { "    ${it.name}: ${it.stability}" }}"
+override fun format(): String {
+    return if (parameters.isEmpty()) {
+      "+ $name (new composable)"
+    } else {
+      "+ $name (new composable):\n" +
+        parameters.joinToString("\n") { "    ${it.name}: ${it.stability}" }
     }
+  }
   }
 
   public data class RemovedFunction(val name: String) : StabilityDifference() {
