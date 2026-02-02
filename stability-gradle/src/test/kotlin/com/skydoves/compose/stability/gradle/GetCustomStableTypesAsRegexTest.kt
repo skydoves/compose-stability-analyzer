@@ -7,7 +7,11 @@ import kotlin.io.path.createTempDirectory
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
+import kotlin.test.assertNotNull
+import org.gradle.internal.impldep.com.amazonaws.http.conn.ssl.ShouldClearSslSessionPredicate
 
 class GetCustomStableTypesAsRegexTest {
   private lateinit var targetFolder: File
@@ -210,7 +214,7 @@ class GetCustomStableTypesAsRegexTest {
 
   @OptIn(ExperimentalEncodingApi::class)
   @Test
-  fun `Do not crash when passed malformed files`() {
+  fun `Fail binary files with invalid characters exception`() {
     val file = File(targetFolder, "patterns.txt")
     // Random string generated from the https://it-tools.tech/token-generator.
     // It results in a random binary file
@@ -223,14 +227,60 @@ class GetCustomStableTypesAsRegexTest {
       "otherpackage.ClassB",
     )
 
-    val result = getMatches(listOf(file), classes)
+    val message = assertFails {
+      getMatches(listOf(file), classes)
+    }.message
+
+    assertNotNull(message)
+    assertContains(message, "Invalid character", ignoreCase = true)
+    assertContains(message, "patterns.txt")
+  }
+
+  @Test
+  fun `Prevent use of characters not allowed in the package names`() {
+    val patterns = """
+      mypackage.ClassA+
+    """.trimIndent()
+
+    val classes = listOf(
+      "mypackage.ClassA",
+      "mypackage.ClassB",
+      "otherpackage.ClassA",
+      "otherpackage.ClassB",
+    )
+
+    val message = assertFails {
+      getMatches(patterns, classes)
+    }.message
+
+    assertNotNull(message)
+    assertContains(message, "patterns.txt")
+    assertContains(message, "+")
+    assertContains(message, "Invalid character", ignoreCase = true)
+  }
+
+  @Test
+  fun `Allow dollar signs, numbers and underscores`() {
+    val patterns = """
+      my_package.Class1${"$"}SubclassB
+    """.trimIndent()
+
+    val classes = listOf(
+      "my_package.Class1",
+      "my_package.Class2",
+      "my_package.Class1\$SubclassA",
+      "my_package.Class1\$SubclassB",
+    )
+
+    val result = getMatches(patterns, classes)
 
     assertEquals(
-      emptyList(),
+      listOf(
+        "my_package.Class1\$SubclassB",
+      ),
       result
     )
   }
-
 
   private fun getMatches(patterns: String, classes: List<String>): List<String> {
     val file = File(targetFolder, "patterns.txt")
@@ -247,7 +297,7 @@ class GetCustomStableTypesAsRegexTest {
 
     return classes.filter { clazz ->
       regexes.any { regex -> regex.matches(clazz) }
-      }
+    }
   }
 
 }
