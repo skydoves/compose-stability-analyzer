@@ -95,6 +95,117 @@ class GetCustomStableTypesAsRegexTest {
     )
   }
 
+  @Test
+  fun `Match single wildcard at the end`() {
+    val patterns = """
+      mypackage.Class*
+    """.trimIndent()
+
+    val classes = listOf(
+      "mypackage.ClassA",
+      "mypackage.ClassB",
+      "otherpackage.ClassA",
+      "mypackage.NotClass",
+      "mypackage.ClassA.Child",
+    )
+
+    val result = getMatches(patterns, classes)
+
+    assertEquals(
+      listOf(
+        "mypackage.ClassA",
+        "mypackage.ClassB"
+      ),
+      result
+    )
+  }
+
+  @Test
+  fun `Match double wildcard at the end`() {
+    val patterns = """
+      mypackage.Class**
+    """.trimIndent()
+
+    val classes = listOf(
+      "mypackage.ClassA",
+      "mypackage.ClassB",
+      "otherpackage.ClassA",
+      "mypackage.NotClass",
+      "mypackage.ClassA.Child",
+    )
+
+    val result = getMatches(patterns, classes)
+
+    assertEquals(
+      listOf(
+        "mypackage.ClassA",
+        "mypackage.ClassB",
+        "mypackage.ClassA.Child",
+      ),
+      result
+    )
+  }
+
+  @Test
+  fun `Match single wildcard in the middle`() {
+    val patterns = """
+      mypackage.*.ClassC
+    """.trimIndent()
+
+    val classes = listOf(
+      "mypackage.ClassA",
+      "mypackage.ClassB",
+      "otherpackage.ClassA",
+      "mypackage.NotClass",
+      "mypackage.ClassA.Child",
+      "mypackage.ClassA.ClassC",
+      "mypackage.ClassB.ClassC",
+      "mypackage.ClassB.ClassC.Another.ClassC",
+      "mypackage.ClassB.ClassC.Another.YetAnother.ClassC",
+    )
+
+    val result = getMatches(patterns, classes)
+
+    assertEquals(
+      listOf(
+        "mypackage.ClassA.ClassC",
+        "mypackage.ClassB.ClassC"
+      ),
+      result
+    )
+  }
+
+  @Test
+  fun `Match double wildcard in the middle`() {
+    val patterns = """
+      mypackage.**.ClassC
+    """.trimIndent()
+
+    val classes = listOf(
+      "mypackage.ClassA",
+      "mypackage.ClassB",
+      "otherpackage.ClassA",
+      "mypackage.NotClass",
+      "mypackage.ClassA.Child",
+      "mypackage.ClassA.ClassC",
+      "mypackage.ClassB.ClassC",
+      "mypackage.ClassB.ClassC.Another.ClassC",
+      "mypackage.ClassB.ClassC.Another.YetAnother.ClassC",
+    )
+
+    val result = getMatches(patterns, classes)
+
+    assertEquals(
+      listOf(
+        "mypackage.ClassA.ClassC",
+        "mypackage.ClassB.ClassC",
+        "mypackage.ClassB.ClassC.Another.ClassC",
+        "mypackage.ClassB.ClassC.Another.YetAnother.ClassC",
+      ),
+      result
+    )
+  }
+
   private fun getMatches(patterns: String, classes: List<String>): List<String> {
     val file = File(targetFolder, "patterns.txt")
     file.writeText(patterns)

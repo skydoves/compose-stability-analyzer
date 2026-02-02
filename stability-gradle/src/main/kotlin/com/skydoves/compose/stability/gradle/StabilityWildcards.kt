@@ -28,7 +28,10 @@ internal fun getCustomStableTypesAsRegex(fileList: List<File>): List<Regex> {
           // Convert glob-style wildcards to regex
           pattern
             .replace(".", "\\.")
-            .replace("*", ".*")
+            // Replace ** with some placeholder value that is unlikely to be in the original string
+            .replace("**", "xxDOUBLEWILDCARDHERExx")
+            .replace("*", "[^.]*")
+            .replace("xxDOUBLEWILDCARDHERExx", ".*")
             .toRegex()
         } catch (e: Exception) {
           null // Skip invalid patterns
