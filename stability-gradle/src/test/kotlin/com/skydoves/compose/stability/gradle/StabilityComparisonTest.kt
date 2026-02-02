@@ -24,11 +24,11 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_noDifferences() {
     val current = mapOf(
-      "com.example.Test" to createEntry("com.example.Test", skippable = true),
+      createEntry("com.example.Test", skippable = true),
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry("com.example.Test", skippable = true),
+      createEntry("com.example.Test", skippable = true),
     )
 
     val differences = compareStability(current, reference)
@@ -38,12 +38,12 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_newFunction() {
     val current = mapOf(
-      "com.example.Old" to createEntry("com.example.Old"),
-      "com.example.New" to createEntry("com.example.New"),
+      createEntry("com.example.Old"),
+      createEntry("com.example.New"),
     )
 
     val reference = mapOf(
-      "com.example.Old" to createEntry("com.example.Old"),
+      createEntry("com.example.Old"),
     )
 
     val differences = compareStability(current, reference)
@@ -56,8 +56,8 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_newFunctionWithRegressionFiltering() {
     val current = mapOf(
-      "com.example.New1" to createEntry("com.example.New1", skippable = true),
-      "com.example.New2" to createEntry("com.example.New2", skippable = false),
+      createEntry("com.example.New1", skippable = true),
+      createEntry("com.example.New2", skippable = false),
     )
 
     val reference = emptyMap<String, StabilityEntry>()
@@ -72,7 +72,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_newFunctionWithRegressionFilteringAndStableRegex() {
     val current = mapOf(
-      "com.example.New1" to createEntry(
+      createEntry(
         "com.example.New1",
         skippable = false,
         params = listOf(
@@ -80,7 +80,7 @@ class StabilityComparisonTest {
           ParameterInfo("b", "com.skydoves.compose.stability.Second", "UNSTABLE"),
         ),
       ),
-      "com.example.New2" to createEntry(
+      createEntry(
         "com.example.New2", skippable = false,
         params = listOf(
           ParameterInfo("c", "com.skydoves.compose.stability.Third", "UNSTABLE"),
@@ -105,7 +105,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_newFunctionWithRegressionFilteringAndStableRegex2() {
     val current = mapOf(
-      "com.example.New1" to createEntry(
+      createEntry(
         "com.example.New1",
         skippable = false,
         params = listOf(
@@ -132,12 +132,12 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_removedFunction() {
     val current = mapOf(
-      "com.example.Remaining" to createEntry("com.example.Remaining"),
+      createEntry("com.example.Remaining"),
     )
 
     val reference = mapOf(
-      "com.example.Remaining" to createEntry("com.example.Remaining"),
-      "com.example.Removed" to createEntry("com.example.Removed"),
+      createEntry("com.example.Remaining"),
+      createEntry("com.example.Removed"),
     )
 
     val differences = compareStability(current, reference)
@@ -153,12 +153,12 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_removedFunctionWithRegressionFiltering() {
     val current = mapOf(
-      "com.example.Remaining" to createEntry("com.example.Remaining"),
+      createEntry("com.example.Remaining"),
     )
 
     val reference = mapOf(
-      "com.example.Remaining" to createEntry("com.example.Remaining"),
-      "com.example.Removed" to createEntry("com.example.Removed"),
+      createEntry("com.example.Remaining"),
+      createEntry("com.example.Removed"),
     )
 
     val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
@@ -169,11 +169,11 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_skippabilityChanged_trueToFalse() {
     val current = mapOf(
-      "com.example.Test" to createEntry("com.example.Test", skippable = false),
+      createEntry("com.example.Test", skippable = false),
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry("com.example.Test", skippable = true),
+      createEntry("com.example.Test", skippable = true),
     )
 
     val differences = compareStability(current, reference)
@@ -188,11 +188,11 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_skippabilityChanged_trueToFalse_withRegressionFiltering() {
     val current = mapOf(
-      "com.example.Test" to createEntry("com.example.Test", skippable = false),
+      createEntry("com.example.Test", skippable = false),
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry("com.example.Test", skippable = true),
+      createEntry("com.example.Test", skippable = true),
     )
 
     val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
@@ -207,7 +207,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_skippabilityChanged_trueToFalse_withRegressionFiltering_StableRegex() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         skippable = false,
         params = listOf(
@@ -221,7 +221,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         skippable = true,
         params = listOf(
@@ -247,11 +247,11 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_skippabilityChanged_falseToTrue() {
     val current = mapOf(
-      "com.example.Test" to createEntry("com.example.Test", skippable = true),
+      createEntry("com.example.Test", skippable = true),
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry("com.example.Test", skippable = false),
+      createEntry("com.example.Test", skippable = false),
     )
 
     val differences = compareStability(current, reference)
@@ -265,11 +265,11 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_skippabilityChanged_falseToTrue_withRegressionFiltering() {
     val current = mapOf(
-      "com.example.Test" to createEntry("com.example.Test", skippable = true),
+      createEntry("com.example.Test", skippable = true),
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry("com.example.Test", skippable = false),
+      createEntry("com.example.Test", skippable = false),
     )
 
     val differences = compareStability(current, reference, ignoreNonRegressiveChanges = true)
@@ -280,7 +280,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_parameterCountChanged() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "String", "STABLE"),
@@ -291,7 +291,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "String", "STABLE"),
@@ -312,7 +312,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_parameterCountChanged_withRegressionFilteringAllStable() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "String", "STABLE"),
@@ -323,7 +323,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "String", "STABLE"),
@@ -340,7 +340,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_parameterCountChanged_withRegressionFilteringSomeUnstable() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "String", "STABLE"),
@@ -351,7 +351,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "String", "STABLE"),
@@ -372,7 +372,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_parameterCountChanged_withRegressionFilteringSomeUnstableStableRegex() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "String", "STABLE"),
@@ -383,7 +383,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "String", "STABLE"),
@@ -405,7 +405,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_parameterStabilityChanged() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("user", "User", "UNSTABLE"),
@@ -414,7 +414,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("user", "User", "STABLE"),
@@ -435,7 +435,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_parameterStabilityChangedToStableWithRegressionFiltering() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("user", "User", "STABLE"),
@@ -444,7 +444,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("user", "User", "UNSTABLE"),
@@ -460,7 +460,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_parameterStabilityChangedToUnstableWithRegressionFiltering() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("user", "User", "UNSTABLE"),
@@ -469,7 +469,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("user", "User", "STABLE"),
@@ -490,7 +490,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_parameterStabilityChangedToUnstableWithRegressionFilteringStableRegex() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("user", "User", "UNSTABLE"),
@@ -499,7 +499,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("user", "User", "STABLE"),
@@ -520,7 +520,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_multipleParameterStabilityChanges() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "A", "UNSTABLE"),
@@ -530,7 +530,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "A", "STABLE"),
@@ -548,7 +548,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_multipleParameterStabilityChangesToUnstableWithRegressionFiltering() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "A", "UNSTABLE"),
@@ -558,7 +558,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "A", "STABLE"),
@@ -576,7 +576,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_multipleParameterStabilityChangesToUnstableWithRegFilterStableRegex() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "A", "UNSTABLE"),
@@ -586,7 +586,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "A", "STABLE"),
@@ -612,7 +612,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_multipleParameterStabilityChangesToStableWithRegressionFiltering() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "A", "STABLE"),
@@ -622,7 +622,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "A", "UNSTABLE"),
@@ -639,7 +639,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_multipleParameterStabilityChangesToMixedWithRegressionFiltering() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "A", "STABLE"),
@@ -649,7 +649,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "A", "UNSTABLE"),
@@ -668,13 +668,13 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_multipleDifferenceTypes() {
     val current = mapOf(
-      "com.example.Changed" to createEntry("com.example.Changed", skippable = false),
-      "com.example.New" to createEntry("com.example.New"),
+      createEntry("com.example.Changed", skippable = false),
+      createEntry("com.example.New"),
     )
 
     val reference = mapOf(
-      "com.example.Changed" to createEntry("com.example.Changed", skippable = true),
-      "com.example.Removed" to createEntry("com.example.Removed"),
+      createEntry("com.example.Changed", skippable = true),
+      createEntry("com.example.Removed"),
     )
 
     val differences = compareStability(current, reference)
@@ -690,7 +690,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_onlyParameterCountChange_noStabilityChanges() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "String", "STABLE"),
@@ -701,7 +701,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "String", "STABLE"),
@@ -719,7 +719,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_onlyParameterCountChange_noStabilityChanges_withRegressionFiltering() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "String", "STABLE"),
@@ -730,7 +730,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("a", "String", "STABLE"),
@@ -747,7 +747,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_stableToRuntime() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("value", "T", "RUNTIME"),
@@ -756,7 +756,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("value", "T", "STABLE"),
@@ -775,7 +775,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_stableToRuntime_withRegressionFiltering() {
     val current = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("value", "T", "RUNTIME"),
@@ -784,7 +784,7 @@ class StabilityComparisonTest {
     )
 
     val reference = mapOf(
-      "com.example.Test" to createEntry(
+      createEntry(
         "com.example.Test",
         params = listOf(
           ParameterInfo("value", "T", "STABLE"),
@@ -813,7 +813,7 @@ class StabilityComparisonTest {
   fun testCompareStability_currentEmpty() {
     val current = emptyMap<String, StabilityEntry>()
     val reference = mapOf(
-      "com.example.Test" to createEntry("com.example.Test"),
+      createEntry("com.example.Test"),
     )
 
     val differences = compareStability(current, reference)
@@ -825,7 +825,7 @@ class StabilityComparisonTest {
   @Test
   fun testCompareStability_referenceEmpty() {
     val current = mapOf(
-      "com.example.Test" to createEntry("com.example.Test"),
+      createEntry("com.example.Test"),
     )
     val reference = emptyMap<String, StabilityEntry>()
 
@@ -840,8 +840,8 @@ class StabilityComparisonTest {
     qualifiedName: String,
     skippable: Boolean = true,
     params: List<ParameterInfo> = emptyList(),
-  ): StabilityEntry {
-    return StabilityEntry(
+  ): Pair<String, StabilityEntry> {
+    return qualifiedName to StabilityEntry(
       qualifiedName = qualifiedName,
       simpleName = qualifiedName.substringAfterLast("."),
       visibility = "public",
