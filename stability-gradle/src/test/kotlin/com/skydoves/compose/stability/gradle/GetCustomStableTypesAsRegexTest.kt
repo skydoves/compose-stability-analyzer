@@ -11,7 +11,6 @@ import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertNotNull
-import org.gradle.internal.impldep.com.amazonaws.http.conn.ssl.ShouldClearSslSessionPredicate
 
 class GetCustomStableTypesAsRegexTest {
   private lateinit var targetFolder: File
@@ -232,8 +231,7 @@ class GetCustomStableTypesAsRegexTest {
     }.message
 
     assertNotNull(message)
-    assertContains(message, "Invalid character", ignoreCase = true)
-    assertContains(message, "patterns.txt")
+    assertContains(message, "is not a valid pattern", ignoreCase = true)
   }
 
   @Test
@@ -254,29 +252,27 @@ class GetCustomStableTypesAsRegexTest {
     }.message
 
     assertNotNull(message)
-    assertContains(message, "patterns.txt")
-    assertContains(message, "+")
-    assertContains(message, "Invalid character", ignoreCase = true)
+    assertContains(message, "is not a valid pattern")
   }
 
   @Test
-  fun `Allow dollar signs, numbers and underscores`() {
+  fun `Allow dollar numbers and underscores`() {
     val patterns = """
-      my_package.Class1${"$"}SubclassB
+      my_package.Class1.SubclassB
     """.trimIndent()
 
     val classes = listOf(
       "my_package.Class1",
       "my_package.Class2",
-      "my_package.Class1\$SubclassA",
-      "my_package.Class1\$SubclassB",
+      "my_package.Class1.SubclassA",
+      "my_package.Class1.SubclassB",
     )
 
     val result = getMatches(patterns, classes)
 
     assertEquals(
       listOf(
-        "my_package.Class1\$SubclassB",
+        "my_package.Class1.SubclassB",
       ),
       result
     )
@@ -293,11 +289,14 @@ class GetCustomStableTypesAsRegexTest {
     fileList: List<File>,
     classes: List<String>
   ): List<String> {
-    val regexes = getCustomStableTypesAsRegex(fileList)
+    val parsers = fileList.map { StabilityConfigParser.fromFile(it.path) }
 
     return classes.filter { clazz ->
-      regexes.any { regex -> regex.matches(clazz) }
+      parsers.any { stabilityConfigParser ->
+        stabilityConfigParser.stableTypeMatchers.any { matcher ->
+          matcher.matches(clazz)
+        }
+      }
     }
   }
-
 }

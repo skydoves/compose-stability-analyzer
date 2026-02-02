@@ -147,12 +147,23 @@ public abstract class StabilityCheckTask : DefaultTask() {
 
     val currentStability = parseStabilityFromCompiler(inputFile)
     val referenceStability = parseStabilityFile(referenceFile)
+
+    val stabilityConfigurationMatchers = stabilityConfigurationFiles.get().flatMap { configRegularFile ->
+      val file = configRegularFile.asFile
+
+      if (!file.exists()) {
+        return@flatMap emptyList()
+      }
+
+      StabilityConfigParser.fromFile(file.path).stableTypeMatchers
+    }
+
     val differences =
       compareStability(
         currentStability,
         referenceStability,
         ignoreNonRegressiveChanges.get(),
-        getCustomStableTypesAsRegex(stabilityConfigurationFiles.get().map { it.asFile }),
+        stabilityConfigurationMatchers,
       )
 
     if (differences.isNotEmpty()) {

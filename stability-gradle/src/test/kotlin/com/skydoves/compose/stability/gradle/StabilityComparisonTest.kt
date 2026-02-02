@@ -94,7 +94,7 @@ class StabilityComparisonTest {
       current,
       reference,
       ignoreNonRegressiveChanges = true,
-      forceStableTypes = listOf(Regex.fromLiteral("com.skydoves.compose.stability.Third")),
+      forceStableTypes = listOf(FqNameMatcher("com.skydoves.compose.stability.Third")),
     )
 
     assertEquals(1, differences.size)
@@ -121,7 +121,7 @@ class StabilityComparisonTest {
       current,
       reference,
       ignoreNonRegressiveChanges = true,
-      forceStableTypes = listOf(Regex.fromLiteral("com.skydoves.compose.stability.Second")),
+      forceStableTypes = listOf(FqNameMatcher("com.skydoves.compose.stability.Second")),
     )
 
     assertEquals(1, differences.size)
@@ -238,7 +238,7 @@ class StabilityComparisonTest {
       current,
       reference,
       ignoreNonRegressiveChanges = true,
-      forceStableTypes = listOf(Regex.fromLiteral("com.skydoves.compose.stability.Third")),
+      forceStableTypes = listOf(FqNameMatcher("com.skydoves.compose.stability.Third")),
     )
 
     assertEquals(0, differences.size)
@@ -396,7 +396,7 @@ class StabilityComparisonTest {
       current,
       reference,
       ignoreNonRegressiveChanges = true,
-      forceStableTypes = listOf(Regex.fromLiteral("Boolean")),
+      forceStableTypes = listOf(FqNameMatcher("Boolean")),
     )
 
     assertEquals(0, differences.size)
@@ -511,7 +511,7 @@ class StabilityComparisonTest {
       current,
       reference,
       ignoreNonRegressiveChanges = true,
-      forceStableTypes = listOf(Regex.fromLiteral("User")),
+      forceStableTypes = listOf(FqNameMatcher("User")),
     )
 
     assertEquals(0, differences.size)
@@ -599,7 +599,7 @@ class StabilityComparisonTest {
       current,
       reference,
       ignoreNonRegressiveChanges = true,
-      forceStableTypes = listOf(Regex.fromLiteral("A")),
+      forceStableTypes = listOf(FqNameMatcher("A")),
     )
 
     assertEquals(1, differences.size)

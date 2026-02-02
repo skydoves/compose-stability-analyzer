@@ -19,7 +19,7 @@ internal fun compareStability(
   current: Map<String, StabilityEntry>,
   reference: Map<String, StabilityEntry>,
   ignoreNonRegressiveChanges: Boolean = false,
-  forceStableTypes: List<Regex> = emptyList(),
+  forceStableTypes: List<FqNameMatcher> = emptyList(),
 
 ): List<StabilityDifference> {
   val differences = mutableListOf<StabilityDifference>()
@@ -103,11 +103,11 @@ internal fun compareStability(
   return differences
 }
 
-private fun StabilityEntry.isStable(forceStableTypes: List<Regex>): Boolean {
+private fun StabilityEntry.isStable(forceStableTypes: List<FqNameMatcher>): Boolean {
   return skippable ||
     (parameters.isNotEmpty() && parameters.all { it.isStable(forceStableTypes) })
 }
 
-private fun ParameterInfo.isStable(forceStableTypes: List<Regex>): Boolean {
+private fun ParameterInfo.isStable(forceStableTypes: List<FqNameMatcher>): Boolean {
   return stability == "STABLE" || forceStableTypes.any { it.matches(type) }
 }
