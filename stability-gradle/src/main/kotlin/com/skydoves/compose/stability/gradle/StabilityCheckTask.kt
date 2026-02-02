@@ -25,6 +25,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
+import org.jetbrains.kotlin.konan.file.File
 
 /**
  * Task to check if composable stability matches the dumped stability file.
@@ -151,7 +152,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
         currentStability,
         referenceStability,
         ignoreNonRegressiveChanges.get(),
-        getCustomStableTypesAsRegex(),
+        getCustomStableTypesAsRegex(stabilityConfigurationFiles.get().map { it.asFile }),
       )
 
     if (differences.isNotEmpty()) {
@@ -473,45 +474,6 @@ public abstract class StabilityCheckTask : DefaultTask() {
     }
 
     return entries
-  }
-
-  /**
-   * Get custom stable type patterns from configuration file.
-   */
-  private fun getCustomStableTypesAsRegex(): List<Regex> {
-    return try {
-      stabilityConfigurationFiles.get().flatMap { stabilityConfigurationFile ->
-        val file = stabilityConfigurationFile.asFile
-        if (!file.exists() || !file.isFile) {
-          return@flatMap emptyList()
-        }
-
-        // Parse the configuration file
-        val patterns = mutableListOf<String>()
-        file.readLines().forEach { line ->
-          val trimmed = line.trim()
-          // Skip empty lines and comments
-          if (trimmed.isNotEmpty() && !trimmed.startsWith("#")) {
-            patterns.add(trimmed)
-          }
-        }
-
-        // Convert patterns to regex
-        patterns.mapNotNull { pattern ->
-          try {
-            // Convert glob-style wildcards to regex
-            pattern
-              .replace(".", "\\.")
-              .replace("*", ".*")
-              .toRegex()
-          } catch (e: Exception) {
-            null // Skip invalid patterns
-          }
-        }
-      }
-    } catch (e: Exception) {
-      emptyList()
-    }
   }
 }
 
