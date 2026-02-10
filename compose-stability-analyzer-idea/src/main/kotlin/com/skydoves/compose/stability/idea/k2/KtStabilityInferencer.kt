@@ -111,15 +111,6 @@ internal class KtStabilityInferencer(
     // Use fullyExpandedType to get the actual underlying type
     val expandedType = type.fullyExpandedType
 
-    val expandedTypeString = try {
-      expandedType.render(position = org.jetbrains.kotlin.types.Variance.INVARIANT)
-    } catch (_: StackOverflowError) {
-      return KtStability.Runtime(
-        className = "Unknown",
-        reason = "Unable to render type due to complexity",
-      )
-    }
-
     // 1. Nullable types - MUST be checked first to strip nullability
     // Use KaTypeNullability enum for compatibility with Android Studio AI-243
     val nonNullableType = if (expandedType.isMarkedNullable) {
@@ -138,7 +129,6 @@ internal class KtStabilityInferencer(
     // Function types are ALWAYS stable (captured values are checked separately in Compose compiler)
     val isFunctionType = nonNullableType.isFunctionType ||
       nonNullableType.isSuspendFunctionType ||
-      expandedTypeString.containsTopLevelArrow() ||
       originalTypeString.containsTopLevelArrow()
 
     if (isFunctionType) {
@@ -149,11 +139,9 @@ internal class KtStabilityInferencer(
       } || nonNullableType.annotations.any { annotation ->
         annotation.classId?.asSingleFqName()?.asString() ==
           "androidx.compose.runtime.Composable"
-      } || expandedTypeString.contains("@Composable") ||
-        originalTypeString.contains("@Composable")
+      } || originalTypeString.contains("@Composable")
 
       val isSuspend = nonNullableType.isSuspendFunctionType ||
-        expandedTypeString.contains("suspend") ||
         originalTypeString.contains("suspend")
 
       return KtStability.Certain(
@@ -191,11 +179,9 @@ internal class KtStabilityInferencer(
       } || nonNullableType.annotations.any { annotation ->
         annotation.classId?.asSingleFqName()?.asString() ==
           "androidx.compose.runtime.Composable"
-      } || expandedTypeString.contains("@Composable") ||
-        originalTypeString.contains("@Composable")
+      } || originalTypeString.contains("@Composable")
 
       val isSuspend = nonNullableType.isSuspendFunctionType ||
-        expandedTypeString.contains("suspend") ||
         originalTypeString.contains("suspend")
 
       return KtStability.Certain(
