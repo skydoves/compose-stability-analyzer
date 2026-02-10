@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.7] - 2026-02-10
+
+### Added
+- **Android variant-specific stability tasks** (Issue #85, PR #101)
+  - Gradle plugin now creates per-variant tasks (e.g., `debugStabilityDump`, `releaseStabilityCheck`) for Android projects
+  - Allows running stability analysis on a single variant without compiling others
+  - Aggregate tasks (`stabilityDump`, `stabilityCheck`) still available for all variants
+  - Improved build cache compatibility for Kotlin compile output registration
+- **Non-regressive change filtering for stability validation** (Issue #82, PR #104)
+  - New `ignoreNonRegressiveChanges` option: only flag stability regressions, ignore non-regressive changes (e.g., new stable parameters)
+  - New `allowMissingBaseline` option: allow stability checks to run even without an existing baseline file
+  - With both flags enabled, the Gradle plugin reports all unstable composables found in the module
+- **Stability configuration file wildcard support** (Issue #108, PR #110)
+  - Implemented `stabilityPatternToRegex` to support `*` and `**` wildcard syntax in stability configuration files
+  - Matches the format used by the official Compose compiler stability configuration
+  - Example: `com.datalayer.*`, `com.example.**`
+
+### Fixed
+- **`@StabilityInferred` annotation now supported in Gradle plugin** (Issue #102, PR #112)
+  - Immutable classes from other modules annotated with `@StabilityInferred(parameters=0)` are now correctly treated as stable during `stabilityDump`/`stabilityCheck`
+  - Previously, cross-module classes with `@StabilityInferred` were incorrectly marked as UNSTABLE
+  - Aligns Gradle plugin behavior with the IDEA plugin, which already handled this correctly
+- **Skip analysis for `@NonRestartableComposable` and `@NonSkippableComposable`** (Issue #103, PR #111)
+  - Composable functions annotated with `@NonRestartableComposable` or `@NonSkippableComposable` are now excluded from stability analysis
+  - These functions are not subject to recomposition skipping, so stability analysis is not applicable
+- **Improved typealias handling in IDEA plugin** (Issue #16, PR #106)
+  - Parameters using a typealias to a function type (e.g., `typealias ComposableAction = @Composable () -> Unit`) are now correctly recognized as stable
+  - Added typealias expansion support across PSI fallback, K1, and K2 analysis paths
+  - Includes circular alias recursion guard to prevent infinite loops
+
+### Improved
+- **Replaced internal `nj2k.descendantsOfType` with stable `PsiTreeUtil` API** (PR #109)
+  - Implemented intelligent caching mechanism for typealias resolution with automatic expiration
+  - Streamlined function-type detection and composability checking logic
+  - Improved IDE responsiveness during analysis
+
 ## [0.6.6] - 2025-12-24
 
 ### Fixed
