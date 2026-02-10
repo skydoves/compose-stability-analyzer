@@ -74,6 +74,25 @@ internal object StabilityAnalyzerK2 {
     // Get function symbol
     val functionSymbol = function.symbol
 
+    // Skip analysis for @NonRestartableComposable / @NonSkippableComposable —
+    // these composables have no caching/comparison code, so stability is irrelevant.
+    val hasNonRestartable =
+      function.hasAnnotation(StabilityConstants.Strings.NON_RESTARTABLE_COMPOSABLE)
+    val hasNonSkippable =
+      function.hasAnnotation(StabilityConstants.Strings.NON_SKIPPABLE_COMPOSABLE)
+    if (hasNonRestartable || hasNonSkippable) {
+      return ComposableStabilityInfo(
+        name = function.name ?: StabilityConstants.Strings.UNKNOWN,
+        fqName = functionSymbol.callableId?.asSingleFqName()?.asString()
+          ?: StabilityConstants.Strings.UNKNOWN,
+        isRestartable = !hasNonRestartable,
+        isSkippable = false,
+        isReadonly = function.hasAnnotation(StabilityConstants.Strings.READ_ONLY_COMPOSABLE),
+        parameters = emptyList(),
+        receivers = emptyList(),
+      )
+    }
+
     // Get the module containing this composable function (usage site)
     val usageSiteModule = ProjectFileIndex.getInstance(function.project).getModuleForFile(
       function.containingKtFile.virtualFile,

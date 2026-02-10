@@ -113,6 +113,8 @@ public class StabilityLineMarkerProvider : LineMarkerProvider {
     val allStable = allParams.all { it.stability == ParameterStability.STABLE }
 
     val color = when {
+      // Non-restartable / non-skippable composables have no stability semantics — show gray
+      !analysis.isSkippable && allParams.isEmpty() -> Color(0x80, 0x80, 0x80)
       analysis.isSkippable && allStable -> Color(settings.stableGutterColorRGB)
       analysis.isSkippable -> Color(settings.stableGutterColorRGB)
       hasUnstable -> Color(settings.unstableGutterColorRGB)
@@ -148,6 +150,15 @@ public class StabilityLineMarkerProvider : LineMarkerProvider {
 
           isRuntimeOnly ->
             "🟡 Runtime Stability (skippability determined at runtime)"
+
+          // Non-restartable / non-skippable with no params → annotated to skip caching
+          !analysis.isRestartable && totalCount == 0 ->
+            "⏭️ Non-Restartable (@NonRestartableComposable)" +
+              "\nStability analysis is not applicable."
+
+          analysis.isRestartable && !analysis.isSkippable && totalCount == 0 ->
+            "⏭️ Non-Skippable (@NonSkippableComposable)" +
+              "\nStability analysis is not applicable."
 
           analysis.isRestartable ->
             "⚠️ Restartable (not skippable)"

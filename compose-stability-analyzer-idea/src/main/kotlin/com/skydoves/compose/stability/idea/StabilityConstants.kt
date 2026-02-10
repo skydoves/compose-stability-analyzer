@@ -78,6 +78,7 @@ internal object StabilityConstants {
     const val UNKNOWN = "Unknown"
     const val COMPOSABLE = "Composable"
     const val NON_RESTARTABLE_COMPOSABLE = "NonRestartableComposable"
+    const val NON_SKIPPABLE_COMPOSABLE = "NonSkippableComposable"
     const val READ_ONLY_COMPOSABLE = "ReadOnlyComposable"
   }
 

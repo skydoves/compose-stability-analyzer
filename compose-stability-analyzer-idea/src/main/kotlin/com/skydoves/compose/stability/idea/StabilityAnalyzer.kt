@@ -154,6 +154,26 @@ internal object StabilityAnalyzer {
    * PSI-based analysis (fallback for K1 mode or when K2 fails).
    */
   private fun analyzePsi(function: KtNamedFunction): ComposableStabilityInfo {
+    // Skip analysis for @NonRestartableComposable / @NonSkippableComposable —
+    // these composables have no caching/comparison code, so stability is irrelevant.
+    val hasNonRestartable = function.hasAnnotation(
+      StabilityConstants.Strings.NON_RESTARTABLE_COMPOSABLE,
+    )
+    val hasNonSkippable = function.hasAnnotation(
+      StabilityConstants.Strings.NON_SKIPPABLE_COMPOSABLE,
+    )
+    if (hasNonRestartable || hasNonSkippable) {
+      return ComposableStabilityInfo(
+        name = function.name ?: StabilityConstants.Strings.UNKNOWN,
+        fqName = function.fqName?.asString() ?: StabilityConstants.Strings.UNKNOWN,
+        isRestartable = !hasNonRestartable,
+        isSkippable = false,
+        isReadonly = function.hasAnnotation(StabilityConstants.Strings.READ_ONLY_COMPOSABLE),
+        parameters = emptyList(),
+        receivers = emptyList(),
+      )
+    }
+
     val parameters = function.valueParameters.mapNotNull { param ->
       analyzeParameter(param)
     }
