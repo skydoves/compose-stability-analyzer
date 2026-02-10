@@ -144,11 +144,7 @@ public class StabilitySettingsState : PersistentStateComponent<StabilitySettings
       .filter { it.isNotEmpty() && !it.startsWith("#") } // Support comments
       .map { pattern ->
         try {
-          // Convert glob-style wildcards to regex
-          pattern
-            .replace(".", "\\.")
-            .replace("*", ".*")
-            .toRegex()
+          stabilityPatternToRegex(pattern)
         } catch (e: Exception) {
           // If regex is invalid, treat as literal string
           Regex.escape(pattern).toRegex()
@@ -183,11 +179,7 @@ public class StabilitySettingsState : PersistentStateComponent<StabilitySettings
       // Convert patterns to regex
       patterns.mapNotNull { pattern ->
         try {
-          // Convert glob-style wildcards to regex
-          pattern
-            .replace(".", "\\.")
-            .replace("*", ".*")
-            .toRegex()
+          stabilityPatternToRegex(pattern)
         } catch (e: Exception) {
           null // Skip invalid patterns
         }
@@ -202,4 +194,44 @@ public class StabilitySettingsState : PersistentStateComponent<StabilitySettings
       return service()
     }
   }
+}
+
+/**
+ * Converts a Compose stability configuration pattern to a [Regex].
+ *
+ * Follows the same semantics as the Compose compiler's stability configuration file:
+ * - `**` matches any sequence of characters including dots (multi-segment wildcard)
+ * - `*` matches any sequence of characters except dots (single-segment wildcard)
+ * - `.` is treated as a literal dot
+ * - All other characters are regex-escaped
+ *
+ * Examples:
+ * - `com.datalayer.*` matches `com.datalayer.Foo` but NOT `com.datalayer.sub.Foo`
+ * - `com.datalayer.**` matches `com.datalayer.Foo` AND `com.datalayer.sub.Foo`
+ */
+internal fun stabilityPatternToRegex(pattern: String): Regex {
+  val regex = buildString {
+    var i = 0
+    while (i < pattern.length) {
+      when {
+        pattern[i] == '*' && i + 1 < pattern.length && pattern[i + 1] == '*' -> {
+          append(".*")
+          i += 2
+        }
+        pattern[i] == '*' -> {
+          append("[^.]*")
+          i++
+        }
+        pattern[i] == '.' -> {
+          append("\\.")
+          i++
+        }
+        else -> {
+          append(Regex.escape(pattern[i].toString()))
+          i++
+        }
+      }
+    }
+  }
+  return regex.toRegex()
 }

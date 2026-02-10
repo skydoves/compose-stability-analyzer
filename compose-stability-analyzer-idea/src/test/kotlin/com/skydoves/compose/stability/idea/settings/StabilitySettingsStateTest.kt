@@ -114,8 +114,9 @@ class StabilitySettingsStateTest {
     val patterns = settings.getIgnoredPatternsAsRegex()
     assertEquals(1, patterns.size)
 
+    // Single * matches only one package segment (no dots)
     assertTrue(patterns[0].matches("com.example.User"))
-    assertTrue(patterns[0].matches("com.example.ui.Card"))
+    assertFalse(patterns[0].matches("com.example.ui.Card"))
     assertFalse(patterns[0].matches("com.other.User"))
   }
 
@@ -170,14 +171,31 @@ class StabilitySettingsStateTest {
   }
 
   @Test
-  fun testGetIgnoredPatternsAsRegex_handlesWildcards() {
+  fun testGetIgnoredPatternsAsRegex_singleStarMatchesSingleSegment() {
     val settings = StabilitySettingsState()
     settings.ignoredTypePatterns = "com.example.*"
 
     val patterns = settings.getIgnoredPatternsAsRegex()
     assertEquals(1, patterns.size)
 
-    // Wildcard should match multiple segments
+    // Single * matches only one segment (no dots)
+    assertTrue(patterns[0].matches("com.example.User"))
+    assertFalse(patterns[0].matches("com.example.ui.UserCard"))
+    assertFalse(patterns[0].matches("com.example.data.model.User"))
+
+    // Should not match different package
+    assertFalse(patterns[0].matches("com.other.User"))
+  }
+
+  @Test
+  fun testGetIgnoredPatternsAsRegex_doubleStarMatchesMultipleSegments() {
+    val settings = StabilitySettingsState()
+    settings.ignoredTypePatterns = "com.example.**"
+
+    val patterns = settings.getIgnoredPatternsAsRegex()
+    assertEquals(1, patterns.size)
+
+    // Double ** matches across package boundaries (including dots)
     assertTrue(patterns[0].matches("com.example.User"))
     assertTrue(patterns[0].matches("com.example.ui.UserCard"))
     assertTrue(patterns[0].matches("com.example.data.model.User"))
@@ -262,7 +280,7 @@ class StabilitySettingsStateTest {
   }
 
   @Test
-  fun testGetCustomStableTypesAsRegex_handlesInvalidRegex() {
+  fun testGetCustomStableTypesAsRegex_handlesSpecialCharacters() {
     val configFile = tempFolder.newFile("stability-config.txt")
     configFile.writeText(
       """
@@ -277,10 +295,11 @@ class StabilitySettingsStateTest {
 
     val patterns = settings.getCustomStableTypesAsRegex()
 
-    // Should skip invalid patterns and only include valid ones
-    assertEquals(2, patterns.size)
+    // All patterns are valid (special characters are properly escaped)
+    assertEquals(3, patterns.size)
     assertTrue(patterns[0].matches("com.example.ValidClass"))
-    assertTrue(patterns[1].matches("com.example.AnotherValid"))
+    assertTrue(patterns[1].matches("[invalid(regex"))
+    assertTrue(patterns[2].matches("com.example.AnotherValid"))
   }
 
   @Test
@@ -378,8 +397,8 @@ class StabilitySettingsStateTest {
   }
 
   @Test
-  fun testGetCustomStableTypesAsRegex_wildcardMatching() {
-    val configFile = tempFolder.newFile("stability-config.txt")
+  fun testGetCustomStableTypesAsRegex_singleStarWildcard() {
+    val configFile = tempFolder.newFile("stability-config-single.txt")
     configFile.writeText("com.example.stable.*")
 
     val settings = StabilitySettingsState()
@@ -388,8 +407,27 @@ class StabilitySettingsStateTest {
     val patterns = settings.getCustomStableTypesAsRegex()
     assertEquals(1, patterns.size)
 
+    // Single * matches only direct children
+    assertTrue(patterns[0].matches("com.example.stable.User"))
+    assertFalse(patterns[0].matches("com.example.stable.data.Repository"))
+    assertFalse(patterns[0].matches("com.example.unstable.User"))
+  }
+
+  @Test
+  fun testGetCustomStableTypesAsRegex_doubleStarWildcard() {
+    val configFile = tempFolder.newFile("stability-config-double.txt")
+    configFile.writeText("com.example.stable.**")
+
+    val settings = StabilitySettingsState()
+    settings.stabilityConfigurationPath = configFile.absolutePath
+
+    val patterns = settings.getCustomStableTypesAsRegex()
+    assertEquals(1, patterns.size)
+
+    // Double ** matches across subpackages
     assertTrue(patterns[0].matches("com.example.stable.User"))
     assertTrue(patterns[0].matches("com.example.stable.data.Repository"))
+    assertTrue(patterns[0].matches("com.example.stable.data.model.Entity"))
     assertFalse(patterns[0].matches("com.example.unstable.User"))
   }
 }
