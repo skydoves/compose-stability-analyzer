@@ -443,7 +443,9 @@ public class StabilityAnalyzerTransformer(
     }
 
     // 17. Cross-module types require explicit @Stable/@Immutable/@StabilityInferred
-    if (isFromDifferentModule(clazz) && !type.hasStableAnnotation()) {
+    if (isFromDifferentModule(clazz) && !type.hasStableAnnotation() &&
+      !type.hasStabilityInferredAnnotation()
+    ) {
       return ParameterStability.UNSTABLE
     }
 
@@ -588,11 +590,33 @@ public class StabilityAnalyzerTransformer(
   }
 
   /**
-   * TODO: Read @StabilityInferred parameters field without deprecated IR APIs.
-   * Returns null (conservative RUNTIME) until stable API is available.
+   * Read the `parameters` field from @StabilityInferred annotation.
+   * Returns 0 when all type parameters are stable, non-zero bitmask otherwise.
+   * Returns null if the annotation is not present.
    */
   private fun IrType.getStabilityInferredParameters(): Int? {
-    return null
+    val classSymbol = this.classOrNull ?: return null
+    val clazz = classSymbol.owner
+    val stabilityInferredFqName =
+      FqName("androidx.compose.runtime.internal.StabilityInferred")
+
+    val annotation = clazz.annotations.find { annot ->
+      try {
+        val annotationClass = annot.symbol.owner.parent as? IrClass
+        annotationClass?.kotlinFqName == stabilityInferredFqName
+      } catch (e: Exception) {
+        false
+      }
+    } ?: return null
+
+    val annotationClass = annotation.symbol.owner
+    val paramNameToIndex = annotationClass.parameters
+      .mapIndexed { index, param -> param.name.asString() to index }
+      .toMap()
+
+    val parametersIndex = paramNameToIndex["parameters"] ?: return null
+    val value = annotation.arguments.getOrNull(parametersIndex) ?: return null
+    return extractConstIntValue(value)
   }
 
   private fun IrType.isCollection(): Boolean {
