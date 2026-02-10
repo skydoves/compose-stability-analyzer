@@ -71,10 +71,7 @@ public class StabilityProjectSettingsState :
 
       patterns.mapNotNull { pattern ->
         try {
-          pattern
-            .replace(".", "\\.")
-            .replace("*", ".*")
-            .toRegex()
+          stabilityPatternToRegex(pattern)
         } catch (e: Exception) {
           null
         }
