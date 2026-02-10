@@ -232,6 +232,13 @@ internal object StabilityAnalysisConstants {
     "MessageLite",
   )
 
+  // K2 sometimes fails to provide classId / fqName for Kotlin FunctionN interfaces,
+  // but the symbol still has a simple name like "Function0/SuspendFunction1/ComposableFunction2".
+  // So we fall back to a identifying them as mutable interfaces and reporting runtime stability
+  private val FUNCTION_SIMPLE_NAME_REGEX = Regex("^(K)?Function\\d+$")
+  private val SUSPEND_FUNCTION_SIMPLE_NAME_REGEX = Regex("^SuspendFunction\\d+$")
+  private val COMPOSABLE_FUNCTION_SIMPLE_NAME_REGEX = Regex("^ComposableFunction\\d+$")
+
   /**
    * Check if a type's simple name is a known stable type.
    */
@@ -267,12 +274,19 @@ internal object StabilityAnalysisConstants {
     return fqName in PRIMITIVE_TYPE_FQ_NAMES
   }
 
+  internal fun isFunctionTypeBySimpleName(simpleName: String): Boolean {
+    return FUNCTION_SIMPLE_NAME_REGEX.matches(simpleName) ||
+      SUSPEND_FUNCTION_SIMPLE_NAME_REGEX.matches(simpleName) ||
+      COMPOSABLE_FUNCTION_SIMPLE_NAME_REGEX.matches(simpleName)
+  }
+
   /**
    * Check if FqName is a function type.
    */
   internal fun isFunctionType(fqName: String): Boolean {
     return fqName.startsWith("kotlin.Function") ||
       fqName.startsWith("kotlin.jvm.functions.Function") ||
-      fqName.startsWith("kotlin.coroutines.SuspendFunction")
+      fqName.startsWith("kotlin.coroutines.SuspendFunction") ||
+      fqName.startsWith("androidx.compose.runtime.internal.ComposableFunction")
   }
 }
