@@ -2,6 +2,36 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.6.7] - 2026-02-10
+
+### Added
+- **Android variant-specific stability tasks** (Issue #85, PR #101)
+  - Gradle plugin now creates per-variant tasks (e.g., `debugStabilityDump`, `releaseStabilityCheck`) for Android projects
+  - Allows running stability analysis on a single variant without compiling others
+  - Improved build cache compatibility
+- **Non-regressive change filtering for stability validation** (Issue #82, PR #104)
+  - New `ignoreNonRegressiveChanges` option to only flag stability regressions
+  - New `allowMissingBaseline` option to allow checks without an existing baseline file
+- **Stability configuration file wildcard support** (Issue #108, PR #110)
+  - Implemented `stabilityPatternToRegex` supporting `*` and `**` wildcard syntax
+  - Matches the official Compose compiler stability configuration format
+
+### Fixed
+- **`@StabilityInferred` annotation now supported in Gradle plugin** (Issue #102, PR #112)
+  - Cross-module classes with `@StabilityInferred(parameters=0)` now correctly treated as stable during `stabilityDump`/`stabilityCheck`
+  - Aligns Gradle plugin behavior with the IDEA plugin
+- **Skip analysis for `@NonRestartableComposable` and `@NonSkippableComposable`** (Issue #103, PR #111)
+  - These composable functions are now excluded from stability analysis as they are not subject to recomposition skipping
+- **Improved typealias handling** (Issue #16, PR #106)
+  - Typealias to function types (e.g., `typealias ComposableAction = @Composable () -> Unit`) now correctly recognized as stable
+  - Added typealias expansion support across PSI, K1, and K2 analysis paths with circular alias recursion guard
+
+### Improved
+- **Replaced internal `nj2k.descendantsOfType` with stable `PsiTreeUtil` API** (PR #109)
+  - Intelligent caching for typealias resolution with automatic expiration
+  - Streamlined function-type detection and composability checking logic
+  - Improved IDE responsiveness during analysis
+
 ## [0.6.4] - 2025-12-16
 
 ### Fixed
