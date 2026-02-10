@@ -21,6 +21,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.psi.PsiManager
+import com.intellij.psi.util.PsiTreeUtil
 import com.skydoves.compose.stability.idea.k2.StabilityAnalyzerK2
 import com.skydoves.compose.stability.idea.settings.StabilityProjectSettingsState
 import com.skydoves.compose.stability.idea.settings.StabilitySettingsState
@@ -35,7 +36,6 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.caches.resolve.resolveMainReference
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.nj2k.descendantsOfType
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
@@ -47,9 +47,10 @@ import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
+import org.jetbrains.kotlin.types.AbbreviatedType
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
-import java.lang.reflect.InvocationTargetException
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Helper class to hold stability result with reason.
@@ -80,6 +81,14 @@ internal object StabilityAnalyzer {
    */
   private val ignoredPatterns: List<Regex>
     get() = settings.getIgnoredPatternsAsRegex()
+
+  /**
+   * Cache for project-wide typealias lookups to avoid repeated filesystem scans.
+   * Key: "aliasName|fqNameHint", Value: Pair(result, timestampMs).
+   * Entries older than [TYPE_ALIAS_CACHE_TTL_MS] are considered stale.
+   */
+  private val typeAliasCache = ConcurrentHashMap<String, Pair<KtTypeAlias?, Long>>()
+  private const val TYPE_ALIAS_CACHE_TTL_MS = 30_000L // 30 seconds
 
   @get:TestOnly
   @set:TestOnly
@@ -692,8 +701,7 @@ internal object StabilityAnalyzer {
     val ktFile = typeRef.containingKtFile
 
     // 1) File-local scan (fast, no IO)
-    ktFile.declarations
-      .descendantsOfType<KtTypeAlias>()
+    PsiTreeUtil.findChildrenOfType(ktFile, KtTypeAlias::class.java)
       .firstOrNull { it.name == aliasName }
       ?.let { return it }
 
@@ -711,6 +719,26 @@ internal object StabilityAnalyzer {
   }
 
   private fun findTypeAliasInProject(
+    project: Project,
+    aliasName: String,
+    fqNameHint: String?,
+  ): KtTypeAlias? {
+    val cacheKey = "$aliasName|$fqNameHint"
+    val now = System.currentTimeMillis()
+
+    // Check cache first
+    typeAliasCache[cacheKey]?.let { (cached, timestamp) ->
+      if (now - timestamp < TYPE_ALIAS_CACHE_TTL_MS && cached?.isValid != false) {
+        return cached
+      }
+    }
+
+    val result = findTypeAliasInProjectUncached(project, aliasName, fqNameHint)
+    typeAliasCache[cacheKey] = result to now
+    return result
+  }
+
+  private fun findTypeAliasInProjectUncached(
     project: Project,
     aliasName: String,
     fqNameHint: String?,
@@ -735,8 +763,7 @@ internal object StabilityAnalyzer {
           return@iterateChildrenRecursively true
         }
 
-        val alias = psi.declarations
-          .descendantsOfType<KtTypeAlias>()
+        val alias = PsiTreeUtil.findChildrenOfType(psi, KtTypeAlias::class.java)
           .firstOrNull { it.name == aliasName }
           ?: return@iterateChildrenRecursively true
 
@@ -1217,33 +1244,7 @@ internal fun KtNamedFunction.hasAnnotation(shortName: String): Boolean {
  */
 
 private fun KotlinType.expandTypeAliasIfNeeded(): KotlinType {
-  val abbreviatedTypeClass = try {
-    Class.forName("org.jetbrains.kotlin.types.AbbreviatedType")
-  } catch (_: ClassNotFoundException) {
-    return this
-  } catch (_: NoClassDefFoundError) {
-    return this
-  } catch (_: LinkageError) {
-    return this
-  }
-
-  if (!abbreviatedTypeClass.isInstance(this)) return this
-
-  val getExpanded = abbreviatedTypeClass.methods.firstOrNull {
-    it.name == "getExpandedType" && it.parameterCount == 0
-  } ?: return this
-
-  return try {
-    (getExpanded.invoke(this) as? KotlinType) ?: this
-  } catch (_: IllegalAccessException) {
-    this
-  } catch (_: IllegalArgumentException) {
-    this
-  } catch (_: InvocationTargetException) {
-    this
-  } catch (_: ClassCastException) {
-    this
-  }
+  return if (this is AbbreviatedType) expandedType else this
 }
 
 /**
