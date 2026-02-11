@@ -500,6 +500,92 @@ D/Recomposition:   └─ onClick: () -> Unit stable (Function@xyz)
 (No more excessive recompositions!)
 ```
 
+### Full Tracking Mode (Experimental)
+
+By default, `@TraceRecomposition` tracks only **parameter changes**. This is called "standard" mode and is lightweight for production debugging.
+
+**Full tracking mode** goes deeper—it also tracks **internal state changes** within your composable, including:
+
+- `mutableStateOf` / `mutableIntStateOf` changes
+- `derivedStateOf` changes
+- `remember` slot value changes
+- `CompositionLocal` value changes (e.g., `LocalTextStyle`, `LocalContentColor`)
+
+This is incredibly useful for debugging why a composable is recomposing when parameters haven't changed.
+
+#### Enabling Full Tracking Mode
+
+Add this to your `build.gradle.kts`:
+
+```kotlin
+composeStabilityAnalyzer {
+    trackingMode.set("full")  // Default is "standard"
+}
+```
+
+#### Example: Tracking Internal State
+
+```kotlin
+@TraceRecomposition(tag = "internal-state")
+@Composable
+fun InternalStateDemo() {
+    // These internal states are tracked in full mode
+    var counter by remember { mutableIntStateOf(0) }
+    val doubled by remember { derivedStateOf { counter * 2 } }
+
+    Column {
+        Text("Counter: $counter")
+        Text("Doubled: $doubled")
+        Button(onClick = { counter++ }) {
+            Text("Increment")
+        }
+    }
+}
+```
+
+**Logcat output (full mode):**
+
+```
+D/Recomposition: [Recomposition #2] InternalStateDemo (tag: internal-state)
+D/Recomposition:   ├─ intSlot:2: slot_modified changed (0 → 1)
+D/Recomposition:   └─ derivedValue: slot_modified changed (0 → 2)
+```
+
+#### Example: Tracking CompositionLocal Changes
+
+Full tracking mode can also detect when `CompositionLocal` values change:
+
+```kotlin
+@TraceRecomposition(tag = "text-style-consumer")
+@Composable
+fun TrackedTextStyleConsumer() {
+    val currentStyle = LocalTextStyle.current
+    Text("Font weight: ${currentStyle.fontWeight}", style = currentStyle)
+}
+
+// Parent provides different styles
+CompositionLocalProvider(LocalTextStyle provides largeTextStyle) {
+    TrackedTextStyleConsumer()
+}
+```
+
+**Logcat output:**
+
+```
+D/Recomposition: [Recomposition #2] TrackedTextStyleConsumer (tag: text-style-consumer)
+D/Recomposition:   ├─ slot:1: slot_modified changed (FontWeight(400) → FontWeight(700))
+D/Recomposition:   └─ Unstable parameters: [slot:1]
+```
+
+#### When to Use Each Mode
+
+| Mode | Use Case | Performance |
+|------|----------|-------------|
+| `standard` | Production debugging, CI monitoring | Lightweight |
+| `full` | Deep debugging, understanding internal recomposition causes | More overhead |
+
+> **Note**: Full tracking mode has additional runtime overhead. Use it during development/debugging only.
+
 ### Best Practices
 
 **1. Don't track everything**: Be selective about which composables you track. Focus on:
