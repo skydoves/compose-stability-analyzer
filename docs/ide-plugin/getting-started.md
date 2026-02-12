@@ -22,13 +22,13 @@ Once installed, the plugin provides four types of visual feedback that work toge
 
 **Hover Tooltips** appear when you move your mouse over a composable function name. They show a detailed stability breakdown including whether the composable is skippable and restartable, how many parameters are stable vs. unstable, and the specific reason behind each parameter's stability status.
 
-**Inline Hints** are small badges that appear directly next to each parameter's type declaration. They let you see the stability of every parameter at a glance without needing to hover — particularly useful for composables with many parameters.
+**Inline Hints** are small badges that appear directly next to each parameter's type declaration. They let you see the stability of every parameter at a glance without needing to hover, which is particularly useful for composables with many parameters.
 
 **Code Inspections** go beyond passive indicators. When a composable has unstable parameters, the plugin highlights the issue with a warning underline and offers quick fixes through the Alt+Enter menu, such as adding `@TraceRecomposition` for runtime debugging.
 
 ## Verification
 
-To verify the plugin is working, open any Kotlin file with `@Composable` functions and look for colored dots in the left margin (the gutter area). Hover over a composable function name — you should see a tooltip with detailed stability information. If nothing appears, the plugin may be disabled.
+To verify the plugin is working, open any Kotlin file with `@Composable` functions and look for colored dots in the left margin (the gutter area). Hover over a composable function name; you should see a tooltip with detailed stability information. If nothing appears, the plugin may be disabled.
 
 !!! note "Troubleshooting"
 

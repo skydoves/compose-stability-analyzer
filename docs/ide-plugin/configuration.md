@@ -9,11 +9,11 @@ You can customize the Compose Stability Analyzer plugin to match your preference
 
 The general settings control which visual features are active and how the plugin analyzes your code.
 
-**Enable stability checks** is the master toggle for the entire plugin. When disabled, no gutter icons, tooltips, inline hints, or inspections will appear. This is useful if you want to temporarily disable the plugin without uninstalling it — for example, when working on a non-Compose part of your project where the analysis overhead isn't needed.
+**Enable stability checks** is the master toggle for the entire plugin. When disabled, no gutter icons, tooltips, inline hints, or inspections will appear. This is useful if you want to temporarily disable the plugin without uninstalling it (for example, when working on a non-Compose part of your project where the analysis overhead isn't needed).
 
 **Strong Skipping mode** controls whether the analyzer accounts for Compose's Strong Skipping mode when determining stability. With Strong Skipping enabled (the default since Compose Compiler 1.5.4+), more composables are considered skippable because unstable parameters are compared by instance equality. If your project doesn't use Strong Skipping, disable this setting so the analysis reflects your actual compiler behavior.
 
-**Show gutter icons**, **Show inline hints**, and **Show warnings** let you independently toggle each visual indicator. For example, you might want gutter icons for a quick overview but find inline hints too noisy — you can disable hints while keeping the gutter icons active. Each indicator serves a different purpose, and the right combination depends on your workflow.
+**Show gutter icons**, **Show inline hints**, and **Show warnings** let you independently toggle each visual indicator. For example, you might want gutter icons for a quick overview but find inline hints too noisy. You can disable hints while keeping the gutter icons active. Each indicator serves a different purpose, and the right combination depends on your workflow.
 
 **Show in test source sets** controls whether the plugin analyzes composables in test directories. By default, this is disabled because test composables (previews, test fixtures) typically don't need stability optimization. Enable this if you want to analyze composable stability in your test code as well.
 
@@ -34,7 +34,7 @@ This is especially useful if you use a high-contrast theme, a colorblind-friendl
 
 ## Stability Configuration File
 
-The Compose compiler determines stability based on type annotations and property mutability. However, there are cases where a type is effectively stable but the compiler can't infer it — third-party library types without `@Stable` annotations, code-generated types, or legacy classes you know are immutable but can't easily modify. The stability configuration file lets you tell the analyzer to treat these types as stable.
+The Compose compiler determines stability based on type annotations and property mutability. However, there are cases where a type is effectively stable but the compiler can't infer it: third-party library types without `@Stable` annotations, code-generated types, or legacy classes you know are immutable but can't easily modify. The stability configuration file lets you tell the analyzer to treat these types as stable.
 
 ### Global Settings
 
@@ -55,7 +55,7 @@ Per-project settings are stored alongside your project and can be shared with yo
 The configuration file is a plain text file where each line specifies a fully-qualified type name or a wildcard pattern. Lines starting with `//` are comments.
 
 ```
-// Consider LocalDateTime stable — it's immutable but lacks @Stable annotation
+// Consider LocalDateTime stable (it's immutable but lacks @Stable annotation)
 java.time.LocalDateTime
 
 // Consider all types in the datalayer package stable

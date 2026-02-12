@@ -31,7 +31,7 @@ The Compose Stability Analyzer works alongside the Compose compiler. Ensure your
 
 !!! note "Compose Compiler bundled with Kotlin"
 
-    Starting with Kotlin 2.0, the Compose compiler is bundled as a Kotlin compiler plugin. You no longer need to specify a separate Compose compiler version — it is automatically matched to your Kotlin version.
+    Starting with Kotlin 2.0, the Compose compiler is bundled as a Kotlin compiler plugin. You no longer need to specify a separate Compose compiler version; it is automatically matched to your Kotlin version.
 
 ## Maven Coordinates
 

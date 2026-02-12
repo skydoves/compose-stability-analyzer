@@ -1,10 +1,10 @@
 # Stability Validation
 
-Stability Validation prevents stability regressions from reaching production. It's like **git diff for composable stability** — it tracks your composables' stability over time and automatically fails your build if stability regresses. Without it, a seemingly innocent change (like converting a `val` to `var` in a data class) can silently destabilize dozens of composables, and the performance regression slips through code review unnoticed.
+Stability Validation prevents stability regressions from reaching production. It's like **git diff for composable stability**: it tracks your composables' stability over time and automatically fails your build if stability regresses. Without it, a seemingly innocent change (like converting a `val` to `var` in a data class) can silently destabilize dozens of composables, and the performance regression slips through code review unnoticed.
 
 ## How It Works
 
-Two Gradle tasks power stability validation. The **`stabilityDump`** task analyzes your compiled code and creates a snapshot (baseline) of every composable's stability status — function signatures, skippability, restartability, and the stability of each parameter. The **`stabilityCheck`** task compares the current compilation output against that snapshot and reports any differences.
+Two Gradle tasks power stability validation. The **`stabilityDump`** task analyzes your compiled code and creates a snapshot (baseline) of every composable's stability status: function signatures, skippability, restartability, and the stability of each parameter. The **`stabilityCheck`** task compares the current compilation output against that snapshot and reports any differences.
 
 | Task | Purpose |
 |------|---------|
@@ -19,14 +19,14 @@ Think of `stabilityDump` as "save the current state" and `stabilityCheck` as "ha
 
 ## Step 1: Create a Baseline
 
-The first step is generating a baseline — a snapshot of your current composables' stability. This establishes the "known good" state that future changes are compared against. Run the compilation first (the stability analysis reads the compiled output), then generate the baseline.
+The first step is generating a baseline, a snapshot of your current composables' stability. This establishes the "known good" state that future changes are compared against. Run the compilation first (the stability analysis reads the compiled output), then generate the baseline.
 
 ```bash
 ./gradlew :app:compileDebugKotlin
 ./gradlew :app:stabilityDump
 ```
 
-This creates a human-readable `.stability` file at `app/stability/app.stability`. The file is intentionally designed to be readable in code reviews — when someone updates the baseline, reviewers can see exactly what changed and why.
+This creates a human-readable `.stability` file at `app/stability/app.stability`. The file is intentionally designed to be readable in code reviews. When someone updates the baseline, reviewers can see exactly what changed and why.
 
 **Example content:**
 
@@ -82,13 +82,13 @@ The following composables have changed stability:
 If these changes are intentional, run './gradlew stabilityDump' to update the stability file.
 ```
 
-The build **fails**, preventing the regression from being merged. The error message includes instructions for updating the baseline if the change is intentional — but updating requires a deliberate `stabilityDump` and a separate commit, creating a documented decision in git history rather than an accidental regression.
+The build **fails**, preventing the regression from being merged. The error message includes instructions for updating the baseline if the change is intentional. However, updating requires a deliberate `stabilityDump` and a separate commit, creating a documented decision in git history rather than an accidental regression.
 
 ### Change Types
 
 The check detects three types of changes, each marked with a different symbol in the output.
 
-The `~` symbol indicates a **stability regression** — a parameter or composable that was previously stable is now unstable. This is the most critical change type and the primary reason for running stability validation.
+The `~` symbol indicates a **stability regression**, meaning a parameter or composable that was previously stable is now unstable. This is the most critical change type and the primary reason for running stability validation.
 
 The `+` symbol indicates a **new composable** was added. This appears when a new composable function exists in the current code but not in the baseline. This is informational and typically non-breaking.
 
@@ -134,9 +134,9 @@ composeStabilityAnalyzer {
 
 By default, `stabilityCheck` fails the build when stability changes are detected. This is the right behavior for CI pipelines where you want to catch regressions before they're merged. However, during initial adoption or gradual migration, you may want to see stability issues without blocking builds.
 
-Setting `failOnStabilityChange` to `false` switches to warning-only mode — the task still reports all stability changes in the output, but the build succeeds regardless. This is useful when first adding stability validation to an existing project, allowing your team to see all current issues and fix them incrementally without blocking every PR.
+Setting `failOnStabilityChange` to `false` switches to warning-only mode. The task still reports all stability changes in the output, but the build succeeds regardless. This is useful when first adding stability validation to an existing project, allowing your team to see all current issues and fix them incrementally without blocking every PR.
 
-A common pattern is to use environment-based configuration — strict on CI, warning-only for local development:
+A common pattern is to use environment-based configuration: strict on CI, warning-only for local development.
 
 ```kotlin
 composeStabilityAnalyzer {
@@ -148,7 +148,7 @@ composeStabilityAnalyzer {
 
 ### `ignoreNonRegressiveChanges`
 
-When enabled, the check only flags stability regressions — changes where a parameter or composable became less stable. Non-regressive changes (like a new stable composable being added, or an unstable parameter becoming stable) are not reported. This reduces noise in projects where composables are frequently added or removed, letting you focus exclusively on changes that could harm performance.
+When enabled, the check only flags stability regressions, specifically changes where a parameter or composable became less stable. Non-regressive changes (like a new stable composable being added, or an unstable parameter becoming stable) are not reported. This reduces noise in projects where composables are frequently added or removed, letting you focus exclusively on changes that could harm performance.
 
 ```kotlin
 composeStabilityAnalyzer {
@@ -160,7 +160,7 @@ composeStabilityAnalyzer {
 
 ## Excluding Composables
 
-Some composables shouldn't be included in stability validation — preview composables that only exist for Android Studio previews, debug-only screens, or experimental features still under active development. Use the `@IgnoreStabilityReport` annotation to exclude them.
+Some composables shouldn't be included in stability validation: preview composables that only exist for Android Studio previews, debug-only screens, or experimental features still under active development. Use the `@IgnoreStabilityReport` annotation to exclude them.
 
 ```kotlin
 @IgnoreStabilityReport
@@ -197,4 +197,4 @@ Or target specific modules when you only want to validate a subset of your proje
 ./gradlew :feature-auth:stabilityCheck
 ```
 
-Each module's baseline is independent, so updating the baseline for one module doesn't affect others. This is important in large projects where different teams own different modules — a stability change in `feature-auth` doesn't require updating `feature-profile`'s baseline.
+Each module's baseline is independent, so updating the baseline for one module doesn't affect others. This is important in large projects where different teams own different modules, since a stability change in `feature-auth` doesn't require updating `feature-profile`'s baseline.

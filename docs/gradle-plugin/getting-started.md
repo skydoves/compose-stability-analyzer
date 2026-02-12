@@ -19,7 +19,7 @@ stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", ve
 
 ### Step 2: Apply to Root Project
 
-Apply the plugin to your root `build.gradle.kts` with `apply false`. This makes the plugin available to submodules without applying it to the root project itself — a standard Gradle convention for plugins that should only run in specific modules.
+Apply the plugin to your root `build.gradle.kts` with `apply false`. This makes the plugin available to submodules without applying it to the root project itself, which is a standard Gradle convention for plugins that should only run in specific modules.
 
 ```kotlin
 plugins {
@@ -50,7 +50,7 @@ The Compose Stability Analyzer compiler plugin is tightly coupled to the Kotlin 
 
 ## What's Included
 
-The Gradle plugin provides four capabilities that work together. The **`@TraceRecomposition` annotation** is added to any composable function you want to monitor — at runtime, it logs detailed information about each recomposition event, including which parameters changed and which are unstable. See [TraceRecomposition](trace-recomposition.md) for usage details.
+The Gradle plugin provides four capabilities that work together. The **`@TraceRecomposition` annotation** is added to any composable function you want to monitor. At runtime, it logs detailed information about each recomposition event, including which parameters changed and which are unstable. See [TraceRecomposition](trace-recomposition.md) for usage details.
 
 The **`ComposeStabilityAnalyzer` runtime** is the API you use to configure logging behavior. You can enable or disable tracing, set custom loggers, and integrate with analytics platforms like Firebase. See [Custom Logger](custom-logger.md) for advanced configurations.
 

@@ -1,6 +1,6 @@
 # Inline Parameter Hints
 
-Inline hints are small badges that appear right next to parameter types in your composable function declarations, showing the stability of each individual parameter. While gutter icons give you a function-level summary and tooltips provide detailed breakdowns on hover, inline hints let you see parameter-level stability information directly in your code — without any interaction required.
+Inline hints are small badges that appear right next to parameter types in your composable function declarations, showing the stability of each individual parameter. While gutter icons give you a function-level summary and tooltips provide detailed breakdowns on hover, inline hints let you see parameter-level stability information directly in your code, without any interaction required.
 
 ## How It Works
 
@@ -26,6 +26,6 @@ To change the hint colors, go to **Settings** > **Tools** > **Compose Stability 
 
 ## When This Is Useful
 
-Inline hints shine in several scenarios. When you're **reviewing code** — whether your own or a teammate's — they give you an immediate sense of which parameters might cause performance issues without requiring you to interact with the editor. When you're **refactoring** a composable's parameters, the hints update in real time, confirming whether your changes improved or worsened stability. And when you're **learning** how Compose stability works, seeing the stability status directly next to each type helps build intuition about which types Compose considers stable and why.
+Inline hints shine in several scenarios. When you're **reviewing code** (whether your own or a teammate's), they give you an immediate sense of which parameters might cause performance issues without requiring you to interact with the editor. When you're **refactoring** a composable's parameters, the hints update in real time, confirming whether your changes improved or worsened stability. And when you're **learning** how Compose stability works, seeing the stability status directly next to each type helps build intuition about which types Compose considers stable and why.
 
 If you find the inline hints too noisy for everyday coding, you can disable them independently from gutter icons in the plugin settings while still keeping the other visual indicators active.

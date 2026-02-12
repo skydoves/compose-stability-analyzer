@@ -4,7 +4,7 @@ By default, `@TraceRecomposition` logs recomposition events to Logcat using Andr
 
 ## Setting a Custom Logger
 
-To override the default logging behavior, call `ComposeStabilityAnalyzer.setLogger()` with your own `RecompositionLogger` implementation. The `log()` method receives a `RecompositionEvent` containing everything about the recomposition — which composable, how many times, which parameters changed, and which are unstable.
+To override the default logging behavior, call `ComposeStabilityAnalyzer.setLogger()` with your own `RecompositionLogger` implementation. The `log()` method receives a `RecompositionEvent` containing everything about the recomposition: which composable, how many times, which parameters changed, and which are unstable.
 
 ```kotlin
 ComposeStabilityAnalyzer.setLogger(object : RecompositionLogger {
@@ -43,7 +43,7 @@ You can place this call in your `Application.onCreate()` alongside `ComposeStabi
 
 ## Firebase Analytics Integration
 
-One of the most powerful use cases for a custom logger is **tracking excessive recompositions in production**. By sending recomposition data to Firebase Analytics (or any analytics platform), you can identify performance hotspots in real user sessions — not just during local development.
+One of the most powerful use cases for a custom logger is **tracking excessive recompositions in production**. By sending recomposition data to Firebase Analytics (or any analytics platform), you can identify performance hotspots in real user sessions, not just during local development.
 
 The example below sends a Firebase event whenever a composable recomposes 10 or more times. This threshold filters out normal recompositions (initial layout, expected state changes) and only captures composables that are recomposing excessively, which often indicates a stability problem.
 
@@ -64,7 +64,7 @@ ComposeStabilityAnalyzer.setLogger(object : RecompositionLogger {
 
 !!! note "Choosing a threshold"
 
-    The threshold of `10` is a starting point. Adjust it based on your app's behavior — list items or frequently updating screens may need a higher threshold (e.g., `20` or `50`), while static screens should rarely exceed `3`.
+    The threshold of `10` is a starting point. Adjust it based on your app's behavior. List items or frequently updating screens may need a higher threshold (e.g., `20` or `50`), while static screens should rarely exceed `3`.
 
 With this data flowing into Firebase, you can:
 
@@ -75,7 +75,7 @@ With this data flowing into Firebase, you can:
 
 ## Tag-Based Filtering
 
-Tags (set via `@TraceRecomposition(tag = "...")`) let you categorize composables by feature or screen. A tag-based logger uses these tags to route events differently — for example, sending analytics for specific features while logging everything else to Logcat during development.
+Tags (set via `@TraceRecomposition(tag = "...")`) let you categorize composables by feature or screen. A tag-based logger uses these tags to route events differently; for example, sending analytics for specific features while logging everything else to Logcat during development.
 
 This pattern is especially useful in large apps where you want to monitor critical flows (checkout, authentication, feed) in production without the noise from every composable in the app.
 
@@ -106,7 +106,7 @@ ComposeStabilityAnalyzer.setLogger(object : RecompositionLogger {
 - **In release builds** (`!BuildConfig.DEBUG`): Only composables with tags in the `tagsToLog` set (or untagged composables) send events to Firebase. This keeps analytics focused on the features you care about.
 - **In debug builds**: Every recomposition is logged to Logcat regardless of tag, giving you full visibility during development.
 
-You can update the `tagsToLog` set as your monitoring needs change — add new tags when investigating a performance issue, remove them once the issue is resolved.
+You can update the `tagsToLog` set as your monitoring needs change: add new tags when investigating a performance issue, remove them once the issue is resolved.
 
 ## RecompositionEvent Fields
 
@@ -117,7 +117,7 @@ The `RecompositionEvent` object passed to your logger contains all the informati
 | `composableName` | `String` | Name of the composable function that recomposed |
 | `tag` | `String` | Tag from `@TraceRecomposition(tag = "...")`. Empty string if no tag was set |
 | `recompositionCount` | `Int` | How many times this composable instance has recomposed (starts at 1) |
-| `parameterChanges` | `List<ParameterChange>` | Detailed information about each parameter — its name, type, whether it changed, and whether it is stable |
+| `parameterChanges` | `List<ParameterChange>` | Detailed information about each parameter: its name, type, whether it changed, and whether it is stable |
 | `unstableParameters` | `List<String>` | Convenience list of parameter names that are unstable. Useful for quick checks without iterating `parameterChanges` |
 
 Each `ParameterChange` in the `parameterChanges` list contains:

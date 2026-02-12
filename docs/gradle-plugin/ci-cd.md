@@ -4,7 +4,7 @@ Adding stability validation to your CI pipeline ensures that every pull request 
 
 ## GitHub Actions
 
-The following workflow runs stability validation on every push and pull request. It's split into two jobs — `build` compiles the project, and `stability_check` runs the validation after compilation completes.
+The following workflow runs stability validation on every push and pull request. It's split into two jobs: `build` compiles the project, and `stability_check` runs the validation after compilation completes.
 
 ```yaml
 name: Android CI
@@ -39,7 +39,7 @@ jobs:
         run: ./gradlew stabilityCheck
 ```
 
-The `needs: build` dependency is critical — it ensures that compilation has finished before the stability check runs. The stability analysis reads compiled output, so running it before compilation would produce incorrect results or fail.
+The `needs: build` dependency is critical because it ensures that compilation has finished before the stability check runs. The stability analysis reads compiled output, so running it before compilation would produce incorrect results or fail.
 
 !!! warning "Build order matters"
 
@@ -49,7 +49,7 @@ The `needs: build` dependency is critical — it ensures that compilation has fi
 
 ### Initial Setup
 
-Getting stability validation running for the first time requires four steps. First, add the Gradle plugin to your project following the [Getting Started](getting-started.md) guide. Then run `./gradlew stabilityDump` to create the baseline — this captures the current stability state of all your composables as the "known good" reference point.
+Getting stability validation running for the first time requires four steps. First, add the Gradle plugin to your project following the [Getting Started](getting-started.md) guide. Then run `./gradlew stabilityDump` to create the baseline. This captures the current stability state of all your composables as the "known good" reference point.
 
 Commit the generated `.stability` files to your repository. These files are intentionally human-readable so they can be reviewed in pull requests. Finally, add the `stabilityCheck` task to your CI pipeline using the GitHub Actions workflow above (or its equivalent for your CI system).
 
@@ -59,11 +59,11 @@ From this point forward, every pull request will be automatically validated agai
 
 Once the CI pipeline is configured, the workflow is transparent to developers. A developer makes code changes and opens a pull request. CI automatically runs `stabilityCheck` on the PR. If all composables maintain their stability (or improve), the check passes silently and the PR can be merged.
 
-If a change causes a stability regression — for example, changing a `val` to `var` in a data class that's used as a composable parameter — the CI check fails with a clear message showing exactly which composables were affected and how their stability changed. The developer then has two options: fix the regression (the preferred path), or update the baseline if the stability change is intentional and justified.
+If a change causes a stability regression (for example, changing a `val` to `var` in a data class that's used as a composable parameter), the CI check fails with a clear message showing exactly which composables were affected and how their stability changed. The developer then has two options: fix the regression (the preferred path), or update the baseline if the stability change is intentional and justified.
 
 ### Updating the Baseline
 
-When a stability change is intentional — perhaps you're adding a mutable property that's genuinely needed, or you're refactoring a data model in a way that temporarily reduces stability — you update the baseline by running `stabilityDump` again and committing the updated file.
+When a stability change is intentional (perhaps you're adding a mutable property that's genuinely needed, or you're refactoring a data model in a way that temporarily reduces stability), you update the baseline by running `stabilityDump` again and committing the updated file.
 
 ```bash
 ./gradlew :app:compileDebugKotlin
@@ -91,4 +91,4 @@ This configuration reads the `CI` environment variable, which is automatically s
 
 ## Quick Integration Example
 
-For a real-world example of integrating stability validation into an existing project, see the [Landscapist integration PR](https://github.com/skydoves/landscapist/pull/767/files). This PR shows the complete setup — plugin configuration, baseline generation, and CI workflow — applied to a production open-source project.
+For a real-world example of integrating stability validation into an existing project, see the [Landscapist integration PR](https://github.com/skydoves/landscapist/pull/767/files). This PR shows the complete setup (plugin configuration, baseline generation, and CI workflow) applied to a production open-source project.
