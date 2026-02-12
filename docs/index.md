@@ -12,17 +12,15 @@ Instantly see which composable parameters cause unnecessary recompositions right
 
 ## Key Features
 
-- **Gutter Icons**: Colored dots in the editor margin showing if a composable is skippable
-- **Hover Tooltips**: Detailed stability information when you hover over composable functions
-- **Inline Parameter Hints**: Badges next to parameters showing their stability status
-- **Code Inspections**: Quick fixes and warnings for unstable composables
-- **Stability Explorer**: Tree view of all composables' stability in your project
-- **Recomposition Tracing**: Runtime tracking with `@TraceRecomposition` annotation
-- **Stability Validation**: CI-ready `stabilityDump`/`stabilityCheck` Gradle tasks to prevent regressions
+The Compose Stability Analyzer equips you with visual and analytical tools across your entire development workflow. **Gutter Icons** place colored dots in the editor margin so you can see at a glance whether a composable is skippable. **Hover Tooltips** provide detailed stability breakdowns — including the specific reason each parameter is stable or unstable — when you hover over any composable function. **Inline Parameter Hints** go even further, placing badges next to each parameter so you can read stability information without leaving the code.
+
+Beyond visual feedback, the plugin includes **Code Inspections** that actively suggest improvements with quick fixes, and a **Stability Explorer** that gives you a project-wide tree view of all composables organized by module, package, and file. For runtime analysis, the **`@TraceRecomposition` annotation** lets you trace exactly which parameters change during recomposition, and the **`stabilityDump`/`stabilityCheck` Gradle tasks** bring CI-ready stability validation to prevent regressions from reaching production.
 
 ## Two Components
 
-Compose Stability Analyzer consists of two independent, complementary components:
+Compose Stability Analyzer consists of two independent, complementary components. The **IDE Plugin** provides visual stability indicators — gutter icons, tooltips, inline hints, inspections, and the Stability Explorer — directly in Android Studio. You install it from the JetBrains Marketplace and it works immediately with no build configuration changes.
+
+The **Gradle Plugin** operates at build time and runtime. It powers the `@TraceRecomposition` annotation for runtime recomposition logging, and provides the `stabilityDump`/`stabilityCheck` tasks for CI-ready stability validation. You add it to your `build.gradle.kts`.
 
 | Component | Purpose | Integration |
 |-----------|---------|-------------|
@@ -68,7 +66,9 @@ alias(libs.plugins.stability.analyzer)
 
 Jetpack Compose's declarative paradigm brings hidden complexity: **understanding recomposition behavior**. When a composable recomposes unnecessarily, you pay a performance cost — CPU cycles spent re-rendering UI that didn't actually change.
 
-The challenge isn't just identifying these issues — it's understanding **why** they happen. Compose Stability Analyzer bridges this gap by giving you real-time visibility into stability at every level: from parameter hints in your editor to CI-enforced regression checks.
+The challenge isn't just identifying these issues — it's understanding **why** they happen. A composable might recompose because a parameter changed, because a parameter is unstable, or because a parent recomposed and the composable couldn't be skipped. Without tooling, diagnosing the root cause means adding manual logging, reading compiler metrics reports, or guessing.
+
+Compose Stability Analyzer bridges this gap by giving you real-time visibility into stability at every level: from parameter hints in your editor to CI-enforced regression checks. Instead of discovering performance issues after they've shipped, you catch them the moment they're introduced.
 
 !!! note "Not about making everything stable"
 
