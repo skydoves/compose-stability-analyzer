@@ -55,7 +55,7 @@ intellijPlatform {
   pluginConfiguration {
     ideaVersion {
       sinceBuild = "242"
-      untilBuild = "253.*"
+      untilBuild = "261.*"
     }
 
     description = """
@@ -171,6 +171,9 @@ intellijPlatform {
   pluginVerification {
     ides {
       recommended()
+      create("IC", "2024.2.5") // sinceBuild lower bound (242)
+      create("IC", "2025.2") // current build target
+      create("IC", "2026.1") // new upper bound (261)
     }
   }
 }
