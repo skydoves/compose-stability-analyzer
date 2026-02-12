@@ -6,13 +6,15 @@ The Compose Stability Analyzer Gradle plugin enables runtime recomposition traci
 
 ## Installation
 
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.skydoves/compose-stability-runtime.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.github.skydoves%22%20AND%20a:%compose-stability-runtime%22)
+
 ### Step 1: Add to Version Catalog
 
 Add the plugin to the `[plugins]` section of your `libs.versions.toml` file:
 
 ```toml
 [plugins]
-stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.6.7" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "$version" }
 ```
 
 ### Step 2: Apply to Root Project
