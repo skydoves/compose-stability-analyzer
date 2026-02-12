@@ -1,0 +1,73 @@
+site_name: Compose Stability Analyzer
+site_description: 'Real-time analysis of Jetpack Compose composable functions stability directly within Android Studio or IntelliJ.'
+site_author: 'Jaewoong (skydoves)'
+site_url: 'https://github.com/skydoves/compose-stability-analyzer'
+edit_uri: 'tree/main/docs/'
+remote_branch: gh-pages
+
+docs_dir: docs
+
+# Navigation
+nav:
+  - 'Overview': index.md
+  - 'IDE Plugin':
+    - 'Getting Started': ide-plugin/getting-started.md
+    - 'Gutter Icons & Tooltips': ide-plugin/gutter-icons.md
+    - 'Inline Hints': ide-plugin/inline-hints.md
+    - 'Code Inspections': ide-plugin/inspections.md
+    - 'Stability Explorer': ide-plugin/stability-explorer.md
+    - 'Configuration': ide-plugin/configuration.md
+  - 'Gradle Plugin':
+    - 'Getting Started': gradle-plugin/getting-started.md
+    - 'TraceRecomposition': gradle-plugin/trace-recomposition.md
+    - 'Custom Logger': gradle-plugin/custom-logger.md
+    - 'Stability Validation': gradle-plugin/stability-validation.md
+    - 'CI/CD Integration': gradle-plugin/ci-cd.md
+  - 'Stability Concepts': stability-concepts.md
+  - 'Kotlin Version Map': version-map.md
+  - 'Sponsor': sponsor.md
+
+# Repository
+repo_name: 'Compose Stability Analyzer'
+repo_url: 'https://github.com/skydoves/compose-stability-analyzer'
+
+# Configuration
+theme:
+  name: 'material'
+  language: 'en'
+  icon:
+    logo: material/unicorn-variant
+
+  palette:
+    primary: 'deep purple'
+    accent: 'deep purple'
+    scheme: slate
+
+  font:
+    text: 'Roboto'
+    code: 'JetBrains Mono'
+
+  features:
+    - content.tabs.link
+    - content.code.copy
+    - content.code.annotate
+
+extra:
+  analytics:
+    provider: google
+    property: G-1SBY14Q79E
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - attr_list
+  - codehilite:
+      guess_lang: false
+  - footnotes
+  - toc:
+      permalink: true
+  - pymdownx.betterem
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
