@@ -41,7 +41,6 @@ dependencies {
     intellijIdeaCommunity("2025.2")
     bundledPlugin("org.jetbrains.kotlin")
     testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
-    pluginVerifier()
   }
 
   testImplementation(kotlin("test"))
@@ -55,7 +54,7 @@ intellijPlatform {
   pluginConfiguration {
     ideaVersion {
       sinceBuild = "242"
-      untilBuild = "261.*"
+      untilBuild = "253.*"
     }
 
     description = """
@@ -78,7 +77,7 @@ intellijPlatform {
                 <li><b>New: Heatmap tab</b> in tool window - Shows recomposition event logs with parameter changes when clicking heatmap counts</li>
                 <li><b>New: Cascade tab</b> in tool window - Dedicated panel for cascade analysis results</li>
                 <li>Start/Stop Heatmap button moved to tool window title bar for easy access across all tabs</li>
-                <li>Extended IDE compatibility to build 261 (IntelliJ IDEA 2026.1)</li>
+                <li>Extended IDE compatibility to build 253 (IntelliJ IDEA 2025.3)</li>
                 <li>Heatmap enabled by default in plugin settings</li>
             </ul>
             <b>0.6.7</b>
@@ -187,18 +186,6 @@ intellijPlatform {
 
   }
 
-  pluginVerification {
-    ides {
-      recommended()
-    }
-    // Pre-existing K2 API issues (KaSessionProvider.handleAnalysisException) in 242-251
-    // cause false positives — the plugin gracefully falls back to PSI on older IDEs.
-    // 261 (2026.1 EAP) uses the unified "idea" artifact which the verifier cannot resolve yet.
-    failureLevel = listOf(
-      org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.INVALID_PLUGIN,
-      org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.NOT_DYNAMIC,
-    )
-  }
 }
 
 tasks {
