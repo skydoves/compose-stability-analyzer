@@ -50,6 +50,7 @@ internal object CascadeAnalyzer {
   ): CascadeResult {
     return ReadAction.compute<CascadeResult, Exception> {
       indicator.text = "Analyzing recomposition cascade..."
+      indicator.checkCanceled()
       val visitedFqNames = mutableSetOf<String>()
       val root = buildCascadeNode(rootFunction, 0, visitedFqNames, indicator)
       val summary = computeSummary(root)
@@ -118,6 +119,7 @@ internal object CascadeAnalyzer {
     // Find and recursively analyze child composable calls
     val callees = findComposableCallees(function)
     val children = callees.map { callee ->
+      indicator.checkCanceled()
       buildCascadeNode(callee, depth + 1, visitedFqNames, indicator)
     }
 
@@ -146,11 +148,8 @@ internal object CascadeAnalyzer {
 
     for (callExpr in callExpressions) {
       val callee = callExpr.calleeExpression as? KtReferenceExpression ?: continue
-      val resolved = try {
-        callee.resolveMainReference()
-      } catch (e: Exception) {
-        null
-      }
+      // In K2 mode, resolveMainReference() can throw; fall back gracefully
+      val resolved = runCatching { callee.resolveMainReference() }.getOrNull()
 
       val namedFunction = resolved as? KtNamedFunction ?: continue
       if (!namedFunction.isComposable()) continue

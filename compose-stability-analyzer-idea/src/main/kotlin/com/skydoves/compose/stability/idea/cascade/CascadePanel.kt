@@ -217,7 +217,8 @@ internal class CascadePanel(private val project: Project) {
         ?: return@invokeLater
 
       val offset = if (node.line > 0) {
-        document.getLineStartOffset(node.line - 1)
+        val targetLine = (node.line - 1).coerceIn(0, document.lineCount - 1)
+        document.getLineStartOffset(targetLine)
       } else {
         0
       }
@@ -433,6 +434,9 @@ internal class CascadePanel(private val project: Project) {
     "Re-analyze recomposition cascade",
     AllIcons.Actions.Refresh,
   ) {
+    override fun getActionUpdateThread(): com.intellij.openapi.actionSystem.ActionUpdateThread =
+      com.intellij.openapi.actionSystem.ActionUpdateThread.EDT
+
     override fun actionPerformed(e: AnActionEvent) {
       currentFunction?.let { analyzeFunction(it) }
     }
