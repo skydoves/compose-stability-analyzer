@@ -15,23 +15,16 @@
  */
 package com.skydoves.compose.stability.idea.heatmap
 
-import com.intellij.codeInsight.codeVision.CodeVisionHost
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiManager
-import com.intellij.util.Alarm
 import com.skydoves.compose.stability.idea.settings.StabilitySettingsState
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Project-level service that listens to ADB logcat for recomposition events
@@ -52,11 +45,11 @@ internal class AdbLogcatService(
 
   private val dataMap = ConcurrentHashMap<String, ComposableHeatmapData>()
   private val running = AtomicBoolean(false)
-  private val dataVersion = AtomicLong(0)
+
+  private val parserLock = Any()
 
   @Volatile
-  private var lastRefreshedVersion = 0L
-  private val refreshAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
+  private var currentParser: LogcatParser? = null
 
   @Volatile
   private var process: Process? = null
@@ -102,27 +95,22 @@ internal class AdbLogcatService(
       start()
     }
 
-    startPeriodicRefresh()
+    HeatmapInlayManager.getInstance(project).start()
   }
 
   /** Stop the logcat listener. */
   fun stop() {
     if (!running.getAndSet(false)) return
-    refreshAlarm.cancelAllRequests()
+    HeatmapInlayManager.getInstance(project).stop()
     process?.destroyForcibly()
     process = null
     readerThread?.interrupt()
     readerThread = null
   }
 
-  /** Clear all aggregated data and refresh CodeVision. */
+  /** Clear all aggregated data. Inlays will update on next refresh cycle. */
   fun clearData() {
     dataMap.clear()
-    dataVersion.incrementAndGet()
-    // Force an immediate refresh on EDT
-    ApplicationManager.getApplication().invokeLater {
-      invalidateCodeVision()
-    }
   }
 
   /** Get heatmap data for a composable by its simple name. */
@@ -130,6 +118,13 @@ internal class AdbLogcatService(
 
   /** Get all tracked composable names. */
   fun getAllComposableNames(): Set<String> = dataMap.keys.toSet()
+
+  /** Flush any pending event from the parser (thread-safe). */
+  fun flushParser() {
+    synchronized(parserLock) {
+      currentParser?.flush()
+    }
+  }
 
   /** Check if ADB is available. */
   fun isAdbAvailable(): Boolean = resolveAdbPath() != null
@@ -164,18 +159,18 @@ internal class AdbLogcatService(
     val proc = process ?: return
     val reader = BufferedReader(InputStreamReader(proc.inputStream))
     val parser = LogcatParser(::onEventParsed)
+    synchronized(parserLock) { currentParser = parser }
 
     try {
       var line = reader.readLine()
       while (line != null && running.get()) {
-        // Raw mode output is just the message; but guard against tagged mode
         val message = stripLogcatPrefix(line)
         if (message.isNotEmpty()) {
-          parser.feedLine(message)
+          synchronized(parserLock) { parser.feedLine(message) }
         }
         line = reader.readLine()
       }
-      parser.flush()
+      synchronized(parserLock) { parser.flush() }
     } catch (_: InterruptedException) {
       // Expected on stop
     } catch (e: Exception) {
@@ -183,6 +178,7 @@ internal class AdbLogcatService(
         log.warn("Error reading logcat stream", e)
       }
     } finally {
+      synchronized(parserLock) { currentParser = null }
       running.set(false)
     }
   }
@@ -223,53 +219,6 @@ internal class AdbLogcatService(
           unstableParameters = existing.unstableParameters + event.unstableParameters,
         )
       }
-    }
-
-    dataVersion.incrementAndGet()
-  }
-
-  /** Starts a periodic refresh loop that checks for new data and updates CodeVision. */
-  private fun startPeriodicRefresh() {
-    scheduleNextRefresh()
-  }
-
-  private fun scheduleNextRefresh() {
-    if (!running.get() || project.isDisposed) return
-    refreshAlarm.addRequest(
-      {
-        val current = dataVersion.get()
-        if (current != lastRefreshedVersion) {
-          lastRefreshedVersion = current
-          invalidateCodeVision()
-        }
-        scheduleNextRefresh()
-      },
-      REFRESH_INTERVAL_MS,
-    )
-  }
-
-  private fun invalidateCodeVision() {
-    if (project.isDisposed) return
-
-    // Invalidate CodeVision provider — tells the host to re-query our provider
-    try {
-      val host = project.getService(CodeVisionHost::class.java)
-      host?.invalidateProvider(
-        CodeVisionHost.LensInvalidateSignal(
-          null,
-          listOf(RecompositionHeatmapProvider.PROVIDER_ID),
-        ),
-      )
-    } catch (_: Exception) {
-      // CodeVisionHost API may vary across IDE versions
-    }
-
-    // Restart daemon analysis for each open file to trigger DaemonBoundCodeVisionProvider
-    val fem = FileEditorManager.getInstance(project)
-    val psiManager = PsiManager.getInstance(project)
-    for (vFile in fem.openFiles) {
-      val psiFile = psiManager.findFile(vFile) ?: continue
-      DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
     }
   }
 
@@ -346,8 +295,6 @@ internal class AdbLogcatService(
   }
 
   companion object {
-    private const val REFRESH_INTERVAL_MS = 1000L
-
     /**
      * Matches common logcat prefixes for the Recomposition tag:
      * - `D/Recomposition: `             (brief format)

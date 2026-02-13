@@ -103,11 +103,8 @@
         <projectService
                 serviceImplementation="com.skydoves.compose.stability.idea.heatmap.AdbLogcatService"/>
 
-        <codeInsight.daemonBoundCodeVisionProvider
-                implementation="com.skydoves.compose.stability.idea.heatmap.RecompositionHeatmapProvider"/>
-
-        <config.codeVisionGroupSettingProvider
-                implementation="com.skydoves.compose.stability.idea.heatmap.RecompositionHeatmapGroupSettingProvider"/>
+        <projectService
+                serviceImplementation="com.skydoves.compose.stability.idea.heatmap.HeatmapInlayManager"/>
 
         <postStartupActivity
                 implementation="com.skydoves.compose.stability.idea.heatmap.HeatmapProjectActivity"/>
