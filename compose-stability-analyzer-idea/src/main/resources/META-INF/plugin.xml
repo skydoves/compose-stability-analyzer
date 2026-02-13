@@ -133,6 +133,7 @@
                 class="com.skydoves.compose.stability.idea.heatmap.ToggleHeatmapAction"
                 text="Toggle Recomposition Heatmap"
                 description="Start or stop live recomposition heatmap from a connected device">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <add-to-group group-id="CodeMenu" anchor="last"/>
         </action>
 

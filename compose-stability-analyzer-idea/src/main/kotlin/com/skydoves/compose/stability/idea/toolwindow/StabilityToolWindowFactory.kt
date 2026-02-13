@@ -15,11 +15,13 @@
  */
 package com.skydoves.compose.stability.idea.toolwindow
 
+import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
 import com.skydoves.compose.stability.idea.cascade.CascadePanel
+import com.skydoves.compose.stability.idea.heatmap.HeatmapPanel
 
 /**
  * Factory for creating the Compose Stability Analyzer tool window.
@@ -48,6 +50,24 @@ public class StabilityToolWindowFactory : ToolWindowFactory {
       false,
     )
     toolWindow.contentManager.addContent(cascadeContent)
+
+    // Tab 3: Recomposition Heatmap
+    val heatmapPanel = HeatmapPanel(project)
+    val heatmapComponent = heatmapPanel.getContent()
+    heatmapComponent.putClientProperty(HeatmapPanel::class.java, heatmapPanel)
+    val heatmapContent = contentFactory.createContent(
+      heatmapComponent,
+      "Heatmap",
+      false,
+    )
+    toolWindow.contentManager.addContent(heatmapContent)
+
+    // Add toggle heatmap button to tool window title bar
+    val toggleAction = ActionManager.getInstance()
+      .getAction("com.skydoves.compose.stability.idea.heatmap.ToggleHeatmapAction")
+    if (toggleAction != null) {
+      toolWindow.setTitleActions(listOf(toggleAction))
+    }
   }
 
   public override fun shouldBeAvailable(project: Project): Boolean = true
