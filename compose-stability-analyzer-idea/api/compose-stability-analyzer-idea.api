@@ -107,6 +107,10 @@ public final class com/skydoves/compose/stability/idea/settings/StabilitySetting
 	public static final field Companion Lcom/skydoves/compose/stability/idea/settings/StabilitySettingsState$Companion;
 	public fun <init> ()V
 	public final fun getCustomStableTypesAsRegex ()Ljava/util/List;
+	public final fun getHeatmapAutoStart ()Z
+	public final fun getHeatmapGreenThreshold ()I
+	public final fun getHeatmapMaxRecentEvents ()I
+	public final fun getHeatmapRedThreshold ()I
 	public final fun getIgnoredPatternsAsRegex ()Ljava/util/List;
 	public final fun getIgnoredTypePatterns ()Ljava/lang/String;
 	public final fun getRuntimeGutterColorRGB ()I
@@ -114,6 +118,7 @@ public final class com/skydoves/compose/stability/idea/settings/StabilitySetting
 	public final fun getShowGutterIcons ()Z
 	public final fun getShowGutterIconsInTests ()Z
 	public final fun getShowGutterIconsOnlyForUnskippable ()Z
+	public final fun getShowHeatmapWhenStopped ()Z
 	public final fun getShowInlineHints ()Z
 	public final fun getShowOnlyUnstableHints ()Z
 	public final fun getShowWarnings ()Z
@@ -124,16 +129,23 @@ public final class com/skydoves/compose/stability/idea/settings/StabilitySetting
 	public synthetic fun getState ()Ljava/lang/Object;
 	public final fun getUnstableGutterColorRGB ()I
 	public final fun getUnstableHintColorRGB ()I
+	public final fun isHeatmapEnabled ()Z
 	public final fun isStabilityCheckEnabled ()Z
 	public final fun isStrongSkippingEnabled ()Z
 	public fun loadState (Lcom/skydoves/compose/stability/idea/settings/StabilitySettingsState;)V
 	public synthetic fun loadState (Ljava/lang/Object;)V
+	public final fun setHeatmapAutoStart (Z)V
+	public final fun setHeatmapEnabled (Z)V
+	public final fun setHeatmapGreenThreshold (I)V
+	public final fun setHeatmapMaxRecentEvents (I)V
+	public final fun setHeatmapRedThreshold (I)V
 	public final fun setIgnoredTypePatterns (Ljava/lang/String;)V
 	public final fun setRuntimeGutterColorRGB (I)V
 	public final fun setRuntimeHintColorRGB (I)V
 	public final fun setShowGutterIcons (Z)V
 	public final fun setShowGutterIconsInTests (Z)V
 	public final fun setShowGutterIconsOnlyForUnskippable (Z)V
+	public final fun setShowHeatmapWhenStopped (Z)V
 	public final fun setShowInlineHints (Z)V
 	public final fun setShowOnlyUnstableHints (Z)V
 	public final fun setShowWarnings (Z)V
