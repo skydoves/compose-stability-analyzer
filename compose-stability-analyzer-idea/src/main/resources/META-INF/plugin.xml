@@ -98,6 +98,16 @@
                 anchor="right"
                 factoryClass="com.skydoves.compose.stability.idea.toolwindow.StabilityToolWindowFactory"
                 icon="/icons/stability.svg"/>
+
+        <!-- Recomposition Heatmap -->
+        <projectService
+                serviceImplementation="com.skydoves.compose.stability.idea.heatmap.AdbLogcatService"/>
+
+        <projectService
+                serviceImplementation="com.skydoves.compose.stability.idea.heatmap.HeatmapInlayManager"/>
+
+        <postStartupActivity
+                implementation="com.skydoves.compose.stability.idea.heatmap.HeatmapProjectActivity"/>
     </extensions>
 
     <actions>
@@ -107,6 +117,22 @@
                 class="com.skydoves.compose.stability.idea.AnalyzeStabilityAction"
                 text="Analyze Compose Stability"
                 description="Analyze stability of all composable functions in the current file">
+            <add-to-group group-id="CodeMenu" anchor="last"/>
+        </action>
+
+        <action
+                id="com.skydoves.compose.stability.idea.heatmap.ToggleHeatmapAction"
+                class="com.skydoves.compose.stability.idea.heatmap.ToggleHeatmapAction"
+                text="Toggle Recomposition Heatmap"
+                description="Start or stop live recomposition heatmap from a connected device">
+            <add-to-group group-id="CodeMenu" anchor="last"/>
+        </action>
+
+        <action
+                id="com.skydoves.compose.stability.idea.heatmap.ClearHeatmapDataAction"
+                class="com.skydoves.compose.stability.idea.heatmap.ClearHeatmapDataAction"
+                text="Clear Recomposition Data"
+                description="Clear all accumulated recomposition heatmap data">
             <add-to-group group-id="CodeMenu" anchor="last"/>
         </action>
     </actions>

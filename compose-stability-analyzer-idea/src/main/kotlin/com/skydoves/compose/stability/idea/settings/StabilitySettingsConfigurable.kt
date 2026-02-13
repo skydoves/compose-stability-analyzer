@@ -22,6 +22,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.ColorPanel
 import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.bindIntValue
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
@@ -206,6 +207,51 @@ public class StabilitySettingsConfigurable(
                 com.skydoves.models.* - Types in specific package
                 .*ViewModel - All ViewModel classes
               """.trimIndent(),
+            )
+        }
+      }
+
+      group("Recomposition Heatmap") {
+        row {
+          checkBox("Enable recomposition heatmap")
+            .bindSelected(settings::isHeatmapEnabled)
+            .comment(
+              "Show live recomposition counts above @Composable functions " +
+                "from a connected device via ADB logcat",
+            )
+        }
+
+        indent {
+          row {
+            checkBox("Auto-start on project open")
+              .bindSelected(settings::heatmapAutoStart)
+              .comment(
+                "Automatically start listening when the project opens " +
+                  "and exactly one ADB device is connected",
+              )
+          }
+
+          row {
+            checkBox("Show data when listener is stopped")
+              .bindSelected(settings::showHeatmapWhenStopped)
+              .comment(
+                "Keep showing previously collected heatmap data " +
+                  "even after the logcat listener is stopped",
+              )
+          }
+        }
+
+        row("Green threshold (recompositions):") {
+          spinner(1..1000, 1)
+            .bindIntValue(settings::heatmapGreenThreshold)
+            .comment("Counts below this value are shown in green")
+        }
+
+        row("Red threshold (recompositions):") {
+          spinner(1..10000, 5)
+            .bindIntValue(settings::heatmapRedThreshold)
+            .comment(
+              "Counts at or above this value are shown in red; between green and red is yellow",
             )
         }
       }

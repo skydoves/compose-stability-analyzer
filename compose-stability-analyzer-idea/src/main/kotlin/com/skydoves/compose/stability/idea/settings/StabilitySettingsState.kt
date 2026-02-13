@@ -128,6 +128,40 @@ public class StabilitySettingsState : PersistentStateComponent<StabilitySettings
    */
   public var runtimeHintColorRGB: Int = (240 shl 16) or (198 shl 8) or 116
 
+  /**
+   * Enable the live recomposition heatmap feature.
+   * When enabled, CodeVision annotations show live recomposition counts from a connected device.
+   */
+  public var isHeatmapEnabled: Boolean = false
+
+  /**
+   * Auto-start the heatmap listener when the project opens
+   * (only if exactly one ADB device is connected).
+   */
+  public var heatmapAutoStart: Boolean = false
+
+  /**
+   * Show heatmap annotations even when the logcat listener is stopped.
+   * Previously accumulated data remains visible until cleared.
+   */
+  public var showHeatmapWhenStopped: Boolean = true
+
+  /**
+   * Recomposition count below this value is shown in green.
+   */
+  public var heatmapGreenThreshold: Int = 10
+
+  /**
+   * Recomposition count at or above this value is shown in red.
+   * Counts between greenThreshold and this value are shown in yellow.
+   */
+  public var heatmapRedThreshold: Int = 50
+
+  /**
+   * Maximum number of recent events to keep per composable.
+   */
+  public var heatmapMaxRecentEvents: Int = 50
+
   public override fun getState(): StabilitySettingsState = this
 
   public override fun loadState(state: StabilitySettingsState) {
