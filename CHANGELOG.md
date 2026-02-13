@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-02-13
+
+### Added
+- **Recomposition Cascade Visualizer** (PR #119)
+  - Right-click any `@Composable` function and select "Analyze Recomposition Cascade" to trace downstream composables affected by recomposition
+  - Tree view showing each downstream composable with stability status (skippable vs. non-skippable)
+  - Summary statistics: total downstream count, skippable/unskippable counts, and max depth
+  - Cycle detection and configurable depth limits (max 10) prevent infinite analysis
+  - Double-click any node to navigate directly to its source code
+  - Available via editor right-click context menu
+  - New "Cascade" tab in the Compose Stability Analyzer tool window
+- **Live Recomposition Heatmap** (PR #120, #121)
+  - Real-time recomposition counts from a connected device overlaid directly above composable functions in the editor
+  - Reads `@TraceRecomposition` events from ADB logcat and aggregates per-composable data
+  - Color-coded severity: green (< 10 recompositions), yellow (10-50), red (50+)
+  - Click any recomposition count to open the Heatmap tab with detailed event logs and parameter change history
+  - Start/Stop toggle button in the tool window title bar and Code menu
+  - Multi-device support with device picker when multiple ADB devices are connected
+  - Flicker-free rendering using deterministic pre-baked inlay renderers
+  - Heatmap enabled by default in plugin settings
+  - Configurable severity thresholds in Settings > Tools > Compose Stability Analyzer
+  - New "Heatmap" tab in the Compose Stability Analyzer tool window
+- **Plugin Verifier integration** (PR #118)
+  - Extended IDE compatibility to build 261 (IntelliJ IDEA 2026.1)
+  - Added `runPluginVerifier` task for automated compatibility testing
+
+### Improved
+- Tool window now has three tabs: Explorer, Cascade, and Heatmap
+- Start/Stop Recomposition Heatmap button moved to tool window title bar for visibility across all tabs
+- K2-safe reference resolution using `runCatching` pattern in cascade analyzer
+- Cancellation support in cascade background analysis via `ProgressIndicator.checkCanceled()`
+
 ## [0.6.7] - 2026-02-10
 
 ### Added

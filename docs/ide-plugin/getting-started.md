@@ -16,7 +16,7 @@ The plugin requires **Android Studio or IntelliJ IDEA 2024.2+** (build 242 or la
 
 ## What You'll See
 
-Once installed, the plugin provides four types of visual feedback that work together to give you a complete picture of your composables' stability.
+Once installed, the plugin provides six types of visual feedback that work together to give you a complete picture of your composables' stability.
 
 **Gutter Icons** are colored dots that appear in the left margin of your editor. Green means the composable is skippable (all parameters stable), yellow means stability is determined at runtime, and red means the composable has unstable parameters and cannot be skipped. This is the quickest way to scan your code for potential performance issues.
 
@@ -25,6 +25,10 @@ Once installed, the plugin provides four types of visual feedback that work toge
 **Inline Hints** are small badges that appear directly next to each parameter's type declaration. They let you see the stability of every parameter at a glance without needing to hover, which is particularly useful for composables with many parameters.
 
 **Code Inspections** go beyond passive indicators. When a composable has unstable parameters, the plugin highlights the issue with a warning underline and offers quick fixes through the Alt+Enter menu, such as adding `@TraceRecomposition` for runtime debugging.
+
+**[Recomposition Cascade](recomposition-cascade.md)** lets you trace the downstream impact of recomposition. Right-click any composable and select "Analyze Recomposition Cascade" to see a tree of all child composables that would be affected, with stability status for each one.
+
+**[Live Recomposition Heatmap](recomposition-heatmap.md)** bridges runtime behavior with your IDE by displaying actual recomposition counts from a connected device directly above composable functions in the editor. Color-coded annotations (green, yellow, red) highlight the hottest spots in your UI in real time.
 
 ## Verification
 

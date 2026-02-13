@@ -2,6 +2,37 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.7.0] - 2026-02-13
+
+### Added
+- **Recomposition Cascade Visualizer** (PR #119)
+  - Right-click any `@Composable` function and select "Analyze Recomposition Cascade"
+  - Traces downstream composables affected by recomposition in a tree view
+  - Shows stability status, summary statistics (total/skippable/unskippable/depth), and source navigation
+  - Cycle detection and depth limits prevent infinite analysis in recursive call graphs
+  - New "Cascade" tab in the tool window with dedicated toolbar (Refresh/Clear)
+  - K2-safe reference resolution using `runCatching` pattern
+  - Cancellation support via `ProgressIndicator.checkCanceled()`
+- **Live Recomposition Heatmap** (PR #120, #121)
+  - Reads `@TraceRecomposition` events from ADB logcat on a connected device
+  - Overlays real-time recomposition counts above composable functions in the editor
+  - Color-coded severity: green (< 10), yellow (10-50), red (50+) -- thresholds configurable
+  - Deterministic pre-baked inlay renderers eliminate flickering
+  - Click any recomposition count to open the Heatmap tab with detailed event logs and parameter change history
+  - Start/Stop toggle via tool window title bar button, Code menu, or editor right-click menu
+  - Multi-device support with device picker popup
+  - ADB path auto-detection: ANDROID_HOME, local.properties sdk.dir, common paths, PATH
+  - Heatmap enabled by default in plugin settings
+  - New "Heatmap" tab in the tool window with Refresh/Clear toolbar
+  - Configurable settings: severity thresholds, auto-start, show-when-stopped, max recent events
+- **Plugin Verifier integration** (PR #118)
+  - Extended IDE compatibility range to build 261 (IntelliJ IDEA 2026.1)
+
+### Improved
+- Tool window reorganized with three tabs: Explorer, Cascade, and Heatmap
+- Heatmap toggle button moved from Explorer toolbar to tool window title bar for visibility across all tabs
+- Cascade and Heatmap panels use simplified single-pane tree layout (no split details panel)
+
 ## [0.6.7] - 2026-02-10
 
 ### Added
