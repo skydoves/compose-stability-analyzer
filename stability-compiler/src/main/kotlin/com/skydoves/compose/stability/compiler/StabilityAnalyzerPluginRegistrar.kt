@@ -45,6 +45,16 @@ public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
       "",
     )
 
+    val rawTrackingMode = configuration.get(
+      StabilityAnalyzerConfigurationKeys.KEY_TRACKING_MODE,
+      "standard",
+    )
+    val trackingMode = if (rawTrackingMode in listOf("standard", "full")) {
+      rawTrackingMode
+    } else {
+      "standard"
+    }
+
     // Register FIR extensions for frontend analysis (K2)
     FirExtensionRegistrarAdapter.registerExtension(
       StabilityAnalyzerFirExtensionRegistrar(),
@@ -55,6 +65,7 @@ public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
       StabilityAnalyzerIrGenerationExtension(
         stabilityOutputDir = stabilityOutputDir,
         projectDependencies = projectDependencies,
+        trackingMode = trackingMode,
       ),
     )
   }
