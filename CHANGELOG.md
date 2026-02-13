@@ -27,10 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Heatmap enabled by default in plugin settings
   - Configurable severity thresholds in Settings > Tools > Compose Stability Analyzer
   - New "Heatmap" tab in the Compose Stability Analyzer tool window
-- **Plugin Verifier integration** (PR #118)
-  - Extended IDE compatibility to build 261 (IntelliJ IDEA 2026.1)
-  - Added `runPluginVerifier` task for automated compatibility testing
-
 ### Improved
 - Tool window now has three tabs: Explorer, Cascade, and Heatmap
 - Start/Stop Recomposition Heatmap button moved to tool window title bar for visibility across all tabs
