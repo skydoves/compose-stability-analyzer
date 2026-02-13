@@ -142,6 +142,12 @@ public class StabilityToolWindow(private val project: Project) {
     actionGroup.addSeparator()
     actionGroup.add(SettingsAction())
     actionGroup.add(GitHubAction())
+    actionGroup.addSeparator()
+    val toggleHeatmap = ActionManager.getInstance()
+      .getAction("com.skydoves.compose.stability.idea.heatmap.ToggleHeatmapAction")
+    if (toggleHeatmap != null) {
+      actionGroup.add(toggleHeatmap)
+    }
 
     val toolbar = ActionManager.getInstance()
       .createActionToolbar(ActionPlaces.TOOLBAR, actionGroup, true)
