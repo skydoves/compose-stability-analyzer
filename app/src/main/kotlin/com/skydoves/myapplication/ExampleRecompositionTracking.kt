@@ -124,6 +124,20 @@ fun TrackedCounterDisplay(
   content.invoke()
 }
 
+/**
+ * Example 2: Tracking with custom tag for filtering.
+ *
+ * Use tags to group related screens or features.
+ * You can filter Logcat by tag: "Recomposition" or search for "user-profile"
+ *
+ * Expected Logcat output:
+ * ```
+ * D/Recomposition: [Recomposition #1] TrackedUserProfile (tag: user-profile)
+ * D/Recomposition:   └─ user: StableUser stable (StableUser@abc123)
+ * D/Recomposition: [Recomposition #2] TrackedUserProfile (tag: user-profile)
+ * D/Recomposition:   └─ user: StableUser changed (StableUser@abc123 → StableUser@def456)
+ * ```
+ */
 @TraceRecomposition(tag = "user-profile")
 @Composable
 fun TrackedUserProfile(user: StableUser) {
@@ -134,6 +148,20 @@ fun TrackedUserProfile(user: StableUser) {
   }
 }
 
+/**
+ * Example 3: Tracking with threshold to reduce noise.
+ *
+ * This composable will only start logging after the 3rd recomposition.
+ * Useful for frequently recomposing screens where you only care about
+ * excessive recompositions.
+ *
+ * Expected Logcat output (only appears after 3rd recomposition):
+ * ```
+ * D/Recomposition: [Recomposition #3] TrackedUnstableUserCard
+ * D/Recomposition:   ├─ user: UnstableUser unstable (UnstableUser@xyz789)
+ * D/Recomposition:   └─ Unstable parameters: [user]
+ * ```
+ */
 @TraceRecomposition(tag = "user-card", threshold = 3)
 @Composable
 fun TrackedUnstableUserCard(user: UnstableUser) {
@@ -144,6 +172,23 @@ fun TrackedUnstableUserCard(user: UnstableUser) {
   }
 }
 
+/**
+ * Example 4: Tracking composable with mixed parameter stability.
+ *
+ * Shows how different parameter types are tracked:
+ * - String: stable primitive
+ * - Int: stable primitive
+ * - UnstableUser: unstable due to mutable properties
+ *
+ * Expected Logcat output:
+ * ```
+ * D/Recomposition: [Recomposition #5] TrackedMixedParameters (tag: mixed-example)
+ * D/Recomposition:   ├─ title: String stable (Mixed Stability Example)
+ * D/Recomposition:   ├─ count: Int changed (4 → 5)
+ * D/Recomposition:   ├─ user: UnstableUser unstable (UnstableUser@abc)
+ * D/Recomposition:   └─ Unstable parameters: [user]
+ * ```
+ */
 @TraceRecomposition(tag = "mixed-example", threshold = 5)
 @Composable
 fun TrackedMixedParameters(
