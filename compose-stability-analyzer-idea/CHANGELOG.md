@@ -25,6 +25,9 @@ All notable changes to the IntelliJ IDEA plugin will be documented in this file.
   - Heatmap enabled by default in plugin settings
   - New "Heatmap" tab in the tool window with Refresh/Clear toolbar
   - Configurable settings: severity thresholds, auto-start, show-when-stopped, max recent events
+- **Plugin Verifier integration** (PR #118)
+  - Extended IDE compatibility range to build 261 (IntelliJ IDEA 2026.1)
+
 ### Improved
 - Tool window reorganized with three tabs: Explorer, Cascade, and Heatmap
 - Heatmap toggle button moved from Explorer toolbar to tool window title bar for visibility across all tabs
