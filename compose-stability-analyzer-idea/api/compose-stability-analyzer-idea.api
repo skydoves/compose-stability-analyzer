@@ -71,6 +71,118 @@ public final class com/skydoves/compose/stability/idea/StabilityLineMarkerProvid
 	public fun getLineMarkerInfo (Lcom/intellij/psi/PsiElement;)Lcom/intellij/codeInsight/daemon/LineMarkerInfo;
 }
 
+public final class com/skydoves/compose/stability/idea/cascade/AnalyzeCascadeAction : com/intellij/openapi/actionSystem/AnAction {
+	public fun <init> ()V
+	public fun actionPerformed (Lcom/intellij/openapi/actionSystem/AnActionEvent;)V
+	public fun getActionUpdateThread ()Lcom/intellij/openapi/actionSystem/ActionUpdateThread;
+	public fun update (Lcom/intellij/openapi/actionSystem/AnActionEvent;)V
+}
+
+public final class com/skydoves/compose/stability/idea/cascade/CascadeNode {
+	public fun <init> (Lcom/skydoves/compose/stability/runtime/ComposableStabilityInfo;Ljava/lang/String;IILjava/util/List;ZLjava/lang/String;)V
+	public synthetic fun <init> (Lcom/skydoves/compose/stability/runtime/ComposableStabilityInfo;Ljava/lang/String;IILjava/util/List;ZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/skydoves/compose/stability/runtime/ComposableStabilityInfo;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()I
+	public final fun component4 ()I
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Z
+	public final fun component7 ()Ljava/lang/String;
+	public final fun copy (Lcom/skydoves/compose/stability/runtime/ComposableStabilityInfo;Ljava/lang/String;IILjava/util/List;ZLjava/lang/String;)Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;Lcom/skydoves/compose/stability/runtime/ComposableStabilityInfo;Ljava/lang/String;IILjava/util/List;ZLjava/lang/String;ILjava/lang/Object;)Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChildren ()Ljava/util/List;
+	public final fun getDepth ()I
+	public final fun getFilePath ()Ljava/lang/String;
+	public final fun getLine ()I
+	public final fun getStabilityInfo ()Lcom/skydoves/compose/stability/runtime/ComposableStabilityInfo;
+	public final fun getTruncationReason ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isTruncated ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/skydoves/compose/stability/idea/cascade/CascadeResult {
+	public fun <init> (Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;)V
+	public final fun component1 ()Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;
+	public final fun component2 ()Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;
+	public final fun copy (Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;)Lcom/skydoves/compose/stability/idea/cascade/CascadeResult;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/idea/cascade/CascadeResult;Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;ILjava/lang/Object;)Lcom/skydoves/compose/stability/idea/cascade/CascadeResult;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRoot ()Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;
+	public final fun getSummary ()Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/skydoves/compose/stability/idea/cascade/CascadeSummary {
+	public fun <init> (IIIIZ)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun component4 ()I
+	public final fun component5 ()Z
+	public final fun copy (IIIIZ)Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;IIIIZILjava/lang/Object;)Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHasTruncatedBranches ()Z
+	public final fun getMaxDepth ()I
+	public final fun getSkippableCount ()I
+	public final fun getTotalCount ()I
+	public final fun getUnskippableCount ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class com/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData {
+}
+
+public final class com/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$Composable : com/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData {
+	public fun <init> (Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;)V
+	public final fun component1 ()Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;
+	public final fun copy (Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;)Lcom/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$Composable;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$Composable;Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;ILjava/lang/Object;)Lcom/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$Composable;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNode ()Lcom/skydoves/compose/stability/idea/cascade/CascadeNode;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$EmptyMessage : com/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$EmptyMessage;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$EmptyMessage;Ljava/lang/String;ILjava/lang/Object;)Lcom/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$EmptyMessage;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$Summary : com/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData {
+	public fun <init> (Ljava/lang/String;Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;
+	public final fun copy (Ljava/lang/String;Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;)Lcom/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$Summary;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$Summary;Ljava/lang/String;Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;ILjava/lang/Object;)Lcom/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$Summary;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getComposableName ()Ljava/lang/String;
+	public final fun getSummary ()Lcom/skydoves/compose/stability/idea/cascade/CascadeSummary;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$Truncated : com/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$Truncated;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$Truncated;Ljava/lang/String;ILjava/lang/Object;)Lcom/skydoves/compose/stability/idea/cascade/CascadeTreeNodeData$Truncated;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getReason ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/skydoves/compose/stability/idea/quickfix/AddTraceRecompositionIntention : com/intellij/codeInsight/intention/PsiElementBaseIntentionAction, com/intellij/codeInsight/intention/IntentionAction {
 	public fun <init> ()V
 	public fun getFamilyName ()Ljava/lang/String;

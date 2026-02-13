@@ -121,6 +121,14 @@
         </action>
 
         <action
+                id="com.skydoves.compose.stability.idea.cascade.AnalyzeCascadeAction"
+                class="com.skydoves.compose.stability.idea.cascade.AnalyzeCascadeAction"
+                text="Analyze Recomposition Cascade"
+                description="Show downstream composables affected by instability in this function">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+
+        <action
                 id="com.skydoves.compose.stability.idea.heatmap.ToggleHeatmapAction"
                 class="com.skydoves.compose.stability.idea.heatmap.ToggleHeatmapAction"
                 text="Toggle Recomposition Heatmap"
