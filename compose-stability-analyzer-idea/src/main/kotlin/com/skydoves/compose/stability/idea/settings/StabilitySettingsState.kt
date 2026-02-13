@@ -132,7 +132,7 @@ public class StabilitySettingsState : PersistentStateComponent<StabilitySettings
    * Enable the live recomposition heatmap feature.
    * When enabled, CodeVision annotations show live recomposition counts from a connected device.
    */
-  public var isHeatmapEnabled: Boolean = false
+  public var isHeatmapEnabled: Boolean = true
 
   /**
    * Auto-start the heatmap listener when the project opens

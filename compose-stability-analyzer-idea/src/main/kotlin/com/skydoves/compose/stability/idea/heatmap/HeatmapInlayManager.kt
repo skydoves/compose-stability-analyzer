@@ -25,8 +25,11 @@ import com.intellij.openapi.editor.EditorCustomElementRenderer
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.Inlay
 import com.intellij.openapi.editor.colors.EditorFontType
+import com.intellij.openapi.editor.event.EditorMouseEvent
+import com.intellij.openapi.editor.event.EditorMouseListener
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ui.JBUI
@@ -74,7 +77,41 @@ internal class HeatmapInlayManager(
   @Volatile
   private var refreshTask: ScheduledFuture<*>? = null
 
+  @Volatile
+  private var clickListenerRegistered = false
+
+  /**
+   * Mouse listener that detects clicks on heatmap block inlays
+   * and opens the Heatmap tab to show recomposition logs.
+   */
+  private val clickListener = object : EditorMouseListener {
+    override fun mouseClicked(event: EditorMouseEvent) {
+      if (event.mouseEvent.clickCount != 1) return
+      val editor = event.editor
+      if (editor.project != project) return
+
+      val editorKey = System.identityHashCode(editor)
+      val entries = editorState[editorKey] ?: return
+
+      val point = event.mouseEvent.point
+      for ((name, entry) in entries) {
+        if (!entry.inlay.isValid) continue
+        val bounds = entry.inlay.bounds ?: continue
+        if (bounds.contains(point)) {
+          openHeatmapPanel(name)
+          return
+        }
+      }
+    }
+  }
+
   fun start() {
+    if (!clickListenerRegistered) {
+      clickListenerRegistered = true
+      EditorFactory.getInstance().eventMulticaster
+        .addEditorMouseListener(clickListener, this)
+    }
+
     refreshTask = com.intellij.util.concurrency.AppExecutorUtil
       .getAppScheduledExecutorService()
       .scheduleWithFixedDelay(
@@ -264,7 +301,7 @@ internal class HeatmapInlayManager(
       val editorFont = editor.colorsScheme.getFont(EditorFontType.PLAIN)
       val smallFont = editorFont.deriveFont(
         Font.PLAIN,
-        editor.colorsScheme.editorFontSize2D.toFloat(),
+        editor.colorsScheme.editorFontSize2D,
       )
       g.font = smallFont
       val fm = g.fontMetrics
@@ -276,6 +313,25 @@ internal class HeatmapInlayManager(
       // Text
       g.color = color
       g.drawString(text, x, baseline)
+    }
+  }
+
+  /**
+   * Opens the Heatmap tab in the tool window and displays
+   * recomposition data for the given composable.
+   */
+  private fun openHeatmapPanel(composableName: String) {
+    ApplicationManager.getApplication().invokeLater {
+      val toolWindow = ToolWindowManager.getInstance(project)
+        .getToolWindow("Compose Stability Analyzer") ?: return@invokeLater
+      toolWindow.show {
+        val heatmapContent = toolWindow.contentManager
+          .findContent("Heatmap") ?: return@show
+        toolWindow.contentManager.setSelectedContent(heatmapContent)
+        val panel = heatmapContent.component
+          .getClientProperty(HeatmapPanel::class.java) as? HeatmapPanel ?: return@show
+        panel.showComposableData(composableName)
+      }
     }
   }
 
