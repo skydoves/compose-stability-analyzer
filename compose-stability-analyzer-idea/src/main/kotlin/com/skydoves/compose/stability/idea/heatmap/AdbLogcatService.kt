@@ -188,6 +188,7 @@ internal class AdbLogcatService(
       "Parsed recomposition event: ${event.composableName} #${event.recompositionCount}" +
         " (${event.parameterEntries.size} params, unstable: ${event.unstableParameters})",
     )
+
     val maxRecent = settings.heatmapMaxRecentEvents
     dataMap.compute(event.composableName) { _, existing ->
       if (existing == null) {

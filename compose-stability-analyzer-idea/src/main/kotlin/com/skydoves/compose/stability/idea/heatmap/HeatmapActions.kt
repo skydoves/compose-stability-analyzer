@@ -137,7 +137,11 @@ internal class ToggleHeatmapAction : AnAction() {
 /**
  * Action to clear all accumulated recomposition heatmap data.
  */
-internal class ClearHeatmapDataAction : AnAction() {
+internal class ClearHeatmapDataAction : AnAction(
+  "Clear Recomposition Data",
+  "Clear all accumulated recomposition heatmap data",
+  AllIcons.Actions.GC,
+) {
 
   override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 

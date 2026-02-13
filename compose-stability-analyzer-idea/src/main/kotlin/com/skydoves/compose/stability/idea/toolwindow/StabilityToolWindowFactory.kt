@@ -62,11 +62,14 @@ public class StabilityToolWindowFactory : ToolWindowFactory {
     )
     toolWindow.contentManager.addContent(heatmapContent)
 
-    // Add toggle heatmap button to tool window title bar
-    val toggleAction = ActionManager.getInstance()
-      .getAction("com.skydoves.compose.stability.idea.heatmap.ToggleHeatmapAction")
-    if (toggleAction != null) {
-      toolWindow.setTitleActions(listOf(toggleAction))
+    // Add toggle heatmap and clear buttons to tool window title bar
+    val actionManager = ActionManager.getInstance()
+    val titleActions = listOfNotNull(
+      actionManager.getAction("com.skydoves.compose.stability.idea.heatmap.ToggleHeatmapAction"),
+      actionManager.getAction("com.skydoves.compose.stability.idea.heatmap.ClearHeatmapDataAction"),
+    )
+    if (titleActions.isNotEmpty()) {
+      toolWindow.setTitleActions(titleActions)
     }
   }
 
