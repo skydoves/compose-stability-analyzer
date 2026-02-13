@@ -40,12 +40,14 @@ The sponsors listed below made it possible for this project to be released as op
 
 The Compose Stability Analyzer IntelliJ Plugin brings **visual stability analysis** directly into your IDE (Android Studio), helping you identify and fix performance issues while you code. Instead of waiting for runtime or build-time reports, you get instant feedback right in Android Studio or IntelliJ IDEA.
 
-This plugin provides real-time visual feedback about your composables' stability through four main features:
+This plugin provides real-time visual feedback about your composables' stability through six main features:
 
 - **1. Gutter Icons**: Colored dots in the editor margin showing if a composable is skippable.
 - **2. Hover Tooltips**: Detailed stability information when you hover over composable functions. It also provides the reasons: why it's stable or unstable.
 - **3. Inline Parameter Hints**: Badges next to parameters showing their stability status.
 - **4. Code Inspections**: Quick fixes and warnings for unstable composables.
+- **5. Recomposition Cascade**: Visualize downstream composables affected by recomposition from any `@Composable` function.
+- **6. Live Recomposition Heatmap**: Real-time recomposition counts from a connected device overlaid directly in the editor.
 
 > **Note**: You don’t need to make every composable function skippable or all parameters stable, these are not direct indicators of performance optimization. The goal of this plugin isn’t to encourage over-focusing on stability, but rather to help you explore how Compose’s stability mechanisms work and use them as tools for examining and debugging composables that may have performance issues. For more information, check out [Compose Stability Analyzer: Real-Time Stability Insights for Jetpack Compose](https://medium.com/proandroiddev/compose-stability-analyzer-real-time-stability-insights-for-jetpack-compose-1399924a0a64).
 
@@ -109,6 +111,46 @@ You can enable this explorer with the steps below:
 2. On your IDE, go to **View** -> **Tool Windows** -> **Compose Stability Analyzer**, then you will see the icon on the right side of your Android Studio. Click the icon then you'll see a panel.
 3. Clean & build your project, and click the refresh button on the panel.
 
+### Recomposition Cascade
+
+The Recomposition Cascade visualizer lets you trace the **downstream impact** of instability in your composable functions. Right-click any `@Composable` function in the editor and select **"Analyze Recomposition Cascade"** to see a tree of all downstream composables that would be affected by recomposition.
+
+![cascade](art/cascade.png)
+
+This helps you answer questions like:
+- "If this composable recomposes, how many downstream composables are affected?"
+- "Which parts of my composable tree are skippable and which are not?"
+- "Where should I focus my stability optimization efforts?"
+
+The cascade tree shows:
+- Each downstream composable with its stability status (skippable vs. non-skippable)
+- Summary statistics: total downstream count, skippable count, unskippable count, and max depth
+- Double-click any node to navigate directly to its source code
+- Cycle detection and depth limits prevent infinite analysis in recursive call graphs
+
+### Live Recomposition Heatmap
+
+The Live Recomposition Heatmap bridges **runtime behavior** with your IDE. It reads actual `@TraceRecomposition` events from a connected device via ADB logcat and overlays real recomposition counts directly above composable functions in the editor, color-coded by severity.
+
+![heatmap](art/heatmap.gif)
+
+**How to use:**
+
+1. Add `@TraceRecomposition` annotations to the composables you want to monitor
+2. Enable `ComposeStabilityAnalyzer.setEnabled(BuildConfig.DEBUG)` in your Application class
+3. Connect your device/emulator and run the app
+4. Click the **Start Recomposition Heatmap** button in the tool window title bar (or use **Code menu > Toggle Recomposition Heatmap**)
+5. Interact with your app -- recomposition counts appear above composables in the editor in real time
+
+**Color-coded severity:**
+- **Green**: Low recomposition count (< 10 by default)
+- **Yellow**: Medium recomposition count (10-50)
+- **Red**: High recomposition count (50+)
+
+**Click-to-inspect:** Click on any recomposition count in the editor to open the **Heatmap** tab in the tool window, showing detailed recomposition event logs with parameter change history for that composable.
+
+> **Note**: The heatmap requires a connected device running your app with `@TraceRecomposition` composables. Severity thresholds are configurable in **Settings > Tools > Compose Stability Analyzer**.
+
 ### Plugin Customization
 
 You can change the colors used for stability indicators to match your IDE theme, enabling Strong Skipping mode for analyzing, visual indicators (showing gutter icons, warnings, inline hints), change parameter hint colors, enabling analysis in test source sets, set a stability configuration file, add ignored type patterns to exclude from the stability analysis.
@@ -170,7 +212,7 @@ This is incredibly useful for:
 First, add the plugin to the `[plugins]` section of your `libs.versions.toml` file:
 
 ```toml
-stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.6.7" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.7.0" }
 ```
 
 Then, apply it to your root `build.gradle.kts` with `apply false`:

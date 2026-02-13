@@ -16,6 +16,8 @@ nav:
     - 'Inline Hints': ide-plugin/inline-hints.md
     - 'Code Inspections': ide-plugin/inspections.md
     - 'Stability Explorer': ide-plugin/stability-explorer.md
+    - 'Recomposition Cascade': ide-plugin/recomposition-cascade.md
+    - 'Recomposition Heatmap': ide-plugin/recomposition-heatmap.md
     - 'Configuration': ide-plugin/configuration.md
   - 'Gradle Plugin':
     - 'Getting Started': gradle-plugin/getting-started.md

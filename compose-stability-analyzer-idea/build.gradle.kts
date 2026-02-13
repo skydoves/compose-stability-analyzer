@@ -71,6 +71,25 @@ intellijPlatform {
             </ul>
         """.trimIndent()
     changeNotes = """
+            <b>0.7.0</b>
+            <ul>
+                <li><b>New: Recomposition Cascade Visualizer</b> - Right-click any @Composable function to trace downstream composables affected by recomposition. Shows a tree view with stability status, summary statistics, cycle detection, and source navigation.</li>
+                <li><b>New: Live Recomposition Heatmap</b> - Real-time recomposition counts from a connected device overlaid directly above composable functions in the editor. Color-coded by severity (green/yellow/red). Click any count to view detailed event logs with parameter change history.</li>
+                <li><b>New: Heatmap tab</b> in tool window - Shows recomposition event logs with parameter changes when clicking heatmap counts</li>
+                <li><b>New: Cascade tab</b> in tool window - Dedicated panel for cascade analysis results</li>
+                <li>Start/Stop Heatmap button moved to tool window title bar for easy access across all tabs</li>
+                <li>Extended IDE compatibility to build 261 (IntelliJ IDEA 2026.1)</li>
+                <li>Heatmap enabled by default in plugin settings</li>
+            </ul>
+            <b>0.6.7</b>
+            <ul>
+                <li><b>Android variant-specific stability tasks</b> (Issue #85) - Per-variant tasks like debugStabilityDump and releaseStabilityCheck</li>
+                <li><b>Non-regressive change filtering</b> (Issue #82) - New ignoreNonRegressiveChanges and allowMissingBaseline options</li>
+                <li><b>Stability config wildcard support</b> (Issue #108) - Support for * and ** wildcards matching the official Compose compiler format</li>
+                <li><b>Fixed @StabilityInferred in Gradle plugin</b> (Issue #102) - Cross-module classes now correctly treated as stable</li>
+                <li><b>Fixed @NonRestartableComposable/@NonSkippableComposable analysis</b> (Issue #103) - Now excluded from stability analysis</li>
+                <li><b>Improved typealias handling</b> (Issue #16) - Typealias to function types now correctly recognized as stable</li>
+            </ul>
             <b>0.6.2</b>
             <ul>
                 <li><b>Fixed property source file location and navigation in tool window</b> (Issue #67) - Properties now show correct file name and double-click navigation works</li>
