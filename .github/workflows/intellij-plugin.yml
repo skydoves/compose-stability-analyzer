@@ -99,7 +99,7 @@ jobs:
         run: ./gradlew :stability-runtime:build --no-daemon --stacktrace
 
       - name: Verify plugin compatibility
-        run: ./gradlew :compose-stability-analyzer-idea:verifyPlugin --no-daemon --stacktrace
+        run: ./gradlew :compose-stability-analyzer-idea:runPluginVerifier --no-daemon --stacktrace
 
       - name: Upload verification results
         if: always()
