@@ -19,6 +19,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
+import com.skydoves.compose.stability.idea.cascade.CascadePanel
 
 /**
  * Factory for creating the Compose Stability Analyzer tool window.
@@ -26,14 +27,27 @@ import com.intellij.ui.content.ContentFactory
 public class StabilityToolWindowFactory : ToolWindowFactory {
 
   public override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-    val stabilityToolWindow = StabilityToolWindow(project)
     val contentFactory = ContentFactory.getInstance()
-    val content = contentFactory.createContent(
+
+    // Tab 1: Stability Explorer (existing)
+    val stabilityToolWindow = StabilityToolWindow(project)
+    val explorerContent = contentFactory.createContent(
       stabilityToolWindow.getContent(),
-      "",
+      "Explorer",
       false,
     )
-    toolWindow.contentManager.addContent(content)
+    toolWindow.contentManager.addContent(explorerContent)
+
+    // Tab 2: Recomposition Cascade
+    val cascadePanel = CascadePanel(project)
+    val cascadeComponent = cascadePanel.getContent()
+    cascadeComponent.putClientProperty(CascadePanel::class.java, cascadePanel)
+    val cascadeContent = contentFactory.createContent(
+      cascadeComponent,
+      "Cascade",
+      false,
+    )
+    toolWindow.contentManager.addContent(cascadeContent)
   }
 
   public override fun shouldBeAvailable(project: Project): Boolean = true
