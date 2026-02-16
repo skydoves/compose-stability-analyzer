@@ -1,3 +1,18 @@
+/*
+ * Designed and developed by 2025 skydoves (Jaewoong Eum)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.skydoves.compose.stability.gradle
 
 import java.io.File
@@ -43,9 +58,9 @@ class GetCustomStableTypesAsRegexTest {
 
     assertEquals(
       listOf(
-        "mypackage.ClassA"
+        "mypackage.ClassA",
       ),
-      result
+      result,
     )
   }
 
@@ -70,13 +85,12 @@ class GetCustomStableTypesAsRegexTest {
         "mypackage.ClassA",
         "mypackage.ClassB",
       ),
-      result
+      result,
     )
   }
 
   @Test
   fun `Match from multiple files`() {
-
     val firstFile = File(targetFolder, "patterns1.txt")
     firstFile.writeText("mypackage.ClassA")
     val secondFile = File(targetFolder, "patterns2.txt")
@@ -94,9 +108,9 @@ class GetCustomStableTypesAsRegexTest {
     assertEquals(
       listOf(
         "mypackage.ClassA",
-        "mypackage.ClassB"
+        "mypackage.ClassB",
       ),
-      result
+      result,
     )
   }
 
@@ -119,9 +133,9 @@ class GetCustomStableTypesAsRegexTest {
     assertEquals(
       listOf(
         "mypackage.ClassA",
-        "mypackage.ClassB"
+        "mypackage.ClassB",
       ),
-      result
+      result,
     )
   }
 
@@ -147,7 +161,7 @@ class GetCustomStableTypesAsRegexTest {
         "mypackage.ClassB",
         "mypackage.ClassA.Child",
       ),
-      result
+      result,
     )
   }
 
@@ -174,9 +188,9 @@ class GetCustomStableTypesAsRegexTest {
     assertEquals(
       listOf(
         "mypackage.ClassA.ClassC",
-        "mypackage.ClassB.ClassC"
+        "mypackage.ClassB.ClassC",
       ),
-      result
+      result,
     )
   }
 
@@ -207,7 +221,7 @@ class GetCustomStableTypesAsRegexTest {
         "mypackage.ClassB.ClassC.Another.ClassC",
         "mypackage.ClassB.ClassC.Another.YetAnother.ClassC",
       ),
-      result
+      result,
     )
   }
 
@@ -217,7 +231,16 @@ class GetCustomStableTypesAsRegexTest {
     val file = File(targetFolder, "patterns.txt")
     // Random string generated from the https://it-tools.tech/token-generator.
     // It results in a random binary file
-    file.writeBytes(Base64.decode("SMeCMZ8rlwx1i42PskSpoYiF0fXmiYxWlHSk6yI0DifWgPTE7HWaHTz4dO2BP05lTYJdIPf8jcjGaI44UfBfWouZ42ogkafZvVRWq0RbQm74ScODlB4OWc5aXpKMecEbJduhlYSrOysYwvcAV0Yo9UOHjZ3U9H3uqsF182oXsK2HyUaZ0r7DDFVZej2VLpwFKEbgaMyP8Vwvx0szxRT3QIGXPJ5dtH3ZWJxRRPI5deID8hRjbZOHI1sF9Y7DHTPoTXUaphSaXSUACeBkUB7UMd9fUKwkx4pDa3Hujo2dksEqo5YYtOZATJH9oaDsMGDguCuTRLtbT9gmgFkTSMCHV35buQJDUKyQLPJcAxG4QDuGq9tcmvKGPr6wreqVSkAyyr7zl3SmSlHF"))
+    file.writeBytes(
+      Base64.decode(
+        "SMeCMZ8rlwx1i42PskSpoYiF0fXmiYxWlHSk6yI0" +
+          "DifWgPTE7HWaHTz4dO2BP05lTYJdIPf8jcjGaI44UfBfWouZ42ogkafZvVRWq0RbQm74ScODlB4OWc5aXpKM" +
+          "ecEbJduhlYSrOysYwvcAV0Yo9UOHjZ3U9H3uqsF182oXsK2HyUaZ0r7DDFVZej2VLpwFKEbgaMyP8Vwvx0sz" +
+          "xRT3QIGXPJ5dtH3ZWJxRRPI5deID8hRjbZOHI1sF9Y7DHTPoTXUaphSaXSUACeBkUB7UMd9fUKwkx4pDa3Hu" +
+          "jo2dksEqo5YYtOZATJH9oaDsMGDguCuTRLtbT9gmgFkTSMCHV35buQJDUKyQLPJcAxG4QDuGq9tcmvKGPr6w" +
+          "reqVSkAyyr7zl3SmSlHF",
+      ),
+    )
 
     val classes = listOf(
       "mypackage.ClassA",
@@ -274,7 +297,7 @@ class GetCustomStableTypesAsRegexTest {
       listOf(
         "my_package.Class1.SubclassB",
       ),
-      result
+      result,
     )
   }
 
@@ -301,7 +324,7 @@ class GetCustomStableTypesAsRegexTest {
         "GenericClass1<Class1>",
         "GenericClass1<Class2>",
       ),
-      result
+      result,
     )
   }
 
@@ -334,7 +357,7 @@ class GetCustomStableTypesAsRegexTest {
         "GenericClass1<Class1>",
         "GenericClass1<Class2>",
       ),
-      result
+      result,
     )
   }
 
@@ -347,7 +370,7 @@ class GetCustomStableTypesAsRegexTest {
 
   private fun getMatches(
     fileList: List<File>,
-    classes: List<String>
+    classes: List<String>,
   ): List<String> {
     val parsers = fileList.map { StabilityConfigParser.fromFile(it.path) }
 

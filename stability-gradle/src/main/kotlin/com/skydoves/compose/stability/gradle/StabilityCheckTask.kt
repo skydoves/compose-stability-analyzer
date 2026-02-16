@@ -148,15 +148,16 @@ public abstract class StabilityCheckTask : DefaultTask() {
     val currentStability = parseStabilityFromCompiler(inputFile)
     val referenceStability = parseStabilityFile(referenceFile)
 
-    val stabilityConfigurationMatchers = stabilityConfigurationFiles.get().flatMap { configRegularFile ->
-      val file = configRegularFile.asFile
+    val stabilityConfigurationMatchers = stabilityConfigurationFiles.get()
+      .flatMap { configRegularFile ->
+        val file = configRegularFile.asFile
 
-      if (!file.exists()) {
-        return@flatMap emptyList()
+        if (!file.exists()) {
+          return@flatMap emptyList()
+        }
+
+        StabilityConfigParser.fromFile(file.path).stableTypeMatchers
       }
-
-      StabilityConfigParser.fromFile(file.path).stableTypeMatchers
-    }
 
     val differences =
       compareStability(
@@ -498,14 +499,14 @@ internal sealed class StabilityDifference {
     val name: String,
     val parameters: List<ParameterInfo>,
   ) : StabilityDifference() {
-override fun format(): String {
-    return if (parameters.isEmpty()) {
-      "+ $name (new composable)"
-    } else {
-      "+ $name (new composable):\n" +
-        parameters.joinToString("\n") { "    ${it.name}: ${it.stability}" }
+    override fun format(): String {
+      return if (parameters.isEmpty()) {
+        "+ $name (new composable)"
+      } else {
+        "+ $name (new composable):\n" +
+          parameters.joinToString("\n") { "    ${it.name}: ${it.stability}" }
+      }
     }
-  }
   }
 
   public data class RemovedFunction(val name: String) : StabilityDifference() {

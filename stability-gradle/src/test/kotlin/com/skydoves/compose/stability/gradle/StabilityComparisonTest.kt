@@ -81,7 +81,8 @@ class StabilityComparisonTest {
         ),
       ),
       createEntry(
-        "com.example.New2", skippable = false,
+        "com.example.New2",
+        skippable = false,
         params = listOf(
           ParameterInfo("c", "com.skydoves.compose.stability.Third", "UNSTABLE"),
         ),

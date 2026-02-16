@@ -1,3 +1,18 @@
+/*
+ * Designed and developed by 2025 skydoves (Jaewoong Eum)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.skydoves.compose.stability.gradle
 
 /*
@@ -63,15 +78,15 @@ private class StabilityConfigParserImpl(
             errorMessage(
               line,
               index,
-              "Comments are only supported at the start of a line."
-            )
+              "Comments are only supported at the start of a line.",
+            ),
           )
         }
         try {
           matchers.add(FqNameMatcher(l))
         } catch (exception: IllegalStateException) {
           error(
-            errorMessage(line, index, exception.message ?: "")
+            errorMessage(line, index, exception.message ?: ""),
           )
         }
       }
@@ -85,7 +100,7 @@ private class StabilityConfigParserImpl(
             Error parsing stability configuration file on line $lineNumber.
             $message
             $line
-        """.trimIndent()
+    """.trimIndent()
   }
 }
 
@@ -123,6 +138,7 @@ internal class FqNameMatcher(val pattern: String) {
             regexPatternBuilder.append(PATTERN_SINGLE_WILD)
           }
         }
+
         STABILITY_PACKAGE_SEPARATOR -> {
           if (hasWildcard) {
             regexPatternBuilder.append(PATTERN_PACKAGE_SEGMENT)
@@ -130,9 +146,11 @@ internal class FqNameMatcher(val pattern: String) {
             keyBuilder.append(STABILITY_PACKAGE_SEPARATOR)
           }
         }
+
         STABILITY_GENERIC_OPEN -> {
           hitGenericOpener = true
         }
+
         else -> {
           if (hasWildcard) {
             regexPatternBuilder.append(c)
@@ -176,7 +194,6 @@ internal class FqNameMatcher(val pattern: String) {
   fun matches(name: String?): Boolean {
     if (pattern == STABILITY_WILDCARD_MULTI) return true
 
-
     val nameStr = name?.removeGenerics() ?: return false
     if (key.length > nameStr.length) return false
 
@@ -213,7 +230,7 @@ internal class FqNameMatcher(val pattern: String) {
     private val validPatternMatcher =
       Regex(
         "((\\w+\\*{0,2}|\\*{1,2})\\.)*" +
-          "((\\w+(<?(?<genericmask>([*|_],)*[*|_])>)+)|(\\w+\\*{0,2}|\\*{1,2}))"
+          "((\\w+(<?(?<genericmask>([*|_],)*[*|_])>)+)|(\\w+\\*{0,2}|\\*{1,2}))",
       )
     private val singleWildcardSuffix = Regex(PATTERN_SINGLE_WILD)
     private val multiWildcardSuffix = Regex(PATTERN_MULTI_WILD)
