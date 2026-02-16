@@ -114,6 +114,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       quietCheck.set(extension.stabilityValidation.quietCheck)
       ignoreNonRegressiveChanges.set(extension.stabilityValidation.ignoreNonRegressiveChanges)
       allowMissingBaseline.set(extension.stabilityValidation.allowMissingBaseline)
+      stabilityConfigurationFiles.set(extension.stabilityValidation.stabilityConfigurationFiles)
     }
 
     // Make check task depend on stabilityCheck if enabled (only if check task exists)
@@ -180,6 +181,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         stabilityFileSuffix.set(variant.name)
         ignoreNonRegressiveChanges.set(extension.stabilityValidation.ignoreNonRegressiveChanges)
         allowMissingBaseline.set(extension.stabilityValidation.allowMissingBaseline)
+        stabilityConfigurationFiles.set(extension.stabilityValidation.stabilityConfigurationFiles)
       }
 
       aggregateDumpTask.configure {
