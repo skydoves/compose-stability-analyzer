@@ -176,14 +176,24 @@ internal class FqNameMatcher(val pattern: String) {
   fun matches(name: String?): Boolean {
     if (pattern == STABILITY_WILDCARD_MULTI) return true
 
-    val nameStr = name ?: return false
-    if (key.length > name.length) return false
+
+    val nameStr = name?.removeGenerics() ?: return false
+    if (key.length > nameStr.length) return false
 
     val suffix = nameStr.substring(key.length)
     return when {
       regex != null -> nameStr.startsWith(key) && regex.matches(suffix)
-      else -> key == name
+      else -> key == nameStr
     }
+  }
+
+  private fun String.removeGenerics(): String {
+    val genericsStart = indexOf("<")
+    if (genericsStart < 0) {
+      return this
+    }
+
+    return substring(0, genericsStart)
   }
 
   override fun equals(other: Any?): Boolean {

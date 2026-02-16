@@ -278,6 +278,66 @@ class GetCustomStableTypesAsRegexTest {
     )
   }
 
+  @Test
+  fun `Match underscore in generic class definitions`() {
+    val patterns = """
+      GenericClass1<_>
+    """.trimIndent()
+
+    val classes = listOf(
+      "GenericClass1",
+      "GenericClass1<Class1>",
+      "GenericClass1<Class2>",
+      "GenericClass2",
+      "GenericClass2<Class1>",
+      "GenericClass2<Class2>",
+    )
+
+    val result = getMatches(patterns, classes)
+
+    assertEquals(
+      listOf(
+        "GenericClass1",
+        "GenericClass1<Class1>",
+        "GenericClass1<Class2>",
+      ),
+      result
+    )
+  }
+
+  @Test
+  fun `Match star in generic class definitions`() {
+    // This is where stability analyser differs from the official Google parser a bit
+    // This case might potentially generate false negatives
+    // To fix it, we would have to feed this back into the compiler to see whether the
+    // referenced generic class is stable or not.
+    // This seems to be a rare enough case, so we do not handle it for now.
+
+    val patterns = """
+      GenericClass1<*>
+    """.trimIndent()
+
+    val classes = listOf(
+      "GenericClass1",
+      "GenericClass1<Class1>",
+      "GenericClass1<Class2>",
+      "GenericClass2",
+      "GenericClass2<Class1>",
+      "GenericClass2<Class2>",
+    )
+
+    val result = getMatches(patterns, classes)
+
+    assertEquals(
+      listOf(
+        "GenericClass1",
+        "GenericClass1<Class1>",
+        "GenericClass1<Class2>",
+      ),
+      result
+    )
+  }
+
   private fun getMatches(patterns: String, classes: List<String>): List<String> {
     val file = File(targetFolder, "patterns.txt")
     file.writeText(patterns)
