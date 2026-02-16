@@ -27,7 +27,6 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
-import org.jetbrains.kotlin.konan.file.File
 
 /**
  * Task to check if composable stability matches the dumped stability file.
