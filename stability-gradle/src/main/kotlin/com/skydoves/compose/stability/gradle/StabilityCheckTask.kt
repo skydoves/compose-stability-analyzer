@@ -24,6 +24,8 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.jetbrains.kotlin.konan.file.File
 
@@ -38,12 +40,14 @@ public abstract class StabilityCheckTask : DefaultTask() {
    * Input file containing current stability information from compiler.
    */
   @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
   public abstract val stabilityInputFiles: ConfigurableFileCollection
 
   /**
    * Directory containing the reference stability file.
    */
   @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
   public abstract val stabilityReferenceFiles: ConfigurableFileCollection
 
   /**
@@ -93,6 +97,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
   public abstract val allowMissingBaseline: Property<Boolean>
 
   @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
   public abstract val stabilityConfigurationFiles: ListProperty<RegularFile>
 
   init {
