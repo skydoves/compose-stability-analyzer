@@ -244,8 +244,12 @@ internal class HeatmapInlayManager(
       val count = data.totalRecompositionCount
       append("$count recomposition")
       if (count != 1) append("s")
-      if (data.unstableParameters.isNotEmpty()) {
-        append("  |  unstable: ${data.unstableParameters.joinToString(", ")}")
+      if (data.changedParameters.isNotEmpty()) {
+        val topChanged = data.changedParameters.entries
+          .sortedByDescending { it.value }
+          .take(3)
+          .joinToString(", ") { it.key }
+        append("  |  changed: $topChanged")
       }
     }
   }
