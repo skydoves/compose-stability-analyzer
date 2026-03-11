@@ -50,6 +50,7 @@ class StabilityTestConfigurator(testServices: TestServices) :
       StabilityAnalyzerIrGenerationExtension(
         stabilityOutputDir = "",
         projectDependencies = "",
+        trackingMode = "standard",
       ),
     )
   }

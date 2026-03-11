@@ -44,9 +44,17 @@ public actual class DefaultRecompositionLogger : RecompositionLogger {
       "[Recomposition #${event.recompositionCount}] ${event.composableName}$tagSuffix",
     )
 
+    // Determine what summary lines we'll have after parameter changes
+    val internalState = event.unstableParameters.contains("_internal_state")
+    val regularUnstable = event.unstableParameters.filter { it != "_internal_state" }
+    val hasUnstableSummary = regularUnstable.isNotEmpty()
+    val hasInternalState = internalState
+
     // Log parameter changes
     event.parameterChanges.forEachIndexed { index, change ->
-      val isLast = index == event.parameterChanges.size - 1
+      val isLastParam = index == event.parameterChanges.size - 1
+      // Only use └─ if this is the last param AND there are no summary lines after
+      val isLast = isLastParam && !hasUnstableSummary && !hasInternalState
       val prefix = if (isLast) "  └─" else "  ├─"
 
       val status = when {
@@ -64,8 +72,16 @@ public actual class DefaultRecompositionLogger : RecompositionLogger {
     }
 
     // Log unstable parameters summary
-    if (event.unstableParameters.isNotEmpty()) {
-      Log.d(tag, "  └─ Unstable parameters: ${event.unstableParameters}")
+    if (hasUnstableSummary) {
+      // Use └─ only if this is the last line (no internal state message follows)
+      val prefix = if (hasInternalState) "  ├─" else "  └─"
+      Log.d(tag, "$prefix Unstable parameters: $regularUnstable")
+    }
+    if (hasInternalState) {
+      Log.d(
+        tag,
+        "  └─ ⚡ Internal state change (remember/derivedState) triggered recomposition",
+      )
     }
   }
 

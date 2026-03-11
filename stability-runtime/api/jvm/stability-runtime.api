@@ -1,4 +1,5 @@
 public final class com/skydoves/compose/stability/runtime/ComposableStabilityInfo {
+	public static final field $stable I
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZZZLjava/util/List;ZLjava/util/List;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZZZLjava/util/List;ZLjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -30,6 +31,7 @@ public final class com/skydoves/compose/stability/runtime/ComposableStabilityInf
 }
 
 public final class com/skydoves/compose/stability/runtime/ComposeStabilityAnalyzer {
+	public static final field $stable I
 	public static final field INSTANCE Lcom/skydoves/compose/stability/runtime/ComposeStabilityAnalyzer;
 	public final fun getLogger ()Lcom/skydoves/compose/stability/runtime/RecompositionLogger;
 	public final fun isEnabled ()Z
@@ -37,15 +39,69 @@ public final class com/skydoves/compose/stability/runtime/ComposeStabilityAnalyz
 	public final fun setLogger (Lcom/skydoves/compose/stability/runtime/RecompositionLogger;)V
 }
 
+public abstract class com/skydoves/compose/stability/runtime/DataChange {
+	public static final field $stable I
+}
+
+public final class com/skydoves/compose/stability/runtime/DataChange$Added : com/skydoves/compose/stability/runtime/DataChange {
+	public static final field $stable I
+	public fun <init> (Lcom/skydoves/compose/stability/runtime/SlotDataItem;)V
+	public final fun component1 ()Lcom/skydoves/compose/stability/runtime/SlotDataItem;
+	public final fun copy (Lcom/skydoves/compose/stability/runtime/SlotDataItem;)Lcom/skydoves/compose/stability/runtime/DataChange$Added;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/runtime/DataChange$Added;Lcom/skydoves/compose/stability/runtime/SlotDataItem;ILjava/lang/Object;)Lcom/skydoves/compose/stability/runtime/DataChange$Added;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getItem ()Lcom/skydoves/compose/stability/runtime/SlotDataItem;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/skydoves/compose/stability/runtime/DataChange$Modified : com/skydoves/compose/stability/runtime/DataChange {
+	public static final field $stable I
+	public fun <init> (Lcom/skydoves/compose/stability/runtime/SlotDataItem;Lcom/skydoves/compose/stability/runtime/SlotDataItem;)V
+	public final fun component1 ()Lcom/skydoves/compose/stability/runtime/SlotDataItem;
+	public final fun component2 ()Lcom/skydoves/compose/stability/runtime/SlotDataItem;
+	public final fun copy (Lcom/skydoves/compose/stability/runtime/SlotDataItem;Lcom/skydoves/compose/stability/runtime/SlotDataItem;)Lcom/skydoves/compose/stability/runtime/DataChange$Modified;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/runtime/DataChange$Modified;Lcom/skydoves/compose/stability/runtime/SlotDataItem;Lcom/skydoves/compose/stability/runtime/SlotDataItem;ILjava/lang/Object;)Lcom/skydoves/compose/stability/runtime/DataChange$Modified;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNew ()Lcom/skydoves/compose/stability/runtime/SlotDataItem;
+	public final fun getOld ()Lcom/skydoves/compose/stability/runtime/SlotDataItem;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/skydoves/compose/stability/runtime/DataChange$Removed : com/skydoves/compose/stability/runtime/DataChange {
+	public static final field $stable I
+	public fun <init> (Lcom/skydoves/compose/stability/runtime/SlotDataItem;)V
+	public final fun component1 ()Lcom/skydoves/compose/stability/runtime/SlotDataItem;
+	public final fun copy (Lcom/skydoves/compose/stability/runtime/SlotDataItem;)Lcom/skydoves/compose/stability/runtime/DataChange$Removed;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/runtime/DataChange$Removed;Lcom/skydoves/compose/stability/runtime/SlotDataItem;ILjava/lang/Object;)Lcom/skydoves/compose/stability/runtime/DataChange$Removed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getItem ()Lcom/skydoves/compose/stability/runtime/SlotDataItem;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/skydoves/compose/stability/runtime/DefaultRecompositionLogger : com/skydoves/compose/stability/runtime/RecompositionLogger {
+	public static final field $stable I
 	public fun <init> ()V
 	public fun log (Lcom/skydoves/compose/stability/runtime/RecompositionEvent;)V
+}
+
+public final class com/skydoves/compose/stability/runtime/FullTrackingRuntimeKt {
+	public static final fun ScheduleDeepTracking (Landroidx/compose/runtime/Composer;ILandroidx/compose/runtime/tooling/CompositionData;)V
+	public static final fun SetScopeIdentity (ILjava/lang/Object;)V
+	public static final fun TraceDeepRecomposition (ILandroidx/compose/runtime/tooling/CompositionData;)V
+	public static final fun TraceFullRecomposition (ILjava/lang/String;Ljava/lang/String;ILandroidx/compose/runtime/Composer;[Ljava/lang/Object;[Ljava/lang/Object;)V
+	public static final fun collectAllSlotData (Landroidx/compose/runtime/tooling/CompositionData;)Ljava/util/List;
+	public static final fun collectAllSlotData (Landroidx/compose/runtime/tooling/CompositionGroup;)Ljava/util/List;
+	public static final fun findGroupByKey (Landroidx/compose/runtime/tooling/CompositionData;Ljava/lang/Object;)Landroidx/compose/runtime/tooling/CompositionGroup;
 }
 
 public abstract interface annotation class com/skydoves/compose/stability/runtime/IgnoreStabilityReport : java/lang/annotation/Annotation {
 }
 
 public final class com/skydoves/compose/stability/runtime/ParameterChange {
+	public static final field $stable I
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;ZZ)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
@@ -76,6 +132,7 @@ public final class com/skydoves/compose/stability/runtime/ParameterStability : j
 }
 
 public final class com/skydoves/compose/stability/runtime/ParameterStabilityInfo {
+	public static final field $stable I
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/skydoves/compose/stability/runtime/ParameterStability;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/skydoves/compose/stability/runtime/ParameterStability;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -103,6 +160,7 @@ public final class com/skydoves/compose/stability/runtime/ReceiverKind : java/la
 }
 
 public final class com/skydoves/compose/stability/runtime/ReceiverStabilityInfo {
+	public static final field $stable I
 	public fun <init> (Ljava/lang/String;Lcom/skydoves/compose/stability/runtime/ParameterStability;Ljava/lang/String;Lcom/skydoves/compose/stability/runtime/ReceiverKind;)V
 	public synthetic fun <init> (Ljava/lang/String;Lcom/skydoves/compose/stability/runtime/ParameterStability;Ljava/lang/String;Lcom/skydoves/compose/stability/runtime/ReceiverKind;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -121,6 +179,7 @@ public final class com/skydoves/compose/stability/runtime/ReceiverStabilityInfo 
 }
 
 public final class com/skydoves/compose/stability/runtime/RecompositionEvent {
+	public static final field $stable I
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
@@ -144,6 +203,7 @@ public abstract interface class com/skydoves/compose/stability/runtime/Recomposi
 }
 
 public final class com/skydoves/compose/stability/runtime/RecompositionTracker {
+	public static final field $stable I
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;I)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun logIfThresholdMet ()V
@@ -157,6 +217,35 @@ public final class com/skydoves/compose/stability/runtime/RecompositionTrackerKt
 
 public final class com/skydoves/compose/stability/runtime/RememberRecompositionTracker_jvmKt {
 	public static final fun rememberRecompositionTracker (Ljava/lang/String;Ljava/lang/String;I)Lcom/skydoves/compose/stability/runtime/RecompositionTracker;
+}
+
+public final class com/skydoves/compose/stability/runtime/ScopeDataTracker {
+	public static final field $stable I
+	public fun <init> (ILjava/lang/String;Ljava/lang/String;I)V
+	public final fun getIdentity ()Ljava/lang/Object;
+	public final fun setIdentity (Ljava/lang/Object;)V
+	public final fun trackDeepRecomposition (Landroidx/compose/runtime/tooling/CompositionData;)V
+	public final fun trackRecomposition (Landroidx/compose/runtime/Composer;[Ljava/lang/String;[Ljava/lang/Object;)V
+}
+
+public final class com/skydoves/compose/stability/runtime/SlotDataItem {
+	public static final field $stable I
+	public fun <init> (Ljava/lang/Object;Ljava/lang/String;ILjava/lang/Object;I)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()I
+	public final fun component4 ()Ljava/lang/Object;
+	public final fun component5 ()I
+	public final fun copy (Ljava/lang/Object;Ljava/lang/String;ILjava/lang/Object;I)Lcom/skydoves/compose/stability/runtime/SlotDataItem;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/runtime/SlotDataItem;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/Object;IILjava/lang/Object;)Lcom/skydoves/compose/stability/runtime/SlotDataItem;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDepth ()I
+	public final fun getGroupKey ()Ljava/lang/Object;
+	public final fun getSlotIndex ()I
+	public final fun getSourceInfo ()Ljava/lang/String;
+	public final fun getValue ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface annotation class com/skydoves/compose/stability/runtime/StableForAnalysis : java/lang/annotation/Annotation {

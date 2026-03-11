@@ -45,6 +45,7 @@ public class StabilityAnalyzerTransformer(
   private val pluginContext: IrPluginContext,
   private val stabilityCollector: StabilityInfoCollector? = null,
   private val projectDependencies: List<String> = emptyList(),
+  private val trackingMode: String = "standard",
 ) : IrElementTransformerVoidWithContext() {
 
   private val composableFqName = FqName("androidx.compose.runtime.Composable")
@@ -58,6 +59,7 @@ public class StabilityAnalyzerTransformer(
 
   private val irBuilder = RecompositionIrBuilder(pluginContext)
   private var irBuilderInitialized = false
+  private var fullTrackingInitialized = false
 
   // Cycle detection for recursive types
   private val analyzingTypes = ThreadLocal.withInitial { mutableSetOf<String>() }
@@ -162,15 +164,7 @@ public class StabilityAnalyzerTransformer(
         return super.visitFunctionNew(declaration)
       }
 
-      // Initialize IR builder symbols once
-      if (!irBuilderInitialized) {
-        irBuilderInitialized = irBuilder.initializeSymbols()
-        if (!irBuilderInitialized) {
-          return super.visitFunctionNew(declaration)
-        }
-      }
-
-      // Extract annotation parameters
+      // Extract annotation parameters (needed by both standard and full modes)
       val annotation = declaration.annotations.find { annot ->
         val annotationClass = annot.symbol.owner.parent as? IrClass
         annotationClass?.kotlinFqName == traceRecompositionFqName
@@ -202,41 +196,76 @@ public class StabilityAnalyzerTransformer(
         }
       }
 
-      // Analyze parameter stability
-      val parameterStabilities = declaration.parameters
-        .filter {
-          val name = it.name.asString()
-          !name.startsWith("$") && name != "<this>"
+      // Branch based on tracking mode
+      if (trackingMode == "full") {
+        // Full mode: initialize full tracking symbols and inject full tracking code
+        if (!fullTrackingInitialized) {
+          fullTrackingInitialized = irBuilder.initializeFullTrackingSymbols()
+          if (!fullTrackingInitialized) {
+            return super.visitFunctionNew(declaration)
+          }
         }
-        .map { param ->
-          val renderedType = param.type.render()
 
-          // If rendered type contains @[Composable], it's a composable function - STABLE
-          val isComposableFunction =
-            renderedType.contains("@[Composable]") || renderedType.contains("@Composable")
+        // Try to extract the restart group key injected by Compose compiler
+        val composeGroupKey = extractComposeRestartGroupKey(declaration)
 
-          val stability = if (isComposableFunction) {
-            ParameterStability.STABLE
-          } else {
-            analyzeTypeStability(param.type)
+        // Use Compose's group key (Int) if available, otherwise fallback to function name hash
+        val callSiteKey: Int = composeGroupKey ?: fqName.hashCode()
+
+        // Inject full tracking code (uses $composer to auto-capture all slot data)
+        irBuilder.injectFullTrackingCode(
+          function = declaration,
+          functionName = functionName,
+          tag = tag,
+          threshold = threshold,
+          callSiteKey = callSiteKey,
+        )
+      } else {
+        // Standard mode (default): use existing parameter tracking logic
+        // Initialize IR builder symbols once
+        if (!irBuilderInitialized) {
+          irBuilderInitialized = irBuilder.initializeSymbols()
+          if (!irBuilderInitialized) {
+            return super.visitFunctionNew(declaration)
+          }
+        }
+
+        // Analyze parameter stability
+        val parameterStabilities = declaration.parameters
+          .filter {
+            val name = it.name.asString()
+            !name.startsWith("$") && name != "<this>"
+          }
+          .map { param ->
+            val renderedType = param.type.render()
+
+            // If rendered type contains @[Composable], it's a composable function - STABLE
+            val isComposableFunction =
+              renderedType.contains("@[Composable]") || renderedType.contains("@Composable")
+
+            val stability = if (isComposableFunction) {
+              ParameterStability.STABLE
+            } else {
+              analyzeTypeStability(param.type)
+            }
+
+            RecompositionIrBuilder.ParameterStabilityData(
+              name = param.name.asString(),
+              typeString = renderedType,
+              parameter = param,
+              stability = stability,
+            )
           }
 
-          RecompositionIrBuilder.ParameterStabilityData(
-            name = param.name.asString(),
-            typeString = renderedType,
-            parameter = param,
-            stability = stability,
-          )
-        }
-
-      // Inject tracking code
-      val injected = irBuilder.injectTrackingCode(
-        function = declaration,
-        functionName = functionName,
-        tag = tag,
-        threshold = threshold,
-        parameterStabilities = parameterStabilities,
-      )
+        // Inject tracking code
+        val injected = irBuilder.injectTrackingCode(
+          function = declaration,
+          functionName = functionName,
+          tag = tag,
+          threshold = threshold,
+          parameterStabilities = parameterStabilities,
+        )
+      }
     }
 
     return super.visitFunctionNew(declaration)
@@ -708,6 +737,126 @@ public class StabilityAnalyzerTransformer(
       "java.util.TreeMap",
       "java.util.TreeSet",
     )
+  }
+
+  /**
+   * Extracts the restart group key that Compose compiler injected.
+   *
+   * Compose compiler transforms @Composable functions to start with:
+   * ```
+   * $composer.startRestartGroup(key)
+   * ```
+   * where key is an Int computed from source location.
+   *
+   * Since our IR transformer runs AFTER Compose compiler, we can see this call
+   * and extract the key to use for scope identification at runtime.
+   */
+  private fun extractComposeRestartGroupKey(function: IrFunction): Int? {
+    val body = function.body as? org.jetbrains.kotlin.ir.expressions.IrBlockBody ?: return null
+
+    // Search for startRestartGroup call in the function body
+    for (statement in body.statements) {
+      val key = findRestartGroupKeyInExpression(statement)
+      if (key != null) return key
+    }
+    return null
+  }
+
+  /**
+   * Recursively searches for startRestartGroup call and extracts its key argument.
+   */
+  private fun findRestartGroupKeyInExpression(
+    element: org.jetbrains.kotlin.ir.IrElement?,
+    depth: Int = 0,
+  ): Int? {
+    if (element == null || depth > 15) return null // Limit recursion depth
+
+    val indent = "  ".repeat(depth)
+
+    // Check if this is a call to startRestartGroup
+    if (element is org.jetbrains.kotlin.ir.expressions.IrCall) {
+      val callee = element.symbol.owner
+      val calleeName = callee.name.asString()
+
+      if (calleeName == "startRestartGroup") {
+        // The first value argument is the key (after dispatch receiver)
+        for (i in element.arguments.indices) {
+          val arg = element.arguments[i]
+          if (arg is IrConst) {
+            val value = extractConstIntValue(arg)
+            if (value != null) {
+              return value
+            }
+          }
+        }
+      }
+    }
+
+    // Recursively search in block/container expressions (IrBlockImpl, etc.)
+    if (element is org.jetbrains.kotlin.ir.expressions.IrStatementContainer) {
+      for (statement in element.statements) {
+        // Handle IrSetValue directly here since it's an IrStatement
+        if (statement is org.jetbrains.kotlin.ir.expressions.IrSetValue) {
+          val valueExpr = statement.value
+          // Check if the value is a call to startRestartGroup
+          if (valueExpr is org.jetbrains.kotlin.ir.expressions.IrCall) {
+            val calleeName = valueExpr.symbol.owner.name.asString()
+            if (calleeName == "startRestartGroup") {
+              for (i in valueExpr.arguments.indices) {
+                val arg = valueExpr.arguments[i]
+                if (arg is IrConst) {
+                  val value = extractConstIntValue(arg)
+                  if (value != null) {
+                    return value
+                  }
+                }
+              }
+            }
+          }
+          val key = findRestartGroupKeyInExpression(valueExpr, depth + 1)
+          if (key != null) return key
+        } else {
+          val key = findRestartGroupKeyInExpression(statement, depth + 1)
+          if (key != null) return key
+        }
+      }
+    }
+
+    // Search in variable initializers
+    if (element is org.jetbrains.kotlin.ir.declarations.IrVariable) {
+      val key = findRestartGroupKeyInExpression(element.initializer, depth + 1)
+      if (key != null) return key
+    }
+
+    // Search in when expressions
+    if (element is org.jetbrains.kotlin.ir.expressions.IrWhen) {
+      for (branch in element.branches) {
+        var key = findRestartGroupKeyInExpression(branch.condition, depth + 1)
+        if (key != null) return key
+        key = findRestartGroupKeyInExpression(branch.result, depth + 1)
+        if (key != null) return key
+      }
+    }
+
+    // Search in type operator expressions (like safe cast)
+    if (element is org.jetbrains.kotlin.ir.expressions.IrTypeOperatorCall) {
+      val key = findRestartGroupKeyInExpression(element.argument, depth + 1)
+      if (key != null) return key
+    }
+
+    // Search in return expressions
+    if (element is org.jetbrains.kotlin.ir.expressions.IrReturn) {
+      val key = findRestartGroupKeyInExpression(element.value, depth + 1)
+      if (key != null) return key
+    }
+
+    // Search in set value expressions (e.g., $composer = $composer.startRestartGroup(key))
+    if (element is org.jetbrains.kotlin.ir.expressions.IrSetValue) {
+      val key = findRestartGroupKeyInExpression(element.value, depth + 1)
+      if (key != null) return key
+    }
+
+    return null
   }
 
   /**

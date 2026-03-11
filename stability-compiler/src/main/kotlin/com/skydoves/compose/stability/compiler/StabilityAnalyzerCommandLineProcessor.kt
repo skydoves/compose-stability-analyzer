@@ -31,6 +31,9 @@ public object StabilityAnalyzerConfigurationKeys {
 
   public val KEY_PROJECT_DEPENDENCIES: CompilerConfigurationKey<String> =
     CompilerConfigurationKey<String>("projectDependencies")
+
+  public val KEY_TRACKING_MODE: CompilerConfigurationKey<String> =
+    CompilerConfigurationKey<String>("trackingMode")
 }
 
 @OptIn(ExperimentalCompilerApi::class)
@@ -59,6 +62,13 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
       description = "Path to file containing project module names (one per line)",
       required = false,
     )
+
+    public val OPTION_TRACKING_MODE: CliOption = CliOption(
+      optionName = "trackingMode",
+      valueDescription = "<standard|full>",
+      description = "Tracking mode: standard (parameter-level) or full (slot-data-level)",
+      required = false,
+    )
   }
 
   override val pluginId: String = PLUGIN_ID
@@ -67,6 +77,7 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
     OPTION_ENABLED,
     OPTION_STABILITY_OUTPUT_DIR,
     OPTION_PROJECT_DEPENDENCIES,
+    OPTION_TRACKING_MODE,
   )
 
   override fun processOption(
@@ -87,6 +98,11 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
 
       OPTION_PROJECT_DEPENDENCIES -> configuration.put(
         StabilityAnalyzerConfigurationKeys.KEY_PROJECT_DEPENDENCIES,
+        value,
+      )
+
+      OPTION_TRACKING_MODE -> configuration.put(
+        StabilityAnalyzerConfigurationKeys.KEY_TRACKING_MODE,
         value,
       )
     }

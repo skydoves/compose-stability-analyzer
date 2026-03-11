@@ -58,6 +58,10 @@ android {
   }
 }
 
+extensions.configure<com.skydoves.compose.stability.gradle.StabilityAnalyzerExtension> {
+  trackingMode.set("full")
+}
+
 dependencies {
   implementation(project(":app-model"))
 

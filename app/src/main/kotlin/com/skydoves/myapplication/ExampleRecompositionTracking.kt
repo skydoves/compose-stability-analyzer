@@ -19,19 +19,32 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.skydoves.compose.stability.runtime.TraceRecomposition
 import com.skydoves.myapplication.models.StableUser
 import com.skydoves.myapplication.models.UnstableUser
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Example screen demonstrating @TraceRecomposition usage.
@@ -51,8 +64,13 @@ fun RecompositionTrackingExample() {
   var counter by remember { mutableIntStateOf(0) }
   var stableUser by remember { mutableStateOf(StableUser("John", 30)) }
   var unstableUser by remember { mutableStateOf(UnstableUser("Jane", 25)) }
+  val scrollState = rememberScrollState()
 
-  Column(modifier = Modifier.padding(16.dp)) {
+  Column(
+    modifier = Modifier
+      .padding(16.dp)
+      .verticalScroll(scrollState),
+  ) {
     // Example 1: Basic tracking with default settings
     TrackedCounterDisplay(counter) {}
 
@@ -93,6 +111,21 @@ fun RecompositionTrackingExample() {
     Button(onClick = { unstableUser.age++ }) {
       Text("Mutate Unstable User")
     }
+
+    Spacer(modifier = Modifier.height(32.dp))
+
+    // Example 7: Internal state tracking (full mode)
+    InternalStateTrackingDemo()
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    // Example 8: Auto-updating state (full mode)
+    AutoUpdatingStateDemo()
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    // Example 9: CompositionLocal tracking
+    CompositionLocalTrackingDemo()
   }
 }
 
@@ -241,6 +274,161 @@ fun RecompositionDemo() {
     Button(onClick = { localCounter++ }) {
       Text("This will trigger recomposition")
     }
+  }
+}
+
+/**
+ * Example 7: Full tracking mode - Internal state and derived state demo.
+ *
+ * This composable demonstrates the "full" tracking mode capability
+ * to track internal state changes (remember values, derived state).
+ *
+ * In "standard" mode, only parameter changes are tracked.
+ * In "full" mode, the compiler also tracks:
+ * - mutableStateOf / mutableIntStateOf changes
+ * - derivedStateOf changes
+ * - Other remember slot value changes
+ *
+ * To enable full tracking mode, set in build.gradle.kts:
+ * ```kotlin
+ * composeStabilityAnalyzer {
+ *     trackingMode.set("full")
+ * }
+ * ```
+ *
+ * Expected Logcat output (full mode):
+ * ```
+ * D/Recomposition: [Recomposition #1] InternalStateTrackingDemo (tag: internal-state)
+ * D/Recomposition:   ├─ title: param stable (State Demo)
+ * D/Recomposition:   ├─ intSlot:2: slot_modified changed (0 → 1)
+ * D/Recomposition:   ├─ derivedValue: slot_modified changed (Derived: 0 → Derived: 2)
+ * D/Recomposition:   └─ ⚡ Internal state change detected
+ * ```
+ */
+@TraceRecomposition(tag = "internal-state")
+@Composable
+fun InternalStateTrackingDemo(title: String = "State Demo") {
+  // Internal mutableIntStateOf - tracked in full mode
+  var counter by remember { mutableIntStateOf(0) }
+
+  // Derived state - also tracked in full mode
+  val doubledValue by remember { derivedStateOf { counter * 2 } }
+
+  // Another derived state depending on doubledValue
+  val formattedValue = remember(doubledValue) { "Derived: $doubledValue" }
+
+  Column(modifier = Modifier.padding(16.dp)) {
+    Text(title)
+    Text("Counter: $counter")
+    Text("Doubled: $doubledValue")
+    Text(formattedValue)
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    Button(onClick = { counter++ }) {
+      Text("Increment (triggers internal state change)")
+    }
+  }
+}
+
+/**
+ * Example 8: Auto-updating internal state demo.
+ *
+ * Demonstrates automatic internal state updates via LaunchedEffect.
+ * Useful for testing full tracking mode with continuous recompositions.
+ *
+ * The internal state increments every second, triggering recomposition.
+ * In full tracking mode, you'll see the slot data changes in Logcat.
+ */
+@TraceRecomposition(tag = "auto-state")
+@Composable
+fun AutoUpdatingStateDemo() {
+  // State that auto-increments every second
+  var tick by remember { mutableIntStateOf(0) }
+
+  // Derived states based on tick
+  val isEven by remember { derivedStateOf { tick % 2 == 0 } }
+  val phase = remember(tick) { if (isEven) "Even phase" else "Odd phase" }
+
+  Column(modifier = Modifier.padding(16.dp)) {
+    Text("Auto-updating State Demo")
+    Text("Tick: $tick")
+    Text("Is Even: $isEven")
+    Text("Phase: $phase")
+  }
+
+  // Auto-increment tick every second
+  LaunchedEffect(Unit) {
+    while (currentCoroutineContext().isActive) {
+      delay(1.seconds)
+      tick++
+    }
+  }
+}
+
+/**
+ * Example 9: CompositionLocal tracking demo.
+ *
+ * Tests whether full tracking mode can detect CompositionLocal value changes.
+ * CompositionLocal values are provided via CompositionLocalProvider and read
+ * implicitly by child composables.
+ *
+ * This example uses LocalTextStyle to demonstrate:
+ * - Providing different TextStyle values dynamically
+ * - Tracking when CompositionLocal values change
+ */
+@Composable
+fun CompositionLocalTrackingDemo() {
+  var useLargeText by remember { mutableStateOf(false) }
+
+  val textStyle = if (useLargeText) {
+    TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold)
+  } else {
+    TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Normal)
+  }
+
+  Column(modifier = Modifier.padding(16.dp)) {
+    Text("CompositionLocal Tracking Demo")
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    // Provide different TextStyle via CompositionLocal
+    CompositionLocalProvider(LocalTextStyle provides textStyle) {
+      // This child reads LocalTextStyle implicitly
+      TrackedTextStyleConsumer()
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    Button(onClick = { useLargeText = !useLargeText }) {
+      Text(if (useLargeText) "Switch to Small Text" else "Switch to Large Text")
+    }
+  }
+}
+
+/**
+ * A composable that reads LocalTextStyle and displays text.
+ * In full tracking mode, we want to see if CompositionLocal changes are tracked.
+ */
+@TraceRecomposition(tag = "text-style-consumer")
+@Composable
+fun TrackedTextStyleConsumer() {
+  // Read the current TextStyle from CompositionLocal
+  val currentStyle = LocalTextStyle.current
+
+  Column {
+    Text(
+      text = "This text uses LocalTextStyle",
+      style = currentStyle,
+    )
+    Text(
+      text = "Font size: ${currentStyle.fontSize}",
+      style = currentStyle,
+    )
+    Text(
+      text = "Font weight: ${currentStyle.fontWeight}",
+      style = currentStyle,
+    )
   }
 }
 

@@ -53,6 +53,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     private const val OPTION_ENABLED = "enabled"
     private const val OPTION_STABILITY_OUTPUT_DIR = "stabilityOutputDir"
     private const val OPTION_PROJECT_DEPENDENCIES = "projectDependencies"
+    private const val OPTION_TRACKING_MODE = "trackingMode"
   }
 
   override fun apply(target: Project) {
@@ -278,6 +279,10 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         SubpluginOption(
           key = OPTION_PROJECT_DEPENDENCIES,
           value = dependenciesFile.absolutePath,
+        ),
+        SubpluginOption(
+          key = OPTION_TRACKING_MODE,
+          value = extension.trackingMode.get(),
         ),
       )
     }

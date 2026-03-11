@@ -40,6 +40,15 @@ public abstract class StabilityAnalyzerExtension @Inject constructor(
     objects.property(Boolean::class.javaObjectType).convention(true)
 
   /**
+   * Tracking mode for recomposition analysis.
+   * - "standard": Parameter-level tracking (default)
+   * - "full": Slot-data-level deep tracking using CompositionData API
+   * Default: "standard"
+   */
+  public val trackingMode: Property<String> =
+    objects.property(String::class.java).convention("standard")
+
+  /**
    * Configuration for stability validation (dump and check).
    */
   public val stabilityValidation: StabilityValidationConfig =

@@ -2,6 +2,7 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityAnalyzerExt
 	public fun <init> (Lorg/gradle/api/file/ProjectLayout;Lorg/gradle/api/model/ObjectFactory;Lorg/gradle/api/provider/ProviderFactory;)V
 	public final fun getEnabled ()Lorg/gradle/api/provider/Property;
 	public final fun getStabilityValidation ()Lcom/skydoves/compose/stability/gradle/StabilityValidationConfig;
+	public final fun getTrackingMode ()Lorg/gradle/api/provider/Property;
 	public final fun stabilityValidation (Lorg/gradle/api/Action;)V
 }
 
