@@ -210,6 +210,10 @@ tasks {
   withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
       jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+      // Pin to Kotlin 2.2 language level so context receivers (used by IntelliJ K2 Analysis API)
+      // continue to work with the Kotlin 2.3.20 compiler.
+      languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2)
+      apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2)
       freeCompilerArgs.addAll(
         listOf(
           "-Xcontext-receivers",
