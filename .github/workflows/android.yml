@@ -60,6 +60,9 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
+      - name: Publish to Maven Local (app module requires current version)
+        run: ./gradlew publishToMavenLocal -x test --no-daemon -PRELEASE_SIGNING_ENABLED=false
+
       - name: Build with Gradle
         run: |
           ./gradlew --scan --stacktrace \
@@ -82,5 +85,8 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: 21
+      - name: Publish to Maven Local (required for plugin resolution)
+        run: ./gradlew publishToMavenLocal -x test --no-daemon -PRELEASE_SIGNING_ENABLED=false
+
       - name: compose stability check
         run: ./gradlew stabilityCheck

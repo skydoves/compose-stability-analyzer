@@ -22,6 +22,9 @@ jobs:
       - name: Grant Permission to Execute Gradle
         run: chmod +x gradlew
 
+      - name: Publish to Maven Local (required for app module to use current version)
+        run: ./gradlew publishToMavenLocal -x test --no-daemon -PRELEASE_SIGNING_ENABLED=false
+
       - name: Release build
         run: ./gradlew assemble --scan
 
