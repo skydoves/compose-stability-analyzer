@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-02-13
+
+### Fixed
+- **Fixed Kotlin 2.3.20 compatibility** (Issue #133)
+  - Resolved `NoSuchMethodError` for `IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB` and `DEFINED` constants
+  - Used reflection-based origin lookups to support Kotlin's changed return types in 2.3.20
+  - Migrated `ComposableStabilityChecker` from `FirSimpleFunctionChecker` to `FirCallableDeclarationChecker` to handle `FirSimpleFunction` → `FirNamedFunction` rename
+
+### Changed
+- **Upgraded to Kotlin 2.3.20**
+
 ## [0.7.0] - 2026-02-13
 
 ### Added
