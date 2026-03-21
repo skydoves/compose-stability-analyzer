@@ -18,8 +18,9 @@ package com.skydoves.compose.stability.compiler
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.analysis.checkers.MppCheckerKind
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
-import org.jetbrains.kotlin.fir.analysis.checkers.declaration.FirSimpleFunctionChecker
-import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
+import org.jetbrains.kotlin.fir.analysis.checkers.declaration.FirCallableDeclarationChecker
+import org.jetbrains.kotlin.fir.declarations.FirCallableDeclaration
+import org.jetbrains.kotlin.fir.declarations.FirFunction
 import org.jetbrains.kotlin.fir.declarations.getAnnotationByClassId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -29,8 +30,11 @@ import org.jetbrains.kotlin.name.Name
  * FIR checker for composable functions.
  * Currently unused - all stability analysis is performed in the IR phase.
  * This is kept as infrastructure for potential future FIR-phase checks.
+ *
+ * Note: Uses [FirCallableDeclarationChecker] instead of `FirSimpleFunctionChecker` because
+ * `FirSimpleFunction` was renamed to `FirNamedFunction` in Kotlin 2.3.20, causing linkage failures.
  */
-public object ComposableStabilityChecker : FirSimpleFunctionChecker(MppCheckerKind.Common) {
+public object ComposableStabilityChecker : FirCallableDeclarationChecker(MppCheckerKind.Common) {
 
   private val COMPOSABLE_FQ_NAME = ClassId(
     FqName("androidx.compose.runtime"),
@@ -38,7 +42,8 @@ public object ComposableStabilityChecker : FirSimpleFunctionChecker(MppCheckerKi
   )
 
   context(ctx: CheckerContext, _: DiagnosticReporter)
-  override fun check(declaration: FirSimpleFunction) {
+  override fun check(declaration: FirCallableDeclaration) {
+    if (declaration !is FirFunction) return
     if (declaration.symbol.getAnnotationByClassId(COMPOSABLE_FQ_NAME, ctx.session) == null) {
       return
     }

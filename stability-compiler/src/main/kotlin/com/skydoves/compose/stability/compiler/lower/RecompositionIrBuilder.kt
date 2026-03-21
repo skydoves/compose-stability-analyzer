@@ -26,7 +26,6 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irString
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
@@ -199,7 +198,7 @@ public class RecompositionIrBuilder(
       parent = function,
       startOffset = UNDEFINED_OFFSET,
       endOffset = UNDEFINED_OFFSET,
-      origin = IrDeclarationOrigin.DEFINED,
+      origin = OriginCompat.DEFINED,
       name = Name.identifier("_tracker"),
       type = trackerClassSymbol!!.defaultType,
       isVar = false,

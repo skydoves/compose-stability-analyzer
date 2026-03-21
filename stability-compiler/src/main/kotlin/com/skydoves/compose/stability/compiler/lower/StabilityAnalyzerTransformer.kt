@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -917,8 +916,8 @@ public class StabilityAnalyzerTransformer(
 
       // Check 1: External library classes (from compiled JARs/AARs)
       val origin = clazz.origin
-      if (origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
-        origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
+      if (origin == OriginCompat.IR_EXTERNAL_DECLARATION_STUB ||
+        origin == OriginCompat.IR_EXTERNAL_JAVA_DECLARATION_STUB
       ) {
         return true
       }
