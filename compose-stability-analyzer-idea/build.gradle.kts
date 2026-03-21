@@ -38,7 +38,7 @@ repositories {
 }
 
 dependencies {
-  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.7.1")
+  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.7.0")
 
   intellijPlatform {
     intellijIdeaCommunity("2025.2")

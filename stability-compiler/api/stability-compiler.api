@@ -1,7 +1,7 @@
 public final class com/skydoves/compose/stability/compiler/ComposableStabilityChecker : org/jetbrains/kotlin/fir/analysis/checkers/declaration/FirDeclarationChecker {
 	public static final field INSTANCE Lcom/skydoves/compose/stability/compiler/ComposableStabilityChecker;
+	public fun check (Lorg/jetbrains/kotlin/fir/analysis/checkers/context/CheckerContext;Lorg/jetbrains/kotlin/diagnostics/DiagnosticReporter;Lorg/jetbrains/kotlin/fir/declarations/FirCallableDeclaration;)V
 	public synthetic fun check (Lorg/jetbrains/kotlin/fir/analysis/checkers/context/CheckerContext;Lorg/jetbrains/kotlin/diagnostics/DiagnosticReporter;Lorg/jetbrains/kotlin/fir/declarations/FirDeclaration;)V
-	public fun check (Lorg/jetbrains/kotlin/fir/analysis/checkers/context/CheckerContext;Lorg/jetbrains/kotlin/diagnostics/DiagnosticReporter;Lorg/jetbrains/kotlin/fir/declarations/FirSimpleFunction;)V
 }
 
 public final class com/skydoves/compose/stability/compiler/ComposableStabilityInfo {
@@ -87,7 +87,6 @@ public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerComm
 	public fun getPluginId ()Ljava/lang/String;
 	public fun getPluginOptions ()Ljava/util/Collection;
 	public fun processOption (Lorg/jetbrains/kotlin/compiler/plugin/AbstractCliOption;Ljava/lang/String;Lorg/jetbrains/kotlin/config/CompilerConfiguration;)V
-	public fun processOption (Lorg/jetbrains/kotlin/compiler/plugin/CliOption;Ljava/lang/String;Lorg/jetbrains/kotlin/config/CompilerConfiguration;)V
 }
 
 public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerCommandLineProcessor$Companion {
