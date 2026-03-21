@@ -24,8 +24,12 @@ include(
   ":stability-runtime",
   ":stability-gradle",
   ":stability-lint",
-  ":compose-stability-analyzer-idea",
   ":compiler-tests",
   ":app",
-  ":app-model"
+  ":app-model",
 )
+
+// The IDE plugin is excluded from the main build because it requires Kotlin 2.3.0
+// (the K2 Analysis API uses context receivers, which are removed in Kotlin 2.3.20).
+// Build it separately: ./gradlew -p compose-stability-analyzer-idea buildPlugin
+// include(":compose-stability-analyzer-idea")

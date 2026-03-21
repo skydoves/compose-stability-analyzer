@@ -148,14 +148,16 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build stability-runtime (dependency)
-        run: ./gradlew :stability-runtime:build --no-daemon --stacktrace
+      - name: Publish stability-runtime to Maven Local
+        run: ./gradlew :stability-runtime:publishToMavenLocal -x test --no-daemon --stacktrace -PRELEASE_SIGNING_ENABLED=false
 
-      - name: Build IDE plugin
-        run: ./gradlew :compose-stability-analyzer-idea:buildPlugin --no-daemon --stacktrace
+      - name: Build IDE plugin (standalone with Kotlin 2.3.0)
+        working-directory: compose-stability-analyzer-idea
+        run: ../gradlew clean buildPlugin --no-daemon --stacktrace
 
       - name: Verify plugin compatibility
-        run: ./gradlew :compose-stability-analyzer-idea:verifyPlugin --no-daemon --stacktrace
+        working-directory: compose-stability-analyzer-idea
+        run: ../gradlew verifyPlugin --no-daemon --stacktrace
 
       - name: Upload verification results
         if: always()
