@@ -151,6 +151,8 @@ com.example.ThirdPartyModel
 com.google.firebase.auth.FirebaseUser
 ```
 
+The same configuration file can also be used with the [Stability Validation](gradle-plugin/stability-validation.md#stabilityconfigurationfiles) Gradle task. By pointing `stabilityConfigurationFiles` to this file, the `stabilityCheck` task respects the same overrides as the Compose compiler, so types you've declared stable won't be flagged as regressions.
+
 ## Cross-Module Stability
 
 Types from other modules that were **not compiled with the Compose compiler** are treated as unstable by default. This is a conservative decision, because the Compose compiler in your module can't inspect the source code of external modules, so it can't verify stability.

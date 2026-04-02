@@ -96,6 +96,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
   public abstract val allowMissingBaseline: Property<Boolean>
 
   @get:InputFiles
+  @get:Optional
   @get:PathSensitive(PathSensitivity.RELATIVE)
   public abstract val stabilityConfigurationFiles: ListProperty<RegularFile>
 
@@ -152,15 +153,9 @@ public abstract class StabilityCheckTask : DefaultTask() {
     val currentStability = parseStabilityFromCompiler(inputFile)
     val referenceStability = parseStabilityFile(referenceFile)
 
-    val stabilityConfigurationMatchers = stabilityConfigurationFiles.get()
+    val stabilityConfigurationMatchers = stabilityConfigurationFiles.getOrElse(emptyList())
       .flatMap { configRegularFile ->
-        val file = configRegularFile.asFile
-
-        if (!file.exists()) {
-          return@flatMap emptyList()
-        }
-
-        StabilityConfigParser.fromFile(file.path).stableTypeMatchers
+        StabilityConfigParser.fromFile(configRegularFile.asFile.path).stableTypeMatchers
       }
 
     val differences =
