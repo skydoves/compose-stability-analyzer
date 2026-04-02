@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-04-02
+
+### Added
+- **Stability configuration file support for `stabilityDump`** (Issue #130, PR #105)
+  - `stabilityConfigurationFiles` now applies to both `stabilityDump` and `stabilityCheck` tasks
+  - Types matching configuration patterns are overridden to STABLE in the baseline file
+  - Composable `skippable` flag is recalculated based on resolved parameter stability
+- **`unstableOnly` option for stability baseline** (Issue #128)
+  - New `unstableOnly` option: when enabled, only unstable composables are included in the baseline file
+  - Reduces baseline file size in large projects and focuses on stability issues
+- **New composable diff now includes parameter-level stability details** (PR #105)
+  - `stabilityCheck` output for new composables shows each parameter's stability status
+
+### Fixed
+- **`ignoredPackages` now consistently respected during `stabilityCheck`** (Issue #129)
+  - Previously, composables in ignored packages were excluded from `stabilityDump` but still detected as "new composable" during `stabilityCheck`
+  - Now both tasks apply the same package/class filtering
+- **`@Optional` annotation added to `stabilityConfigurationFiles` task input** (PR #105)
+  - Prevents Gradle task validation failure when configuration files are not set
+- **ADB not found on Windows** (Issue #139)
+  - Fixed `adb.exe` detection on Windows for the Heatmap feature
+  - Added Windows default SDK path (`%LOCALAPPDATA%\Android\Sdk`)
+  - Uses `where` command instead of `which` on Windows for PATH lookup
+
+### Changed
+- **Tool window actions always visible** — Toggle Heatmap, Clear Data, Settings, and GitHub icons moved from hover-only title bar to content toolbar across all tabs
+- **Tool window icon updated** — Changed from monochrome gray to blue color matching the plugin icon
+- Stability comparison logic extracted to `StabilityComparison.kt` (PR #105)
+- Stability configuration parser added as `StabilityConfigParser.kt` (PR #105)
+
 ## [0.7.1] - 2026-02-13
 
 ### Fixed
