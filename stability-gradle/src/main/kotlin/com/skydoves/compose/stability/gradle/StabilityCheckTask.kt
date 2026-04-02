@@ -18,11 +18,14 @@ package com.skydoves.compose.stability.gradle
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
 /**
@@ -36,12 +39,14 @@ public abstract class StabilityCheckTask : DefaultTask() {
    * Input file containing current stability information from compiler.
    */
   @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
   public abstract val stabilityInputFiles: ConfigurableFileCollection
 
   /**
    * Directory containing the reference stability file.
    */
   @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
   public abstract val stabilityReferenceFiles: ConfigurableFileCollection
 
   /**
@@ -89,6 +94,10 @@ public abstract class StabilityCheckTask : DefaultTask() {
 
   @get:Input
   public abstract val allowMissingBaseline: Property<Boolean>
+
+  @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  public abstract val stabilityConfigurationFiles: ListProperty<RegularFile>
 
   init {
     group = "verification"
@@ -142,8 +151,25 @@ public abstract class StabilityCheckTask : DefaultTask() {
 
     val currentStability = parseStabilityFromCompiler(inputFile)
     val referenceStability = parseStabilityFile(referenceFile)
+
+    val stabilityConfigurationMatchers = stabilityConfigurationFiles.get()
+      .flatMap { configRegularFile ->
+        val file = configRegularFile.asFile
+
+        if (!file.exists()) {
+          return@flatMap emptyList()
+        }
+
+        StabilityConfigParser.fromFile(file.path).stableTypeMatchers
+      }
+
     val differences =
-      compareStability(currentStability, referenceStability, ignoreNonRegressiveChanges.get())
+      compareStability(
+        currentStability,
+        referenceStability,
+        ignoreNonRegressiveChanges.get(),
+        stabilityConfigurationMatchers,
+      )
 
     if (differences.isNotEmpty()) {
       val message = buildString {
@@ -465,82 +491,6 @@ public abstract class StabilityCheckTask : DefaultTask() {
 
     return entries
   }
-
-  private fun compareStability(
-    current: Map<String, StabilityEntry>,
-    reference: Map<String, StabilityEntry>,
-    ignoreNonRegressiveChanges: Boolean = false,
-
-  ): List<StabilityDifference> {
-    val differences = mutableListOf<StabilityDifference>()
-
-    // Check for new functions
-    current.keys.subtract(reference.keys).forEach { functionName ->
-      if (!ignoreNonRegressiveChanges || !current.getValue(functionName).skippable) {
-        differences.add(StabilityDifference.NewFunction(functionName))
-      }
-    }
-
-    // Check for removed functions
-    if (!ignoreNonRegressiveChanges) {
-      reference.keys.subtract(current.keys).forEach { functionName ->
-        differences.add(StabilityDifference.RemovedFunction(functionName))
-      }
-    }
-
-    // Check for changed stability
-    current.keys.intersect(reference.keys).forEach { functionName ->
-      val currentEntry = current[functionName]!!
-      val referenceEntry = reference[functionName]!!
-
-      // Check skippability change
-      if (currentEntry.skippable != referenceEntry.skippable &&
-        (!ignoreNonRegressiveChanges || !currentEntry.skippable)
-      ) {
-        differences.add(
-          StabilityDifference.SkippabilityChanged(
-            functionName,
-            referenceEntry.skippable,
-            currentEntry.skippable,
-          ),
-        )
-      }
-
-      // Check if parameter count changed
-      if (currentEntry.parameters.size != referenceEntry.parameters.size) {
-        if (
-          !ignoreNonRegressiveChanges ||
-          currentEntry.parameters.any { it.stability != "STABLE" }
-        ) {
-          differences.add(
-            StabilityDifference.ParameterCountChanged(
-              functionName,
-              referenceEntry.parameters.size,
-              currentEntry.parameters.size,
-            ),
-          )
-        }
-      } else {
-        // Check parameter stability changes (only if count is the same)
-        currentEntry.parameters.zip(referenceEntry.parameters).forEach { (current, ref) ->
-          if (current.stability != ref.stability &&
-            (!ignoreNonRegressiveChanges || current.stability != "STABLE")
-          ) {
-            differences.add(
-              StabilityDifference.ParameterStabilityChanged(
-                functionName,
-                current.name,
-                ref.stability,
-                current.stability,
-              ),
-            )
-          }
-        }
-      }
-    }
-
-    return differences
-  }
 }
 
 /**
@@ -549,8 +499,18 @@ public abstract class StabilityCheckTask : DefaultTask() {
 internal sealed class StabilityDifference {
   public abstract fun format(): String
 
-  public data class NewFunction(val name: String) : StabilityDifference() {
-    override fun format(): String = "+ $name (new composable)"
+  public data class NewFunction(
+    val name: String,
+    val parameters: List<ParameterInfo>,
+  ) : StabilityDifference() {
+    override fun format(): String {
+      return if (parameters.isEmpty()) {
+        "+ $name (new composable)"
+      } else {
+        "+ $name (new composable):\n" +
+          parameters.joinToString("\n") { "    ${it.name}: ${it.stability}" }
+      }
+    }
   }
 
   public data class RemovedFunction(val name: String) : StabilityDifference() {

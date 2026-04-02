@@ -17,18 +17,39 @@ package com.skydoves.compose.stability.gradle
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class StabilityDifferenceTest {
 
   @Test
   fun testNewFunction_format() {
-    val diff = StabilityDifference.NewFunction("com.example.NewComposable")
+    val diff = StabilityDifference.NewFunction(
+      "com.example.NewComposable",
+      listOf(
+        ParameterInfo("a", "String", "STABLE"),
+        ParameterInfo("b", "Int", "UNSTABLE"),
+      ),
+    )
 
     val formatted = diff.format()
     assertTrue(formatted.contains("+"))
     assertTrue(formatted.contains("com.example.NewComposable"))
     assertTrue(formatted.contains("new composable"))
+    assertTrue(formatted.contains(":"))
+    assertTrue(formatted.contains("a: STABLE"))
+    assertTrue(formatted.contains("b: UNSTABLE"))
+  }
+
+  @Test
+  fun testNewFunction_format_noColon() {
+    val diff = StabilityDifference.NewFunction(
+      "com.example.NewComposable",
+      emptyList(),
+    )
+
+    val formatted = diff.format()
+    assertFalse(formatted.contains(":"))
   }
 
   @Test
@@ -125,9 +146,29 @@ class StabilityDifferenceTest {
 
   @Test
   fun testNewFunction_dataClass() {
-    val diff1 = StabilityDifference.NewFunction("com.example.Test")
-    val diff2 = StabilityDifference.NewFunction("com.example.Test")
-    val diff3 = StabilityDifference.NewFunction("com.example.Other")
+    val diff1 = StabilityDifference.NewFunction("com.example.Test", emptyList())
+    val diff2 = StabilityDifference.NewFunction("com.example.Test", emptyList())
+    val diff3 = StabilityDifference.NewFunction("com.example.Other", emptyList())
+
+    assertEquals(diff1, diff2)
+    assertEquals(diff1.hashCode(), diff2.hashCode())
+    assertTrue(diff1 != diff3)
+  }
+
+  @Test
+  fun testNewFunction_dataClass_parameters() {
+    val diff1 = StabilityDifference.NewFunction(
+      "com.example.Test",
+      listOf(ParameterInfo("a", "String", "STABLE")),
+    )
+    val diff2 = StabilityDifference.NewFunction(
+      "com.example.Test",
+      listOf(ParameterInfo("a", "String", "STABLE")),
+    )
+    val diff3 = StabilityDifference.NewFunction(
+      "com.example.Test",
+      listOf(ParameterInfo("b", "String", "STABLE")),
+    )
 
     assertEquals(diff1, diff2)
     assertEquals(diff1.hashCode(), diff2.hashCode())
@@ -190,7 +231,7 @@ class StabilityDifferenceTest {
   @Test
   fun testDifferenceTypes_polymorphism() {
     val differences: List<StabilityDifference> = listOf(
-      StabilityDifference.NewFunction("com.example.New"),
+      StabilityDifference.NewFunction("com.example.New", emptyList()),
       StabilityDifference.RemovedFunction("com.example.Old"),
       StabilityDifference.SkippabilityChanged("com.example.Changed", true, false),
       StabilityDifference.ParameterCountChanged("com.example.Params", 1, 2),
