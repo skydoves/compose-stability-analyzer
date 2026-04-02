@@ -79,6 +79,12 @@ public abstract class StabilityDumpTask : DefaultTask() {
   @get:PathSensitive(PathSensitivity.RELATIVE)
   public abstract val stabilityConfigurationFiles: ListProperty<RegularFile>
 
+  /**
+   * When true, only unstable composables (not skippable) are included in the baseline file.
+   */
+  @get:Input
+  public abstract val unstableOnly: Property<Boolean>
+
   init {
     group = "verification"
     description = "Dump composable stability information to stability file"
@@ -117,7 +123,12 @@ public abstract class StabilityDumpTask : DefaultTask() {
       }
 
     val resolved = applyStabilityConfiguration(filtered, stableTypeMatchers)
-    writeStabilityFile(outputFile, resolved)
+    val finalEntries = if (unstableOnly.get()) {
+      resolved.filter { !it.skippable }
+    } else {
+      resolved
+    }
+    writeStabilityFile(outputFile, finalEntries)
 
     logger.lifecycle("Stability file written to: ${outputFile.absolutePath}")
   }

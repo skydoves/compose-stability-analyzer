@@ -183,6 +183,15 @@ public abstract class StabilityValidationConfig @Inject constructor(
     objects.property(Boolean::class.javaObjectType).convention(false)
 
   /**
+   * When true, only unstable composables (not skippable) are included in the baseline file.
+   * This reduces baseline file size in large projects and lets you focus on fixing stability issues.
+   *
+   * Default: false
+   */
+  public val unstableOnly: Property<Boolean> =
+    objects.property(Boolean::class.javaObjectType).convention(false)
+
+  /**
    * List of paths to stability configuration files.
    *
    * For more information, see this link:

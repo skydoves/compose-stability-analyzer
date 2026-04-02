@@ -46,6 +46,7 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityDumpTask : 
 	public abstract fun getStabilityConfigurationFiles ()Lorg/gradle/api/provider/ListProperty;
 	public abstract fun getStabilityFileSuffix ()Lorg/gradle/api/provider/Property;
 	public abstract fun getStabilityInputFiles ()Lorg/gradle/api/file/ConfigurableFileCollection;
+	public abstract fun getUnstableOnly ()Lorg/gradle/api/provider/Property;
 }
 
 public abstract class com/skydoves/compose/stability/gradle/StabilityValidationConfig {
@@ -61,5 +62,6 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityValidationC
 	public final fun getOutputDir ()Lorg/gradle/api/file/DirectoryProperty;
 	public final fun getQuietCheck ()Lorg/gradle/api/provider/Property;
 	public final fun getStabilityConfigurationFiles ()Lorg/gradle/api/provider/ListProperty;
+	public final fun getUnstableOnly ()Lorg/gradle/api/provider/Property;
 }
 
