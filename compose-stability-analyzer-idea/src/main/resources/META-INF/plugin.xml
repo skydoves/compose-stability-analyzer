@@ -144,5 +144,11 @@
                 description="Clear all accumulated recomposition heatmap data">
             <add-to-group group-id="CodeMenu" anchor="last"/>
         </action>
+
+        <action
+                id="com.skydoves.compose.stability.idea.toolwindow.GitHubAction"
+                class="com.skydoves.compose.stability.idea.toolwindow.GitHubAction"
+                text="GitHub"
+                description="Open Compose Stability Analyzer on GitHub"/>
     </actions>
 </idea-plugin>

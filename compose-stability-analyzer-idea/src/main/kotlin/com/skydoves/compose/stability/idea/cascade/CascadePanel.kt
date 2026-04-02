@@ -22,6 +22,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
+import com.skydoves.compose.stability.idea.toolwindow.combineToolbars
 import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
@@ -170,11 +171,11 @@ internal class CascadePanel(private val project: Project) {
     actionGroup.add(RefreshAction())
     actionGroup.add(ClearAction())
 
-    val toolbar = ActionManager.getInstance()
+    val tabToolbar = ActionManager.getInstance()
       .createActionToolbar(ActionPlaces.TOOLBAR, actionGroup, true)
-    toolbar.targetComponent = tree
+    tabToolbar.targetComponent = tree
 
-    return toolbar.component
+    return combineToolbars(tabToolbar.component, tree)
   }
 
   private fun navigateToSource(node: CascadeNode) {

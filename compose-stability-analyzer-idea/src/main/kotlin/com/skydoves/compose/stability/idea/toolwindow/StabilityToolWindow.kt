@@ -139,14 +139,11 @@ public class StabilityToolWindow(private val project: Project) {
     actionGroup.add(FilterAllAction())
     actionGroup.add(FilterSkippableAction())
     actionGroup.add(FilterUnskippableAction())
-    actionGroup.addSeparator()
-    actionGroup.add(SettingsAction())
-    actionGroup.add(GitHubAction())
-    val toolbar = ActionManager.getInstance()
+    val tabToolbar = ActionManager.getInstance()
       .createActionToolbar(ActionPlaces.TOOLBAR, actionGroup, true)
-    toolbar.targetComponent = tree
+    tabToolbar.targetComponent = tree
 
-    return toolbar.component
+    return combineToolbars(tabToolbar.component, tree)
   }
 
   private fun refresh() {
@@ -544,32 +541,7 @@ public class StabilityToolWindow(private val project: Project) {
     }
   }
 
-  /**
-   * Settings action
-   */
-  private inner class SettingsAction : AnAction(
-    "Settings",
-    "Open Compose Stability Analyzer settings",
-    AllIcons.General.Settings,
-  ) {
-    override fun actionPerformed(e: AnActionEvent) {
-      com.intellij.openapi.options.ShowSettingsUtil.getInstance()
-        .showSettingsDialog(project, "Compose Stability Analyzer")
-    }
-  }
 
-  /**
-   * GitHub link action
-   */
-  private inner class GitHubAction : AnAction(
-    "GitHub",
-    "Open Compose Stability Analyzer on GitHub",
-    AllIcons.Vcs.Vendors.Github,
-  ) {
-    override fun actionPerformed(e: AnActionEvent) {
-      com.intellij.ide.BrowserUtil.browse("https://github.com/skydoves/compose-stability-analyzer")
-    }
-  }
 
   /**
    * Custom tree cell renderer with color coding

@@ -15,7 +15,6 @@
  */
 package com.skydoves.compose.stability.idea.toolwindow
 
-import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
@@ -61,16 +60,6 @@ public class StabilityToolWindowFactory : ToolWindowFactory {
       false,
     )
     toolWindow.contentManager.addContent(heatmapContent)
-
-    // Add toggle heatmap and clear buttons to tool window title bar
-    val actionManager = ActionManager.getInstance()
-    val titleActions = listOfNotNull(
-      actionManager.getAction("com.skydoves.compose.stability.idea.heatmap.ToggleHeatmapAction"),
-      actionManager.getAction("com.skydoves.compose.stability.idea.heatmap.ClearHeatmapDataAction"),
-    )
-    if (titleActions.isNotEmpty()) {
-      toolWindow.setTitleActions(titleActions)
-    }
   }
 
   public override fun shouldBeAvailable(project: Project): Boolean = true
