@@ -226,11 +226,14 @@ internal class AdbLogcatService(
   // ── ADB helpers ────────────────────────────────────────────────────────
 
   private fun resolveAdbPath(): String? {
+    val isWindows = System.getProperty("os.name").lowercase().contains("win")
+    val adbName = if (isWindows) "adb.exe" else "adb"
+
     // 1. Try ANDROID_HOME / ANDROID_SDK_ROOT environment variables
     val sdkRoot = System.getenv("ANDROID_HOME")
       ?: System.getenv("ANDROID_SDK_ROOT")
     if (sdkRoot != null) {
-      val adb = File(sdkRoot, "platform-tools${File.separator}adb")
+      val adb = File(sdkRoot, "platform-tools${File.separator}$adbName")
       if (adb.exists() && adb.canExecute()) {
         return adb.absolutePath
       }
@@ -244,7 +247,7 @@ internal class AdbLogcatService(
         localProps.inputStream().use { props.load(it) }
         val sdkDir = props.getProperty("sdk.dir")
         if (sdkDir != null) {
-          val adb = File(sdkDir, "platform-tools${File.separator}adb")
+          val adb = File(sdkDir, "platform-tools${File.separator}$adbName")
           if (adb.exists() && adb.canExecute()) {
             return adb.absolutePath
           }
@@ -254,13 +257,20 @@ internal class AdbLogcatService(
       // Ignore and try next fallback
     }
 
-    // 3. Try common macOS / Linux SDK locations
-    val commonPaths = listOf(
-      "${System.getProperty("user.home")}/Library/Android/sdk/platform-tools/adb",
-      "${System.getProperty("user.home")}/Android/Sdk/platform-tools/adb",
-      "/opt/homebrew/bin/adb",
-      "/usr/local/bin/adb",
-    )
+    // 3. Try common SDK locations
+    val userHome = System.getProperty("user.home")
+    val commonPaths = if (isWindows) {
+      listOf(
+        "$userHome\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe",
+      )
+    } else {
+      listOf(
+        "$userHome/Library/Android/sdk/platform-tools/adb",
+        "$userHome/Android/Sdk/platform-tools/adb",
+        "/opt/homebrew/bin/adb",
+        "/usr/local/bin/adb",
+      )
+    }
     for (path in commonPaths) {
       val adb = File(path)
       if (adb.exists() && adb.canExecute()) {
@@ -269,11 +279,12 @@ internal class AdbLogcatService(
     }
 
     // 4. Fallback: adb on PATH
+    val whichCommand = if (isWindows) arrayOf("cmd", "/c", "where", "adb") else arrayOf("which", "adb")
     return try {
-      val proc = ProcessBuilder("which", "adb")
+      val proc = ProcessBuilder(*whichCommand)
         .redirectErrorStream(true)
         .start()
-      val path = proc.inputStream.bufferedReader().readText().trim()
+      val path = proc.inputStream.bufferedReader().readText().trim().lines().first()
       proc.waitFor()
       if (path.isNotEmpty() && File(path).exists()) path else null
     } catch (_: Exception) {
