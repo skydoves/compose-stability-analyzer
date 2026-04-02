@@ -22,6 +22,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
+import com.skydoves.compose.stability.idea.toolwindow.combineToolbars
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.ScrollPaneFactory
@@ -160,11 +161,11 @@ internal class HeatmapPanel(private val project: Project) {
     actionGroup.add(RefreshAction())
     actionGroup.add(ClearAction())
 
-    val toolbar = ActionManager.getInstance()
+    val tabToolbar = ActionManager.getInstance()
       .createActionToolbar(ActionPlaces.TOOLBAR, actionGroup, true)
-    toolbar.targetComponent = tree
+    tabToolbar.targetComponent = tree
 
-    return toolbar.component
+    return combineToolbars(tabToolbar.component, tree)
   }
 
   /**
