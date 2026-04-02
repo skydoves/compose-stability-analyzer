@@ -151,6 +151,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
     }
 
     val currentStability = parseStabilityFromCompiler(inputFile)
+      .filterIgnored(ignoredPackages.get(), ignoredClasses.get())
     val referenceStability = parseStabilityFile(referenceFile)
 
     val stabilityConfigurationMatchers = stabilityConfigurationFiles.getOrElse(emptyList())
@@ -485,6 +486,19 @@ public abstract class StabilityCheckTask : DefaultTask() {
     }
 
     return entries
+  }
+
+  private fun Map<String, StabilityEntry>.filterIgnored(
+    ignoredPackages: List<String>,
+    ignoredClasses: List<String>,
+  ): Map<String, StabilityEntry> {
+    if (ignoredPackages.isEmpty() && ignoredClasses.isEmpty()) return this
+    return filterValues { entry ->
+      val packageName = entry.qualifiedName.substringBeforeLast('.', "")
+      val className = entry.qualifiedName.substringAfterLast('.')
+      !ignoredPackages.any { packageName.startsWith(it) } &&
+        !ignoredClasses.contains(className)
+    }
   }
 }
 
