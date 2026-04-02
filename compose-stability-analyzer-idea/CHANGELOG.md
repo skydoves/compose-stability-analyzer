@@ -2,6 +2,19 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.7.2] - 2026-04-02
+
+### Fixed
+- **ADB not found on Windows** (Issue #139)
+  - Fixed `adb.exe` detection on Windows for the Heatmap feature
+  - Added Windows default SDK path (`%LOCALAPPDATA%\Android\Sdk`)
+  - Uses `where` command instead of `which` on Windows for PATH lookup
+
+### Changed
+- **Tool window actions always visible** — Toggle Heatmap, Clear Data, Settings, and GitHub icons moved from hover-only title bar to each tab's content toolbar (right-aligned)
+- **Tool window icon updated** — Changed from monochrome gray to colorful blue matching the plugin icon
+- Settings and GitHub actions extracted to shared reusable classes
+
 ## [0.7.0] - 2026-02-13
 
 ### Added
