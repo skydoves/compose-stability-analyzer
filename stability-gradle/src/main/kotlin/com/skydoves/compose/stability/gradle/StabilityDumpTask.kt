@@ -18,12 +18,15 @@ package com.skydoves.compose.stability.gradle
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
 /**
@@ -71,6 +74,11 @@ public abstract class StabilityDumpTask : DefaultTask() {
   @get:Optional
   public abstract val stabilityFileSuffix: Property<String>
 
+  @get:InputFiles
+  @get:Optional
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  public abstract val stabilityConfigurationFiles: ListProperty<RegularFile>
+
   init {
     group = "verification"
     description = "Dump composable stability information to stability file"
@@ -103,7 +111,13 @@ public abstract class StabilityDumpTask : DefaultTask() {
       ignoredClasses.get(),
     )
 
-    writeStabilityFile(outputFile, filtered)
+    val stableTypeMatchers = stabilityConfigurationFiles.getOrElse(emptyList())
+      .flatMap { configRegularFile ->
+        StabilityConfigParser.fromFile(configRegularFile.asFile.path).stableTypeMatchers
+      }
+
+    val resolved = applyStabilityConfiguration(filtered, stableTypeMatchers)
+    writeStabilityFile(outputFile, resolved)
 
     logger.lifecycle("Stability file written to: ${outputFile.absolutePath}")
   }
@@ -279,6 +293,26 @@ public abstract class StabilityDumpTask : DefaultTask() {
       !entry.qualifiedName.contains("<anonymous>") &&
         !ignoredPackages.any { packageName.startsWith(it) } &&
         !ignoredClasses.contains(className)
+    }
+  }
+
+  private fun applyStabilityConfiguration(
+    entries: List<StabilityEntry>,
+    stableTypeMatchers: Collection<FqNameMatcher>,
+  ): List<StabilityEntry> {
+    if (stableTypeMatchers.isEmpty()) return entries
+
+    return entries.map { entry ->
+      val resolvedParams = entry.parameters.map { param ->
+        if (param.stability != "STABLE" && stableTypeMatchers.any { it.matches(param.type) }) {
+          param.copy(stability = "STABLE", reason = "matched by stability configuration")
+        } else {
+          param
+        }
+      }
+      val resolvedSkippable = entry.skippable ||
+        (resolvedParams.isNotEmpty() && resolvedParams.all { it.stability == "STABLE" })
+      entry.copy(parameters = resolvedParams, skippable = resolvedSkippable)
     }
   }
 

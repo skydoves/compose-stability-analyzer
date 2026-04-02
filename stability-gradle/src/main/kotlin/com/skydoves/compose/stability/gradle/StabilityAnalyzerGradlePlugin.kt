@@ -96,6 +96,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       outputDir.set(extension.stabilityValidation.outputDir)
       ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
       ignoredClasses.set(extension.stabilityValidation.ignoredClasses)
+      stabilityConfigurationFiles.set(extension.stabilityValidation.stabilityConfigurationFiles)
     }
 
     // Register stability check task
@@ -162,6 +163,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
         ignoredClasses.set(extension.stabilityValidation.ignoredClasses)
         stabilityFileSuffix.set(variant.name)
+        stabilityConfigurationFiles.set(extension.stabilityValidation.stabilityConfigurationFiles)
       }
 
       // Register stability check task
