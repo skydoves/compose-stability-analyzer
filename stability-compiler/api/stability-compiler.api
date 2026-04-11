@@ -156,7 +156,8 @@ public final class com/skydoves/compose/stability/compiler/StabilityReport$Compa
 public final class com/skydoves/compose/stability/compiler/lower/RecompositionIrBuilder {
 	public fun <init> (Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;)V
 	public final fun initializeSymbols ()Z
-	public final fun injectTrackingCode (Lorg/jetbrains/kotlin/ir/declarations/IrFunction;Ljava/lang/String;Ljava/lang/String;ILjava/util/List;)Z
+	public final fun injectTrackingCode (Lorg/jetbrains/kotlin/ir/declarations/IrFunction;Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;)Z
+	public static synthetic fun injectTrackingCode$default (Lcom/skydoves/compose/stability/compiler/lower/RecompositionIrBuilder;Lorg/jetbrains/kotlin/ir/declarations/IrFunction;Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;ILjava/lang/Object;)Z
 }
 
 public final class com/skydoves/compose/stability/compiler/lower/RecompositionIrBuilder$ParameterStabilityData {
@@ -173,6 +174,26 @@ public final class com/skydoves/compose/stability/compiler/lower/RecompositionIr
 	public final fun getStability ()Lcom/skydoves/compose/stability/runtime/ParameterStability;
 	public final fun getTypeString ()Ljava/lang/String;
 	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/skydoves/compose/stability/compiler/lower/RecompositionIrBuilder$StateVariableData {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lorg/jetbrains/kotlin/ir/declarations/IrVariable;ZLorg/jetbrains/kotlin/ir/declarations/IrSimpleFunction;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lorg/jetbrains/kotlin/ir/declarations/IrVariable;ZLorg/jetbrains/kotlin/ir/declarations/IrSimpleFunction;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lorg/jetbrains/kotlin/ir/declarations/IrVariable;
+	public final fun component4 ()Z
+	public final fun component5 ()Lorg/jetbrains/kotlin/ir/declarations/IrSimpleFunction;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lorg/jetbrains/kotlin/ir/declarations/IrVariable;ZLorg/jetbrains/kotlin/ir/declarations/IrSimpleFunction;)Lcom/skydoves/compose/stability/compiler/lower/RecompositionIrBuilder$StateVariableData;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/compiler/lower/RecompositionIrBuilder$StateVariableData;Ljava/lang/String;Ljava/lang/String;Lorg/jetbrains/kotlin/ir/declarations/IrVariable;ZLorg/jetbrains/kotlin/ir/declarations/IrSimpleFunction;ILjava/lang/Object;)Lcom/skydoves/compose/stability/compiler/lower/RecompositionIrBuilder$StateVariableData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getGetter ()Lorg/jetbrains/kotlin/ir/declarations/IrSimpleFunction;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getTypeString ()Ljava/lang/String;
+	public final fun getVariable ()Lorg/jetbrains/kotlin/ir/declarations/IrVariable;
+	public fun hashCode ()I
+	public final fun isDelegated ()Z
 	public fun toString ()Ljava/lang/String;
 }
 

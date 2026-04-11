@@ -53,6 +53,8 @@ public class RecompositionTracker(
   private var recompositionCount = 0
   private val currentParameters = mutableMapOf<String, TrackedParameter>()
   private val previousParameters = mutableMapOf<String, Any?>()
+  private val currentStates = mutableMapOf<String, TrackedState>()
+  private val previousStateValues = mutableMapOf<String, Any?>()
 
   /**
    * Tracks a parameter value for this recomposition.
@@ -65,8 +67,9 @@ public class RecompositionTracker(
    * @param isStable Whether this parameter type is stable according to Compose
    */
   public fun trackParameter(name: String, type: String, value: Any?, isStable: Boolean) {
+    val hasPrevious = name in previousParameters
     val previousValue = previousParameters[name]
-    val changed = previousValue != value
+    val changed = hasPrevious && previousValue != value
 
     currentParameters[name] = TrackedParameter(
       name = name,
@@ -75,6 +78,30 @@ public class RecompositionTracker(
       newValue = value,
       changed = changed,
       stable = isStable,
+    )
+  }
+
+  /**
+   * Tracks an internal state variable value for this recomposition.
+   *
+   * This method is called by generated code for each detected state variable
+   * when `@TraceRecomposition(traceStates = true)` is used.
+   *
+   * @param name State variable name
+   * @param type State value type as string
+   * @param value Current state value
+   */
+  public fun trackState(name: String, type: String, value: Any?) {
+    val hasPrevious = name in previousStateValues
+    val previousValue = previousStateValues[name]
+    val changed = hasPrevious && previousValue != value
+
+    currentStates[name] = TrackedState(
+      name = name,
+      type = type,
+      oldValue = previousValue,
+      newValue = value,
+      changed = changed,
     )
   }
 
@@ -102,12 +129,23 @@ public class RecompositionTracker(
         .filter { !it.stable }
         .map { it.name }
 
+      val stateChanges = currentStates.values.map { tracked ->
+        StateChange(
+          name = tracked.name,
+          type = tracked.type,
+          oldValue = tracked.oldValue,
+          newValue = tracked.newValue,
+          changed = tracked.changed,
+        )
+      }
+
       val event = RecompositionEvent(
         composableName = composableName,
         tag = tag,
         recompositionCount = recompositionCount,
         parameterChanges = parameterChanges,
         unstableParameters = unstableParameters,
+        stateChanges = stateChanges,
       )
 
       ComposeStabilityAnalyzer.logEvent(event)
@@ -118,6 +156,10 @@ public class RecompositionTracker(
       previousParameters[name] = tracked.newValue
     }
     currentParameters.clear()
+    currentStates.forEach { (name, tracked) ->
+      previousStateValues[name] = tracked.newValue
+    }
+    currentStates.clear()
   }
 
   /**
@@ -130,6 +172,14 @@ public class RecompositionTracker(
     val newValue: Any?,
     val changed: Boolean,
     val stable: Boolean,
+  )
+
+  private data class TrackedState(
+    val name: String,
+    val type: String,
+    val oldValue: Any?,
+    val newValue: Any?,
+    val changed: Boolean,
   )
 }
 

@@ -22,6 +22,8 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.IrType
@@ -94,7 +96,8 @@ public class StabilityAnalyzerTransformer(
       return super.visitFunctionNew(declaration)
     }
 
-    // Skip stability reporting if function has @IgnoreStabilityReport annotation or @Preview annotation
+    // Skip stability reporting if function has @IgnoreStabilityReport
+    // or @Preview annotation
     val shouldIgnoreReport = declaration.hasAnnotation(ignoreStabilityReportFqName) ||
       hasPreviewAnnotation(declaration)
 
@@ -177,6 +180,7 @@ public class StabilityAnalyzerTransformer(
 
       var tag = ""
       var threshold = 1
+      var traceStates = false
 
       annotation?.let { annot ->
         val annotationClass = annot.symbol.owner
@@ -197,6 +201,13 @@ public class StabilityAnalyzerTransformer(
         paramNameToIndex["threshold"]?.let { index ->
           annot.arguments.getOrNull(index)?.let { value ->
             threshold = extractConstIntValue(value) ?: 1
+          }
+        }
+
+        // Cover traceStates
+        paramNameToIndex["traceStates"]?.let { index ->
+          annot.arguments.getOrNull(index)?.let { value ->
+            traceStates = extractConstBooleanValue(value) ?: false
           }
         }
       }
@@ -228,6 +239,13 @@ public class StabilityAnalyzerTransformer(
           )
         }
 
+      // Detect state variables if traceStates is enabled
+      val stateVariables = if (traceStates) {
+        detectStateVariables(declaration.body as? IrBlockBody)
+      } else {
+        emptyList()
+      }
+
       // Inject tracking code
       val injected = irBuilder.injectTrackingCode(
         function = declaration,
@@ -235,10 +253,141 @@ public class StabilityAnalyzerTransformer(
         tag = tag,
         threshold = threshold,
         parameterStabilities = parameterStabilities,
+        stateVariables = stateVariables,
       )
     }
 
     return super.visitFunctionNew(declaration)
+  }
+
+  // FqNames for Compose State types
+  private val stateTypeFqNames = setOf(
+    "androidx.compose.runtime.MutableState",
+    "androidx.compose.runtime.MutableIntState",
+    "androidx.compose.runtime.MutableLongState",
+    "androidx.compose.runtime.MutableFloatState",
+    "androidx.compose.runtime.MutableDoubleState",
+    "androidx.compose.runtime.State",
+    "androidx.compose.runtime.MutableTransitionState",
+    "androidx.compose.runtime.snapshots.SnapshotStateList",
+    "androidx.compose.runtime.snapshots.SnapshotStateMap",
+  )
+
+  // FqNames for derived state types
+  private val derivedStateTypeFqNames = setOf(
+    "androidx.compose.runtime.DerivedState",
+  )
+
+  /**
+   * Detects state variable declarations in the function body's top-level statements.
+   * Looks for local variables whose type is a known Compose State type.
+   *
+   * Returns a list of [RecompositionIrBuilder.StateVariableData] for each detected state.
+   */
+  private fun detectStateVariables(
+    body: IrBlockBody?,
+  ): List<RecompositionIrBuilder.StateVariableData> {
+    if (body == null) return emptyList()
+
+    val result = mutableListOf<RecompositionIrBuilder.StateVariableData>()
+    collectStateVariablesRecursive(body.statements, result)
+    return result
+  }
+
+  private fun collectStateVariablesRecursive(
+    statements: List<org.jetbrains.kotlin.ir.IrStatement>,
+    result: MutableList<RecompositionIrBuilder.StateVariableData>,
+  ) {
+    for (statement in statements) {
+      // Recurse into blocks (Compose compiler wraps remember in blocks)
+      if (
+        statement is org.jetbrains.kotlin.ir.expressions.IrBlock
+      ) {
+        collectStateVariablesRecursive(
+          statement.statements,
+          result,
+        )
+        continue
+      }
+
+      // Recurse into when branches (Compose wraps body in IrWhen)
+      if (
+        statement is org.jetbrains.kotlin.ir.expressions.IrWhen
+      ) {
+        for (branch in statement.branches) {
+          val branchResult = branch.result
+          if (
+            branchResult is
+            org.jetbrains.kotlin.ir.expressions.IrBlock
+          ) {
+            collectStateVariablesRecursive(
+              branchResult.statements,
+              result,
+            )
+          }
+        }
+        continue
+      }
+
+      // Handle IrLocalDelegatedProperty (var x by remember { stateOf() })
+      val delegatedProp = statement as?
+        org.jetbrains.kotlin.ir.declarations.IrLocalDelegatedProperty
+      if (delegatedProp != null) {
+        val delegate = delegatedProp.delegate ?: continue
+        val delegateType =
+          delegate.type.classFqName?.asString()
+        if (delegateType != null) {
+          val isState =
+            stateTypeFqNames.any { delegateType == it }
+          val isDerived =
+            derivedStateTypeFqNames.any { delegateType == it }
+          if (isState || isDerived) {
+            result.add(
+              RecompositionIrBuilder.StateVariableData(
+                name = delegatedProp.name.asString(),
+                typeString = delegatedProp.type.render(),
+                variable = delegate,
+                isDelegated = true,
+                getter = delegatedProp.getter,
+              ),
+            )
+          }
+        }
+        continue
+      }
+
+      // Handle plain IrVariable (val state = mutableStateOf())
+      val variable = statement as? IrVariable ?: continue
+      val typeFqName =
+        variable.type.classFqName?.asString() ?: continue
+      val isStateType = stateTypeFqNames.any { typeFqName == it }
+      val isDerivedState = derivedStateTypeFqNames.any {
+        typeFqName == it
+      }
+      if (isStateType || isDerivedState) {
+        // Non-delegated: skip (same-instance comparison won't work)
+        continue
+      }
+      // Check initializer type for delegated fallback
+      val initType =
+        variable.initializer?.type?.classFqName?.asString()
+      if (initType != null) {
+        val initIsState =
+          stateTypeFqNames.any { initType == it }
+        val initIsDerived =
+          derivedStateTypeFqNames.any { initType == it }
+        if (initIsState || initIsDerived) {
+          result.add(
+            RecompositionIrBuilder.StateVariableData(
+              name = variable.name.asString(),
+              typeString = variable.type.render(),
+              variable = variable,
+              isDelegated = true,
+            ),
+          )
+        }
+      }
+    }
   }
 
   /**
@@ -750,6 +899,32 @@ public class StabilityAnalyzerTransformer(
           val valueField = expr.javaClass.getDeclaredField(fieldName)
           valueField.isAccessible = true
           val result = valueField.get(expr) as? Int
+          return result
+        } catch (e: NoSuchFieldException) {
+          continue
+        }
+      }
+      null
+    } catch (e: Exception) {
+      null
+    }
+  }
+
+  /**
+   * Extract a boolean value from an IrConst expression using reflection.
+   * Needed because IrConst.value is not directly accessible in Kotlin 2.1.0.
+   */
+  private fun extractConstBooleanValue(expr: IrExpression): Boolean? {
+    if (expr !is IrConst) {
+      return null
+    }
+    return try {
+      val fields = listOf("value", "getValue")
+      for (fieldName in fields) {
+        try {
+          val valueField = expr.javaClass.getDeclaredField(fieldName)
+          valueField.isAccessible = true
+          val result = valueField.get(expr) as? Boolean
           return result
         } catch (e: NoSuchFieldException) {
           continue

@@ -43,10 +43,13 @@ package com.skydoves.compose.stability.runtime
  * @param tag Optional custom tag for filtering logs. Useful for grouping related composables.
  * @param threshold Only log after this many recompositions. Default is 1 (log from first recomposition).
  *               Use higher values (e.g., 5 or 10) to reduce noise in frequently recomposing screens.
+ * @param traceStates When true, also tracks internal state changes (mutableStateOf, derivedStateOf, etc.)
+ *               that cause recomposition, not just parameter changes. Default is false.
  */
 @Retention(AnnotationRetention.BINARY)
 @Target(AnnotationTarget.FUNCTION)
 public annotation class TraceRecomposition(
   val tag: String = "",
   val threshold: Int = 1,
+  val traceStates: Boolean = false,
 )

@@ -58,8 +58,8 @@ class RecompositionTrackerTest {
     assertEquals("Int", param.type)
     assertNull(param.oldValue)
     assertEquals(0, param.newValue)
-    // First recomposition: null != 0, so changed is true
-    assertTrue(param.changed)
+    // First recomposition: no previous value, so changed is false
+    assertFalse(param.changed)
     assertTrue(param.stable)
   }
 
@@ -78,8 +78,8 @@ class RecompositionTrackerTest {
     assertEquals(2, testLogger.events.size)
 
     val firstEvent = testLogger.events[0]
-    // First recomposition: null != 0, so changed is true
-    assertTrue(firstEvent.parameterChanges[0].changed)
+    // First recomposition: no previous value, so changed is false
+    assertFalse(firstEvent.parameterChanges[0].changed)
     assertNull(firstEvent.parameterChanges[0].oldValue)
     assertEquals(0, firstEvent.parameterChanges[0].newValue)
 
@@ -273,6 +273,110 @@ class RecompositionTrackerTest {
 
     // Should not log when disabled
     assertEquals(0, testLogger.events.size)
+  }
+
+  @Test
+  fun testRecompositionTracker_trackState_firstRecomposition() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    tracker.trackState("count", "Int", 0)
+    tracker.logIfThresholdMet()
+
+    assertEquals(1, testLogger.events.size)
+    val event = testLogger.events[0]
+    assertEquals(1, event.stateChanges.size)
+
+    val state = event.stateChanges[0]
+    assertEquals("count", state.name)
+    assertEquals("Int", state.type)
+    assertNull(state.oldValue)
+    assertEquals(0, state.newValue)
+    // First recomposition: no previous value, changed is false
+    assertFalse(state.changed)
+  }
+
+  @Test
+  fun testRecompositionTracker_trackState_valueChanged() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    // First recomposition
+    tracker.trackState("count", "Int", 0)
+    tracker.logIfThresholdMet()
+
+    // Second recomposition with changed value
+    tracker.trackState("count", "Int", 5)
+    tracker.logIfThresholdMet()
+
+    assertEquals(2, testLogger.events.size)
+
+    val secondEvent = testLogger.events[1]
+    assertTrue(secondEvent.stateChanges[0].changed)
+    assertEquals(0, secondEvent.stateChanges[0].oldValue)
+    assertEquals(5, secondEvent.stateChanges[0].newValue)
+  }
+
+  @Test
+  fun testRecompositionTracker_trackState_valueNotChanged() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    tracker.trackState("count", "Int", 3)
+    tracker.logIfThresholdMet()
+
+    tracker.trackState("count", "Int", 3)
+    tracker.logIfThresholdMet()
+
+    assertEquals(2, testLogger.events.size)
+
+    val secondEvent = testLogger.events[1]
+    assertFalse(secondEvent.stateChanges[0].changed)
+  }
+
+  @Test
+  fun testRecompositionTracker_mixedParameterAndState() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    tracker.trackParameter("title", "String", "Hello", isStable = true)
+    tracker.trackState("count", "Int", 0)
+    tracker.logIfThresholdMet()
+
+    assertEquals(1, testLogger.events.size)
+    val event = testLogger.events[0]
+    assertEquals(1, event.parameterChanges.size)
+    assertEquals(1, event.stateChanges.size)
+    assertEquals("title", event.parameterChanges[0].name)
+    assertEquals("count", event.stateChanges[0].name)
+  }
+
+  @Test
+  fun testRecompositionTracker_stateChangeSummary() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    // First recomposition (setup)
+    tracker.trackState("count", "Int", 0)
+    tracker.trackState("flag", "Boolean", true)
+    tracker.logIfThresholdMet()
+
+    // Second recomposition (count changed, flag same)
+    tracker.trackState("count", "Int", 1)
+    tracker.trackState("flag", "Boolean", true)
+    tracker.logIfThresholdMet()
+
+    assertEquals(2, testLogger.events.size)
+    val secondEvent = testLogger.events[1]
+    assertEquals(2, secondEvent.stateChanges.size)
+    assertTrue(secondEvent.stateChanges[0].changed) // count
+    assertFalse(secondEvent.stateChanges[1].changed) // flag
+  }
+
+  @Test
+  fun testRecompositionTracker_noStateChanges_emptyByDefault() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    tracker.trackParameter("x", "Int", 1, isStable = true)
+    tracker.logIfThresholdMet()
+
+    assertEquals(1, testLogger.events.size)
+    assertTrue(testLogger.events[0].stateChanges.isEmpty())
   }
 
   /**
