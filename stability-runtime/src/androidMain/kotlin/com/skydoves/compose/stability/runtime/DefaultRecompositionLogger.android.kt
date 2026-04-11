@@ -44,29 +44,50 @@ public actual class DefaultRecompositionLogger : RecompositionLogger {
       "[Recomposition #${event.recompositionCount}] ${event.composableName}$tagSuffix",
     )
 
-    // Log parameter changes
-    event.parameterChanges.forEachIndexed { index, change ->
-      val isLast = index == event.parameterChanges.size - 1
-      val prefix = if (isLast) "  └─" else "  ├─"
+    // Collect all tree lines, then apply └─ to the last one
+    val lines = buildTreeLines(event)
+    lines.forEachIndexed { index, line ->
+      val prefix = if (index == lines.size - 1) "  └─" else "  ├─"
+      Log.d(tag, "$prefix $line")
+    }
+  }
 
+  private fun buildTreeLines(event: RecompositionEvent): List<String> {
+    val lines = mutableListOf<String>()
+
+    // Parameter changes
+    event.parameterChanges.forEach { change ->
       val status = when {
         change.changed -> {
           val oldStr = safeToString(change.oldValue)
           val newStr = safeToString(change.newValue)
           "changed ($oldStr → $newStr)"
         }
-
         change.stable -> "stable (${safeToString(change.newValue)})"
         else -> "unstable (${safeToString(change.newValue)})"
       }
-
-      Log.d(tag, "$prefix ${change.name}: ${change.type} $status")
+      lines.add("[param] ${change.name}: ${change.type} $status")
     }
 
-    // Log unstable parameters summary
+    // State changes
+    event.stateChanges.filter { it.changed }.forEach { change ->
+      val oldStr = safeToString(change.oldValue)
+      val newStr = safeToString(change.newValue)
+      lines.add("[state] ${change.name}: ${change.type} changed ($oldStr → $newStr)")
+    }
+
+    // Unstable parameters summary
     if (event.unstableParameters.isNotEmpty()) {
-      Log.d(tag, "  └─ Unstable parameters: ${event.unstableParameters}")
+      lines.add("Unstable parameters: ${event.unstableParameters}")
     }
+
+    // State changes summary
+    val changedStates = event.stateChanges.filter { it.changed }.map { it.name }
+    if (changedStates.isNotEmpty()) {
+      lines.add("State changes: $changedStates")
+    }
+
+    return lines
   }
 
   /**

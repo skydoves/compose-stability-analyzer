@@ -46,6 +46,7 @@ import com.skydoves.myapplication.models.UnstableUser
  *    ComposeStabilityAnalyzer.setEnabled(BuildConfig.DEBUG)
  * 4. Run your app and check Logcat for "Recomposition" tag
  */
+@TraceRecomposition(traceStates = true)
 @Composable
 fun RecompositionTrackingExample() {
   var counter by remember { mutableIntStateOf(0) }

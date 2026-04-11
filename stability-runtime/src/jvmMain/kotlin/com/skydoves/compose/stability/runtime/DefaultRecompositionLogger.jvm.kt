@@ -35,29 +35,45 @@ public actual class DefaultRecompositionLogger : RecompositionLogger {
 
     println("[Recomposition #${event.recompositionCount}] ${event.composableName}$tagSuffix")
 
-    // Log parameter changes
-    event.parameterChanges.forEachIndexed { index, change ->
-      val isLast = index == event.parameterChanges.size - 1
-      val prefix = if (isLast) "  └─" else "  ├─"
+    val lines = buildTreeLines(event)
+    lines.forEachIndexed { index, line ->
+      val prefix = if (index == lines.size - 1) "  └─" else "  ├─"
+      println("$prefix $line")
+    }
+  }
 
+  private fun buildTreeLines(event: RecompositionEvent): List<String> {
+    val lines = mutableListOf<String>()
+
+    event.parameterChanges.forEach { change ->
       val status = when {
         change.changed -> {
           val oldStr = safeToString(change.oldValue)
           val newStr = safeToString(change.newValue)
           "changed ($oldStr → $newStr)"
         }
-
         change.stable -> "stable (${safeToString(change.newValue)})"
         else -> "unstable (${safeToString(change.newValue)})"
       }
-
-      println("$prefix ${change.name}: ${change.type} $status")
+      lines.add("[param] ${change.name}: ${change.type} $status")
     }
 
-    // Log unstable parameters summary
+    event.stateChanges.filter { it.changed }.forEach { change ->
+      val oldStr = safeToString(change.oldValue)
+      val newStr = safeToString(change.newValue)
+      lines.add("[state] ${change.name}: ${change.type} changed ($oldStr → $newStr)")
+    }
+
     if (event.unstableParameters.isNotEmpty()) {
-      println("  └─ Unstable parameters: ${event.unstableParameters}")
+      lines.add("Unstable parameters: ${event.unstableParameters}")
     }
+
+    val changedStates = event.stateChanges.filter { it.changed }.map { it.name }
+    if (changedStates.isNotEmpty()) {
+      lines.add("State changes: $changedStates")
+    }
+
+    return lines
   }
 
   /**

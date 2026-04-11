@@ -55,6 +55,7 @@ public interface RecompositionLogger {
  * @property recompositionCount Number of times this composable has recomposed
  * @property parameterChanges List of all parameters with their change status
  * @property unstableParameters List of parameter names that are unstable
+ * @property stateChanges List of internal state variable changes (empty when traceStates is false)
  */
 public data class RecompositionEvent(
   val composableName: String,
@@ -62,6 +63,7 @@ public data class RecompositionEvent(
   val recompositionCount: Int,
   val parameterChanges: List<ParameterChange>,
   val unstableParameters: List<String>,
+  val stateChanges: List<StateChange> = emptyList(),
 )
 
 /**
@@ -81,6 +83,23 @@ public data class ParameterChange(
   val newValue: Any?,
   val changed: Boolean,
   val stable: Boolean,
+)
+
+/**
+ * Represents the change status of an internal state variable between recompositions.
+ *
+ * @property name State variable name
+ * @property type State value type as string
+ * @property oldValue Previous value (null on first recomposition)
+ * @property newValue Current value
+ * @property changed Whether the value changed from previous recomposition
+ */
+public data class StateChange(
+  val name: String,
+  val type: String,
+  val oldValue: Any?,
+  val newValue: Any?,
+  val changed: Boolean,
 )
 
 /**

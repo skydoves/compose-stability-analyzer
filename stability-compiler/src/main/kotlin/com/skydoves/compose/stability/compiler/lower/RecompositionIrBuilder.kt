@@ -27,10 +27,14 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrLocalDelegatedProperty
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrWhen
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
@@ -64,6 +68,7 @@ public class RecompositionIrBuilder(
   private var trackerClassSymbol: IrClassSymbol? = null
   private var rememberTrackerFunctionSymbol: IrSimpleFunctionSymbol? = null
   private var trackParameterFunctionSymbol: IrSimpleFunctionSymbol? = null
+  private var trackStateFunctionSymbol: IrSimpleFunctionSymbol? = null
   private var logIfThresholdMetFunctionSymbol: IrSimpleFunctionSymbol? = null
 
   /**
@@ -104,6 +109,12 @@ public class RecompositionIrBuilder(
         return false
       }
 
+      trackStateFunctionSymbol = trackerClass?.functions?.firstOrNull {
+        it.name.asString() == "trackState"
+      }?.symbol
+
+      // trackState is optional - don't fail if missing (backward compat)
+
       logIfThresholdMetFunctionSymbol = trackerClass?.functions?.firstOrNull {
         it.name.asString() == "logIfThresholdMet"
       }?.symbol
@@ -136,16 +147,14 @@ public class RecompositionIrBuilder(
     tag: String,
     threshold: Int,
     parameterStabilities: List<ParameterStabilityData>,
+    stateVariables: List<StateVariableData> = emptyList(),
   ): Boolean {
     try {
       val body = function.body as? IrBlockBody ?: return false
 
       val builder = DeclarationIrBuilder(context, function.symbol)
 
-      // Create new body with tracking code prepended
-      val newStatements = mutableListOf<org.jetbrains.kotlin.ir.IrStatement>()
-
-      // 1. Create tracker variable: val _tracker = remember { ... }
+      // 1. Create tracker variable: val _tracker = rememberRecompositionTracker(...)
       val trackerVariable = createTrackerVariable(
         builder = builder,
         function = function,
@@ -153,32 +162,136 @@ public class RecompositionIrBuilder(
         tag = tag,
         threshold = threshold,
       )
-      newStatements.add(trackerVariable)
 
-      // 2. Add trackParameter calls for each parameter
-      parameterStabilities.forEach { paramData ->
-        val trackParameterCall = createTrackParameterCall(
+      // 2. Create trackParameter calls for each parameter
+      val trackParameterCalls = parameterStabilities.map { paramData ->
+        createTrackParameterCall(
           builder = builder,
           trackerVariable = trackerVariable,
           paramData = paramData,
         )
-        newStatements.add(trackParameterCall)
       }
 
-      // 3. Add logIfThresholdMet call
+      // 3. Create logIfThresholdMet call
       val logCall = createLogIfThresholdMetCall(builder, trackerVariable)
-      newStatements.add(logCall)
 
-      // 4. Add original body statements
-      newStatements.addAll(body.statements)
+      if (stateVariables.isEmpty()) {
+        // Standard mode: prepend tracker + params + log, then body
+        val newStatements = mutableListOf<org.jetbrains.kotlin.ir.IrStatement>()
+        newStatements.add(trackerVariable)
+        newStatements.addAll(trackParameterCalls)
+        newStatements.add(logCall)
+        newStatements.addAll(body.statements)
 
-      // Replace body with new statements
-      body.statements.clear()
-      body.statements.addAll(newStatements)
+        body.statements.clear()
+        body.statements.addAll(newStatements)
+      } else {
+        // State tracking mode: interleave trackState calls after
+        // state variable declarations (may be nested in IrBlocks
+        // due to Compose compiler lowering), and move
+        // logIfThresholdMet to the end
+        val stateVarSet = stateVariables.associateBy {
+          it.variable
+        }
+
+        injectTrackStateRecursive(
+          body.statements,
+          builder,
+          trackerVariable,
+          stateVarSet,
+        )
+
+        val newStatements =
+          mutableListOf<org.jetbrains.kotlin.ir.IrStatement>()
+        newStatements.add(trackerVariable)
+        newStatements.addAll(trackParameterCalls)
+        newStatements.addAll(body.statements)
+        newStatements.add(logCall)
+
+        body.statements.clear()
+        body.statements.addAll(newStatements)
+      }
 
       return true
     } catch (e: Exception) {
       return false
+    }
+  }
+
+  /**
+   * Recursively walks IR statements and inserts trackState calls
+   * after detected state variable declarations. Handles IrBlock
+   * nesting from Compose compiler lowering.
+   */
+  private fun injectTrackStateRecursive(
+    statements: MutableList<org.jetbrains.kotlin.ir.IrStatement>,
+    builder: IrBuilderWithScope,
+    trackerVariable: IrVariable,
+    stateVarSet: Map<IrVariable, StateVariableData>,
+  ) {
+    var i = 0
+    while (i < statements.size) {
+      val stmt = statements[i]
+
+      // Recurse into blocks
+      if (stmt is IrBlock) {
+        injectTrackStateRecursive(
+          stmt.statements,
+          builder,
+          trackerVariable,
+          stateVarSet,
+        )
+      }
+
+      // Recurse into when branches
+      if (stmt is IrWhen) {
+        for (branch in stmt.branches) {
+          val branchResult = branch.result
+          if (branchResult is IrBlock) {
+            injectTrackStateRecursive(
+              branchResult.statements,
+              builder,
+              trackerVariable,
+              stateVarSet,
+            )
+          }
+        }
+      }
+
+      // Check if this is a detected state variable (IrVariable)
+      val variable = stmt as? IrVariable
+      if (variable != null && variable in stateVarSet) {
+        val stateData = stateVarSet[variable]!!
+        val trackStateCall = createTrackStateCall(
+          builder,
+          trackerVariable,
+          stateData,
+        )
+        if (trackStateCall != null) {
+          statements.add(i + 1, trackStateCall)
+          i++
+        }
+      }
+
+      // Check IrLocalDelegatedProperty (delegate is our key)
+      val delegatedProp = stmt as? IrLocalDelegatedProperty
+      if (delegatedProp != null) {
+        val delegate = delegatedProp.delegate
+        if (delegate in stateVarSet) {
+          val stateData = stateVarSet[delegate]!!
+          val trackStateCall = createTrackStateCall(
+            builder,
+            trackerVariable,
+            stateData,
+          )
+          if (trackStateCall != null) {
+            statements.add(i + 1, trackStateCall)
+            i++
+          }
+        }
+      }
+
+      i++
     }
   }
 
@@ -276,6 +389,38 @@ public class RecompositionIrBuilder(
   }
 
   /**
+   * Creates IR call to `tracker.trackState(name, type, value)`.
+   *
+   * For delegated state variables (var x by ...), reads the variable directly (already unwrapped).
+   * For non-delegated state variables (val s = mutableStateOf()),
+   * reads s.value via property getter.
+   */
+  private fun createTrackStateCall(
+    builder: IrBuilderWithScope,
+    trackerVariable: IrVariable,
+    stateData: StateVariableData,
+  ): IrExpression? {
+    val trackStateSymbol = trackStateFunctionSymbol ?: return null
+
+    val call = builder.irCall(trackStateSymbol)
+    call.arguments[0] = builder.irGet(trackerVariable) // dispatch receiver
+    call.arguments[1] = builder.irString(stateData.name) // name: String
+    call.arguments[2] = builder.irString(stateData.typeString) // type: String
+
+    if (stateData.getter != null) {
+      // Use the getter from IrLocalDelegatedProperty to read
+      // the unwrapped value (calls getValue on the delegate)
+      val getterCall = builder.irCall(stateData.getter.symbol)
+      call.arguments[3] = getterCall
+    } else {
+      // Fallback: read the variable directly
+      call.arguments[3] = builder.irGet(stateData.variable)
+    }
+
+    return call
+  }
+
+  /**
    * Data class holding parameter information for tracking.
    */
   public data class ParameterStabilityData(
@@ -283,5 +428,16 @@ public class RecompositionIrBuilder(
     val typeString: String,
     val parameter: IrValueParameter,
     val stability: ParameterStability,
+  )
+
+  /**
+   * Data class holding state variable information for tracking.
+   */
+  public data class StateVariableData(
+    val name: String,
+    val typeString: String,
+    val variable: IrVariable,
+    val isDelegated: Boolean,
+    val getter: IrSimpleFunction? = null,
   )
 }
