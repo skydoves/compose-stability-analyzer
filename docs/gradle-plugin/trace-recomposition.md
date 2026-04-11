@@ -21,9 +21,9 @@ When this composable recomposes, detailed logs appear in Logcat showing the reco
 
 ```
 D/Recomposition: [Recomposition #1] UserProfile
-D/Recomposition:   └─ user: User stable (User@abc123)
+D/Recomposition:   └─ [param] user: User stable (User@abc123)
 D/Recomposition: [Recomposition #2] UserProfile
-D/Recomposition:   └─ user: User changed (User@abc123 → User@def456)
+D/Recomposition:   └─ [param] user: User changed (User@abc123 → User@def456)
 ```
 
 The first log entry shows the initial composition: the `user` parameter is stable and the log includes its identity hash. The second entry shows a recomposition triggered by the `user` parameter changing to a different instance, with both the old and new identity hashes displayed.
@@ -46,7 +46,7 @@ Logs now include the tag, making it easy to filter in Logcat:
 
 ```
 D/Recomposition: [Recomposition #1] UserProfile (tag: user-profile)
-D/Recomposition:   └─ user: User stable (User@abc123)
+D/Recomposition:   └─ [param] user: User stable (User@abc123)
 ```
 
 Tags are also valuable when using a [custom logger](custom-logger.md), since you can route events differently based on their tag, for example sending only critical flow recompositions (checkout, authentication) to your analytics platform while logging everything else to Logcat during development.
@@ -69,6 +69,47 @@ fun FrequentlyRecomposingScreen() {
 
 A threshold of `3` works well for most composables. For composables in scrolling lists or frequently updating screens where some recomposition is expected, a higher threshold (e.g., `10` or `20`) helps focus on truly excessive recomposition.
 
+### The `traceStates` Parameter
+
+By default, `@TraceRecomposition` only tracks **parameter changes**. When a composable recomposes due to internal state changes (`mutableStateOf`, `derivedStateOf`, etc.), the standard logs show nothing because the parameters haven't changed.
+
+Setting `traceStates = true` enables **internal state tracking**. The compiler plugin detects state variable declarations in your composable and injects tracking code that logs which states changed between recompositions.
+
+```kotlin
+@TraceRecomposition(traceStates = true)
+@Composable
+fun CounterScreen(title: String) {
+    var counter by remember { mutableIntStateOf(0) }
+    val doubled by remember { derivedStateOf { counter * 2 } }
+
+    Column {
+        Text("$title: $counter (doubled: $doubled)")
+        Button(onClick = { counter++ }) {
+            Text("Increment")
+        }
+    }
+}
+```
+
+After clicking the button, the log now shows both parameter and state information:
+
+```
+D/Recomposition: [Recomposition #2] CounterScreen
+D/Recomposition:   ├─ [param] title: String stable (Counter)
+D/Recomposition:   ├─ [state] counter: Int changed (0 → 1)
+D/Recomposition:   └─ State changes: [counter]
+```
+
+The `[param]` prefix identifies parameter tracking entries, while `[state]` identifies internal state changes. Only states that actually changed are logged, reducing noise. The `State changes` summary at the end lists all changed state variable names for quick reference.
+
+!!! note "Supported state patterns"
+
+    State tracking detects delegated state properties: `var x by remember { mutableStateOf(...) }`, `mutableIntStateOf`, `mutableLongStateOf`, `mutableFloatStateOf`, `mutableDoubleStateOf`, and `derivedStateOf`. Non-delegated patterns (`val state = mutableStateOf(...)`) are not tracked in the current version. Use the `by` delegation syntax for full tracking support.
+
+!!! tip "When to use traceStates"
+
+    Use `traceStates = true` when a composable is recomposing but the parameter logs show no changes. This typically means an internal state or `CompositionLocal` is causing the recomposition, and state tracking will reveal which one.
+
 ## Reading the Logs
 
 Understanding the log output is key to diagnosing recomposition issues. Each log entry contains several pieces of information that, together, tell you exactly what happened and why.
@@ -77,7 +118,7 @@ Understanding the log output is key to diagnosing recomposition issues. Each log
 
 ```
 D/Recomposition: [Recomposition #1] UserProfile
-D/Recomposition:   └─ user: User stable (User@abc123)
+D/Recomposition:   └─ [param] user: User stable (User@abc123)
 ```
 
 The `[Recomposition #1]` counter tells you this is the first time this composable instance is recomposing. `user: User` identifies the parameter by name and type. The `stable` label means the Compose compiler considers this parameter stable, so it won't cause unnecessary recompositions. The identity hash `(User@abc123)` lets you track whether the same instance is being passed across recompositions.
@@ -88,7 +129,7 @@ This log confirms the composable is working correctly. A stable parameter on the
 
 ```
 D/Recomposition: [Recomposition #2] UserProfile
-D/Recomposition:   └─ user: User changed (User@abc123 → User@def456)
+D/Recomposition:   └─ [param] user: User changed (User@abc123 → User@def456)
 ```
 
 The `changed` label is the most important signal. It tells you this parameter's value is different from the last composition, which is the **reason** this composable recomposed. The arrow notation `(User@abc123 → User@def456)` shows the old and new identity hashes, confirming the value actually changed.
@@ -99,7 +140,7 @@ This is normal behavior. The parameter changed, so the composable recomposed to 
 
 ```
 D/Recomposition: [Recomposition #1] UserCard (tag: user-card)
-D/Recomposition:   ├─ user: MutableUser unstable (MutableUser@xyz789)
+D/Recomposition:   ├─ [param] user: MutableUser unstable (MutableUser@xyz789)
 D/Recomposition:   └─ Unstable parameters: [user]
 ```
 
@@ -109,9 +150,9 @@ The `unstable` label means the Compose compiler cannot guarantee this parameter 
 
 ```
 D/Recomposition: [Recomposition #5] ProductList (tag: products)
-D/Recomposition:   ├─ title: String stable (Products)
-D/Recomposition:   ├─ count: Int changed (4 → 5)
-D/Recomposition:   ├─ items: List<Product> unstable (List@abc)
+D/Recomposition:   ├─ [param] title: String stable (Products)
+D/Recomposition:   ├─ [param] count: Int changed (4 → 5)
+D/Recomposition:   ├─ [param] items: List<Product> unstable (List@abc)
 D/Recomposition:   └─ Unstable parameters: [items]
 ```
 
@@ -155,8 +196,8 @@ fun ProductCard(product: Product, onClick: () -> Unit) {
 
 ```
 D/Recomposition: [Recomposition #3] ProductCard (tag: product-card)
-D/Recomposition:   ├─ product: Product unstable (Product@abc)
-D/Recomposition:   ├─ onClick: () -> Unit stable (Function@xyz)
+D/Recomposition:   ├─ [param] product: Product unstable (Product@abc)
+D/Recomposition:   ├─ [param] onClick: () -> Unit stable (Function@xyz)
 D/Recomposition:   └─ Unstable parameters: [product]
 ```
 
@@ -176,8 +217,8 @@ data class Product(val name: String, val price: Double)
 
 ```
 D/Recomposition: [Recomposition #3] ProductCard (tag: product-card)
-D/Recomposition:   ├─ product: Product stable (Product@abc)
-D/Recomposition:   └─ onClick: () -> Unit stable (Function@xyz)
+D/Recomposition:   ├─ [param] product: Product stable (Product@abc)
+D/Recomposition:   └─ [param] onClick: () -> Unit stable (Function@xyz)
 ```
 
 The `ProductCard` is now skippable. During scrolling, Compose will skip recomposing cards whose `product` and `onClick` values haven't changed, resulting in noticeably smoother performance.

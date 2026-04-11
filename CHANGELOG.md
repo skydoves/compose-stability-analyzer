@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.2] - 2026-04-02
+## [0.7.3] - 2026-04-11
 
 ### Added
 - **Stability configuration file support for `stabilityDump`** (Issue #130, PR #105)
@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Reduces baseline file size in large projects and focuses on stability issues
 - **New composable diff now includes parameter-level stability details** (PR #105)
   - `stabilityCheck` output for new composables shows each parameter's stability status
+- **Internal state change tracking for `@TraceRecomposition`** (Issue #89)
+  - New `traceStates` annotation parameter: `@TraceRecomposition(traceStates = true)`
+  - Tracks `mutableStateOf`, `mutableIntStateOf`, `derivedStateOf` and other Compose state changes
+  - Compiler plugin detects delegated state variables via `IrLocalDelegatedProperty` IR analysis
+  - Logs state changes with `[state]` prefix, parameter changes with `[param]` prefix
+  - Only changed states are logged to reduce noise
 
 ### Fixed
 - **`ignoredPackages` now consistently respected during `stabilityCheck`** (Issue #129)

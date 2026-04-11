@@ -2,7 +2,7 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
-## [0.7.2] - 2026-04-02
+## [0.7.3] - 2026-04-11
 
 ### Fixed
 - **ADB not found on Windows** (Issue #139)

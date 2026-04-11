@@ -212,7 +212,7 @@ This is incredibly useful for:
 First, add the plugin to the `[plugins]` section of your `libs.versions.toml` file:
 
 ```toml
-stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.7.2" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.7.3" }
 ```
 
 Then, apply it to your root `build.gradle.kts` with `apply false`:
@@ -234,7 +234,7 @@ It’s **strongly recommended to use the exact same Kotlin version** as this lib
 
 | Stability Analyzer | Kotlin |
 |--------------------|-------------|
-| 0.7.2+             | 2.3.20 |
+| 0.7.3+             | 2.3.20 |
 | 0.6.5~0.7.0        | 2.3.0 |
 | 0.4.0~0.6.4        | 2.2.21 |
 
@@ -257,9 +257,9 @@ That's it. When this composable recomposes, you'll see logs like:
 
 ```
 D/Recomposition: [Recomposition #1] UserProfile
-D/Recomposition:   └─ user: User stable (User@abc123)
+D/Recomposition:   └─ [param] user: User stable (User@abc123)
 D/Recomposition: [Recomposition #2] UserProfile
-D/Recomposition:   └─ user: User changed (User@abc123 → User@def456)
+D/Recomposition:   └─ [param] user: User changed (User@abc123 → User@def456)
 ```
 
 ### Annotation Parameters
@@ -317,7 +317,7 @@ Now logs include the tag:
 
 ```
 D/Recomposition: [Recomposition #1] UserProfile (tag: user-profile)
-D/Recomposition:   └─ user: User stable (User@abc123)
+D/Recomposition:   └─ [param] user: User stable (User@abc123)
 ```
 
 This is also very useful if you want to set a custom logger for `ComposeStabilityAnalyzer`, to distinguish which composable function should be examined like the example below:
@@ -415,7 +415,7 @@ Let's understand what each log tells you:
 
 ```
 D/Recomposition: [Recomposition #1] UserProfile
-D/Recomposition:   └─ user: User stable (User@abc123)
+D/Recomposition:   └─ [param] user: User stable (User@abc123)
 ```
 
 **What this means:**
@@ -431,7 +431,7 @@ This log confirms the composable is working correctly. The parameter is stable a
 
 ```
 D/Recomposition: [Recomposition #2] UserProfile
-D/Recomposition:   └─ user: User changed (User@abc123 → User@def456)
+D/Recomposition:   └─ [param] user: User changed (User@abc123 → User@def456)
 ```
 
 **What this means:**
@@ -445,7 +445,7 @@ This is normal behavior. The parameter changed, so the composable recomposed to 
 
 ```
 D/Recomposition: [Recomposition #1] UserCard (tag: user-card)
-D/Recomposition:   ├─ user: MutableUser unstable (MutableUser@xyz789)
+D/Recomposition:   ├─ [param] user: MutableUser unstable (MutableUser@xyz789)
 D/Recomposition:   └─ Unstable parameters: [user]
 ```
 
@@ -453,9 +453,9 @@ D/Recomposition:   └─ Unstable parameters: [user]
 
 ```
 D/Recomposition: [Recomposition #5] ProductList (tag: products)
-D/Recomposition:   ├─ title: String stable (Products)
-D/Recomposition:   ├─ count: Int changed (4 → 5)
-D/Recomposition:   ├─ items: List<Product> unstable (List@abc)
+D/Recomposition:   ├─ [param] title: String stable (Products)
+D/Recomposition:   ├─ [param] count: Int changed (4 → 5)
+D/Recomposition:   ├─ [param] items: List<Product> unstable (List@abc)
 D/Recomposition:   └─ Unstable parameters: [items]
 ```
 
@@ -492,13 +492,13 @@ fun ProductCard(
 
 ```
 D/Recomposition: [Recomposition #3] ProductCard (tag: product-card)
-D/Recomposition:   ├─ product: Product unstable (Product@abc)
-D/Recomposition:   ├─ onClick: () -> Unit stable (Function@xyz)
+D/Recomposition:   ├─ [param] product: Product unstable (Product@abc)
+D/Recomposition:   ├─ [param] onClick: () -> Unit stable (Function@xyz)
 D/Recomposition:   └─ Unstable parameters: [product]
 
 D/Recomposition: [Recomposition #4] ProductCard (tag: product-card)
-D/Recomposition:   ├─ product: Product unstable (Product@abc)
-D/Recomposition:   ├─ onClick: () -> Unit stable (Function@xyz)
+D/Recomposition:   ├─ [param] product: Product unstable (Product@abc)
+D/Recomposition:   ├─ [param] onClick: () -> Unit stable (Function@xyz)
 D/Recomposition:   └─ Unstable parameters: [product]
 
 ... (logs continue every scroll)
@@ -537,11 +537,46 @@ Run the app again and check Logcat:
 
 ```
 D/Recomposition: [Recomposition #3] ProductCard (tag: product-card)
-D/Recomposition:   ├─ product: Product stable (Product@abc)
-D/Recomposition:   └─ onClick: () -> Unit stable (Function@xyz)
+D/Recomposition:   ├─ [param] product: Product stable (Product@abc)
+D/Recomposition:   └─ [param] onClick: () -> Unit stable (Function@xyz)
 
 (No more excessive recompositions!)
 ```
+
+### Internal State Tracking
+
+By default, `@TraceRecomposition` only tracks **parameter changes**. When a composable recomposes due to internal state changes (`mutableStateOf`, `derivedStateOf`, etc.), the standard logs show nothing because the parameters haven't changed.
+
+Setting `traceStates = true` enables **internal state tracking**:
+
+```kotlin
+@TraceRecomposition(traceStates = true)
+@Composable
+fun CounterScreen(title: String) {
+    var counter by remember { mutableIntStateOf(0) }
+    val doubled by remember { derivedStateOf { counter * 2 } }
+
+    Column {
+        Text("$title: $counter (doubled: $doubled)")
+        Button(onClick = { counter++ }) {
+            Text("Increment")
+        }
+    }
+}
+```
+
+After clicking the button:
+
+```
+D/Recomposition: [Recomposition #2] CounterScreen
+D/Recomposition:   ├─ [param] title: String stable (Counter)
+D/Recomposition:   ├─ [state] counter: Int changed (0 → 1)
+D/Recomposition:   └─ State changes: [counter]
+```
+
+The `[param]` prefix identifies parameter entries, while `[state]` identifies internal state changes. Only states that actually changed are logged. This helps answer the question: "Why is this composable recomposing when parameters haven't changed?"
+
+> **Note**: State tracking detects delegated state properties (`var x by remember { mutableStateOf(...) }`). Non-delegated patterns (`val state = mutableStateOf(...)`) are not tracked in the current version.
 
 ### Best Practices
 

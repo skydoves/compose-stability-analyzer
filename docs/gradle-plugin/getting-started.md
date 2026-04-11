@@ -45,7 +45,7 @@ The Compose Stability Analyzer compiler plugin is tightly coupled to the Kotlin 
 
 | Stability Analyzer | Kotlin |
 |--------------------|--------|
-| 0.7.2+             | 2.3.20 |
+| 0.7.3+             | 2.3.20 |
 | 0.6.5 ~ 0.7.0     | 2.3.0  |
 | 0.4.0 ~ 0.6.4     | 2.2.21 |
 
