@@ -16,7 +16,7 @@ jetbrains-compose = "1.9.3"
 compose-stability-analyzer = "0.7.3"
 runtimeAnnotation = "1.9.0"
 spotless = "6.21.0"
-shadow = "8.1.1"
+shadow = "9.0.0-beta12"
 
 [libraries]
 androidx-compose-compiler = { module = "androidx.compose.compiler:compiler", version.ref = "compiler" }
@@ -53,4 +53,4 @@ compose-stability-analyzer = { id = "com.github.skydoves.compose.stability.analy
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 nexus-plugin = { id = "com.vanniktech.maven.publish", version.ref = "nexusPlugin" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
-shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
