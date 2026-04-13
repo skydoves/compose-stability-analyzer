@@ -72,12 +72,6 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     } else {
       registerTasksAndroid(target, extension, androidComponents)
     }
-
-    // Add output parameter to the Kotlin tasks to ensure it is compatible with the Build Cache
-    target.tasks.withType(KotlinCompile::class.java).configureEach {
-      val stabilityDir = target.layout.buildDirectory.dir("stability").get()
-      outputs.dir(stabilityDir).optional(true)
-    }
   }
 
   private fun registerTasksNonAndroid(
@@ -131,6 +125,14 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       configureTaskDependencies(target, extension, null, stabilityDumpTask, stabilityCheckTask)
       addRuntimeDependency(target)
     }
+
+    // Add output parameter to the Kotlin tasks to ensure it is compatible with the Build Cache
+    target.tasks.withType(KotlinCompile::class.java)
+      .named { isKotlinTaskApplicable(it, false) }
+      .configureEach {
+        val stabilityDir = target.layout.buildDirectory.dir("stability").get()
+        outputs.dir(stabilityDir).optional(true)
+      }
   }
 
   private fun registerTasksAndroid(
@@ -158,7 +160,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       ) {
         projectName.set(target.name)
         stabilityInputFiles.setFrom(
-          target.layout.buildDirectory.file("stability/stability-info.json"),
+          target.layout.buildDirectory.file("stability/${variant.name}/stability-info.json"),
         )
         outputDir.set(extension.stabilityValidation.outputDir)
         ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
@@ -175,7 +177,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       ) {
         projectName.set(target.name)
         stabilityInputFiles.from(
-          target.layout.buildDirectory.file("stability/stability-info.json"),
+          target.layout.buildDirectory.file("stability/${variant.name}/stability-info.json"),
         )
         stabilityReferenceFiles.from(extension.stabilityValidation.outputDir)
         ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
@@ -212,6 +214,16 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
           stabilityCheckTask,
         )
       }
+
+      // Add output parameter to the Kotlin tasks to ensure it is compatible with the Build Cache
+      target.tasks.withType(KotlinCompile::class.java)
+        .named { it.contains(variantNameUpperCase) && isKotlinTaskApplicable(it, false) }
+        .configureEach {
+          val stabilityDir =
+            target.layout.buildDirectory.dir("stability/${variant.name}")
+              .get()
+          outputs.dir(stabilityDir).optional(true)
+        }
     }
 
     target.afterEvaluate {
@@ -266,10 +278,29 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     return project.provider {
       val projectDependencies = collectProjectDependencies(project)
 
+      val variant =
+        if (project.extensions.findByType(AndroidComponentsExtension::class.java) != null) {
+          kotlinCompilation.compileKotlinTaskName
+            .removePrefix("compile")
+            .removeSuffix("Kotlin")
+            .replaceFirstChar { it.lowercase() }
+        } else {
+          ""
+        }
+
+      val stabilityFolderName = if (variant.isBlank()) {
+        "stability"
+      } else {
+        "stability/$variant"
+      }
       // Write project dependencies to a file to avoid empty string issues with SubpluginOption
-      val stabilityDir = project.layout.buildDirectory.dir("stability").get().asFile
+      val stabilityDir = project.layout.buildDirectory.dir(stabilityFolderName).get().asFile
       stabilityDir.mkdirs()
-      val dependenciesFile = java.io.File(stabilityDir, "project-dependencies.txt")
+
+      val variantlessStabilityDir = project.layout.buildDirectory.dir("stability").get().asFile
+      variantlessStabilityDir.mkdirs()
+
+      val dependenciesFile = java.io.File(variantlessStabilityDir, "project-dependencies.txt")
       dependenciesFile.writeText(projectDependencies.joinToString("\n"))
 
       listOf(
