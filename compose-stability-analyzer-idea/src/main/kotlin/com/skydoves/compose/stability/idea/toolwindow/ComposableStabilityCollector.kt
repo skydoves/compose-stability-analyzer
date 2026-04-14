@@ -58,68 +58,73 @@ public class ComposableStabilityCollector(private val project: Project) {
       val contentRoots = moduleRootManager.contentRoots
 
       for (contentRoot in contentRoots) {
-        // Look for build/stability/stability-info.json
-        val jsonFile = File(contentRoot.path, "build/stability/stability-info.json")
-        if (!jsonFile.exists()) {
-          continue
-        }
+        val rootStabilityFolder = File(contentRoot.path, "build/stability")
+        val variantFolders = rootStabilityFolder.listFiles().orEmpty().filter { it.isDirectory }
+        val allStabilityFolders = variantFolders + rootStabilityFolder
+        for (folder in allStabilityFolders) {
+          // Look for build/stability/stability-info.json
+          val jsonFile = File(folder, "stability-info.json")
+          if (!jsonFile.exists()) {
+            continue
+          }
 
-        try {
-          val jsonContent = jsonFile.readText()
-          val jsonObject = JsonParser.parseString(jsonContent).asJsonObject
-          val composablesArray = jsonObject.getAsJsonArray("composables")
+          try {
+            val jsonContent = jsonFile.readText()
+            val jsonObject = JsonParser.parseString(jsonContent).asJsonObject
+            val composablesArray = jsonObject.getAsJsonArray("composables")
 
-          for (composableElement in composablesArray) {
-            val composableJson = composableElement.asJsonObject
+            for (composableElement in composablesArray) {
+              val composableJson = composableElement.asJsonObject
 
-            // Skip anonymous composables
-            val simpleName = composableJson.get("simpleName").asString
-            if (simpleName == "<anonymous>") {
-              continue
-            }
-
-            val qualifiedName = composableJson.get("qualifiedName").asString
-            val skippable = composableJson.get("skippable").asBoolean
-            val restartable = composableJson.get("restartable").asBoolean
-
-            // Parse parameters
-            val parametersArray = composableJson.getAsJsonArray("parameters")
-            val parameters = parametersArray.map { paramElement ->
-              val paramJson = paramElement.asJsonObject
-              val stability = paramJson.get("stability").asString
-              ParameterInfo(
-                name = paramJson.get("name").asString,
-                type = paramJson.get("type").asString,
-                isStable = stability == "STABLE",
-                isRuntime = stability == "RUNTIME",
-              )
-            }
-
-            // Try to find the source file and line number
-            val (filePath, fileName, line) =
-              ReadAction.compute<Triple<String, String, Int>, Exception> {
-                findSourceLocation(qualifiedName, simpleName)
+              // Skip anonymous composables
+              val simpleName = composableJson.get("simpleName").asString
+              if (simpleName == "<anonymous>") {
+                continue
               }
 
-            val packageName = qualifiedName.substringBeforeLast(".$simpleName", "")
+              val qualifiedName = composableJson.get("qualifiedName").asString
+              val skippable = composableJson.get("skippable").asBoolean
+              val restartable = composableJson.get("restartable").asBoolean
 
-            composables.add(
-              ComposableInfo(
-                functionName = simpleName,
-                moduleName = module.name,
-                packageName = packageName.ifEmpty { "<default>" },
-                fileName = fileName,
-                filePath = filePath,
-                line = line,
-                isSkippable = skippable,
-                isRestartable = restartable,
-                isRuntime = !skippable && restartable,
-                parameters = parameters,
-              ),
-            )
+              // Parse parameters
+              val parametersArray = composableJson.getAsJsonArray("parameters")
+              val parameters = parametersArray.map { paramElement ->
+                val paramJson = paramElement.asJsonObject
+                val stability = paramJson.get("stability").asString
+                ParameterInfo(
+                  name = paramJson.get("name").asString,
+                  type = paramJson.get("type").asString,
+                  isStable = stability == "STABLE",
+                  isRuntime = stability == "RUNTIME",
+                )
+              }
+
+              // Try to find the source file and line number
+              val (filePath, fileName, line) =
+                ReadAction.compute<Triple<String, String, Int>, Exception> {
+                  findSourceLocation(qualifiedName, simpleName)
+                }
+
+              val packageName = qualifiedName.substringBeforeLast(".$simpleName", "")
+
+              composables.add(
+                ComposableInfo(
+                  functionName = simpleName,
+                  moduleName = module.name,
+                  packageName = packageName.ifEmpty { "<default>" },
+                  fileName = fileName,
+                  filePath = filePath,
+                  line = line,
+                  isSkippable = skippable,
+                  isRestartable = restartable,
+                  isRuntime = !skippable && restartable,
+                  parameters = parameters,
+                ),
+              )
+            }
+          } catch (e: Exception) {
+            // Skip modules that fail to parse
           }
-        } catch (e: Exception) {
-          // Skip modules that fail to parse
         }
       }
     }
