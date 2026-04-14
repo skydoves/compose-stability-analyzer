@@ -88,7 +88,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         target.layout.buildDirectory.file("stability/stability-info.json"),
       )
       stabilityInputFiles.setFrom(
-        target.layout.buildDirectory.file("stabilityTest/stability-info.json"),
+        target.layout.buildDirectory.file("stability/test/stability-info.json"),
       )
       outputDir.set(extension.stabilityValidation.outputDir)
       ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
@@ -107,7 +107,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         target.layout.buildDirectory.file("stability/stability-info.json"),
       )
       stabilityInputFiles.from(
-        target.layout.buildDirectory.file("stabilityTest/stability-info.json"),
+        target.layout.buildDirectory.file("stability/test/stability-info.json"),
       )
       stabilityReferenceFiles.from(extension.stabilityValidation.outputDir)
       ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
@@ -137,7 +137,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       .named {
         isKotlinTaskApplicable(
           it,
-          extension.stabilityValidation.includeTests.get()
+          extension.stabilityValidation.includeTests.get(),
         )
       }
       .configureEach {
@@ -176,10 +176,14 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
           target.layout.buildDirectory.file("stability/${variant.name}/stability-info.json"),
         )
         stabilityInputFiles.setFrom(
-          target.layout.buildDirectory.file("stability/${variant.name}UnitTest/stability-info.json"),
+          target.layout.buildDirectory.file(
+            "stability/${variant.name}UnitTest/stability-info.json",
+          ),
         )
         stabilityInputFiles.setFrom(
-          target.layout.buildDirectory.file("stability/${variant.name}AndroidTest/stability-info.json"),
+          target.layout.buildDirectory.file(
+            "stability/${variant.name}AndroidTest/stability-info.json",
+          ),
         )
         outputDir.set(extension.stabilityValidation.outputDir)
         ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
@@ -199,10 +203,14 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
           target.layout.buildDirectory.file("stability/${variant.name}/stability-info.json"),
         )
         stabilityInputFiles.from(
-          target.layout.buildDirectory.file("stability/${variant.name}UnitTest/stability-info.json"),
+          target.layout.buildDirectory.file(
+            "stability/${variant.name}UnitTest/stability-info.json",
+          ),
         )
         stabilityInputFiles.from(
-          target.layout.buildDirectory.file("stability/${variant.name}AndroidTest/stability-info.json"),
+          target.layout.buildDirectory.file(
+            "stability/${variant.name}AndroidTest/stability-info.json",
+          ),
         )
         stabilityReferenceFiles.from(extension.stabilityValidation.outputDir)
         ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
@@ -245,7 +253,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         .named {
           it.contains(variantNameUpperCase) && isKotlinTaskApplicable(
             it,
-            extension.stabilityValidation.includeTests.get()
+            extension.stabilityValidation.includeTests.get(),
           )
         }
         .configureEach {
@@ -311,7 +319,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
       val stabilityFolderName = getKotlinTaskStabilityFolderName(
         project,
-        kotlinCompilation.compileKotlinTaskName
+        kotlinCompilation.compileKotlinTaskName,
       )
 
       // Write project dependencies to a file to avoid empty string issues with SubpluginOption
@@ -342,8 +350,8 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
   }
 
   private fun getKotlinTaskStabilityFolderName(
-      project: Project,
-      taskName: String
+    project: Project,
+    taskName: String,
   ): String {
     val variant =
       if (project.extensions.findByType(AndroidComponentsExtension::class.java) != null) {
@@ -353,7 +361,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
           .replaceFirstChar { it.lowercase() }
       } else {
         if (taskName.contains("Test")) {
-          "Test"
+          "test"
         } else {
           ""
         }
@@ -428,7 +436,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     stabilityDumpTask: org.gradle.api.tasks.TaskProvider<StabilityDumpTask>,
     stabilityCheckTask: org.gradle.api.tasks.TaskProvider<StabilityCheckTask>,
 
-    ) {
+  ) {
     // Get the includeTests provider for lazy evaluation
     val includeTestsProvider = extension.stabilityValidation.includeTests
 
