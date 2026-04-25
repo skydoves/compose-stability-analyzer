@@ -56,6 +56,7 @@ public interface RecompositionLogger {
  * @property parameterChanges List of all parameters with their change status
  * @property unstableParameters List of parameter names that are unstable
  * @property stateChanges List of internal state variable changes (empty when traceStates is false)
+ * @property durationNanos Duration of the recomposition in nanoseconds (0 if not measured)
  */
 public data class RecompositionEvent(
   val composableName: String,
@@ -64,6 +65,7 @@ public data class RecompositionEvent(
   val parameterChanges: List<ParameterChange>,
   val unstableParameters: List<String>,
   val stateChanges: List<StateChange> = emptyList(),
+  val durationNanos: Long = 0L,
 )
 
 /**

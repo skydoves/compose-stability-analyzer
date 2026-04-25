@@ -25,6 +25,8 @@ internal data class ParsedRecompositionEvent(
   val parameterEntries: List<ParsedParameterEntry>,
   val unstableParameters: List<String>,
   val timestampMs: Long,
+  val durationMs: Double = 0.0,
+  val stateEntries: List<String> = emptyList(),
 )
 
 /**
@@ -57,6 +59,10 @@ internal data class ComposableHeatmapData(
   val lastSeenTimestampMs: Long,
   val changedParameters: Map<String, Int>,
   val unstableParameters: Set<String>,
+  val lastDurationMs: Double = 0.0,
+  val totalDurationMs: Double = 0.0,
+  val lastParameterChanges: List<String> = emptyList(),
+  val lastStateChanges: List<String> = emptyList(),
 )
 
 /**

@@ -38,10 +38,16 @@ public actual class DefaultRecompositionLogger : RecompositionLogger {
 
   actual override fun log(event: RecompositionEvent) {
     val tagSuffix = if (event.tag.isNotEmpty()) " (tag: ${event.tag})" else ""
+    val durationStr = if (event.durationNanos > 0) {
+      " (%.2fms)".format(event.durationNanos / 1_000_000.0)
+    } else {
+      ""
+    }
 
     Log.d(
       tag,
-      "[Recomposition #${event.recompositionCount}] ${event.composableName}$tagSuffix",
+      "[Recomposition #${event.recompositionCount}] " +
+        "${event.composableName}$tagSuffix$durationStr",
     )
 
     // Collect all tree lines, then apply └─ to the last one

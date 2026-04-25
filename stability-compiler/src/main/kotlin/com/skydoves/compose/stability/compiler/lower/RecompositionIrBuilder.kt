@@ -35,6 +35,8 @@ import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrWhen
+import org.jetbrains.kotlin.ir.expressions.impl.IrCompositeImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrTryImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
@@ -70,6 +72,8 @@ public class RecompositionIrBuilder(
   private var trackParameterFunctionSymbol: IrSimpleFunctionSymbol? = null
   private var trackStateFunctionSymbol: IrSimpleFunctionSymbol? = null
   private var logIfThresholdMetFunctionSymbol: IrSimpleFunctionSymbol? = null
+  private var recordDurationFunctionSymbol: IrSimpleFunctionSymbol? = null
+  private var systemNanoTimeFunctionSymbol: IrSimpleFunctionSymbol? = null
 
   /**
    * Initialize and cache symbols for runtime classes.
@@ -123,6 +127,25 @@ public class RecompositionIrBuilder(
         return false
       }
 
+      // recordDuration is optional - don't fail if missing
+      recordDurationFunctionSymbol =
+        trackerClass?.functions?.firstOrNull {
+          it.name.asString() == "recordDuration"
+        }?.symbol
+
+      // Resolve System.nanoTime() for JVM platforms
+      try {
+        val systemClass = context.referenceClass(
+          ClassId.topLevel(FqName("java.lang.System")),
+        )
+        systemNanoTimeFunctionSymbol =
+          systemClass?.owner?.functions?.firstOrNull {
+            it.name.asString() == "nanoTime"
+          }?.symbol
+      } catch (_: Exception) {
+        // Not available on non-JVM platforms
+      }
+
       return true
     } catch (e: Exception) {
       return false
@@ -132,14 +155,21 @@ public class RecompositionIrBuilder(
   /**
    * Injects recomposition tracking code into the given function.
    *
-   * Generated code:
+   * On JVM platforms with timing support, generates:
    * ```
-   * val _tracker = remember { RecompositionTracker(name, tag, threshold) }
+   * val _tracker = rememberRecompositionTracker(name, tag, threshold)
    * _tracker.trackParameter("param1", "Type1", param1, isStable1)
-   * _tracker.trackParameter("param2", "Type2", param2, isStable2)
-   * _tracker.logIfThresholdMet()
-   * // ... original function body
+   * val _startTime = System.nanoTime()
+   * try {
+   *   // ... original function body
+   * } finally {
+   *   _tracker.recordDuration(_startTime)
+   *   _tracker.logIfThresholdMet()
+   * }
    * ```
+   *
+   * On non-JVM platforms (or when timing symbols are unavailable),
+   * falls back to the original behavior without timing.
    */
   public fun injectTrackingCode(
     function: IrFunction,
@@ -173,23 +203,49 @@ public class RecompositionIrBuilder(
       }
 
       // 3. Create logIfThresholdMet call
-      val logCall = createLogIfThresholdMetCall(builder, trackerVariable)
+      val logCall =
+        createLogIfThresholdMetCall(builder, trackerVariable)
+
+      // Check if timing injection is available (JVM only)
+      val timingAvailable =
+        systemNanoTimeFunctionSymbol != null &&
+          recordDurationFunctionSymbol != null
 
       if (stateVariables.isEmpty()) {
-        // Standard mode: prepend tracker + params + log, then body
-        val newStatements = mutableListOf<org.jetbrains.kotlin.ir.IrStatement>()
+        // Standard mode
+        val newStatements =
+          mutableListOf<org.jetbrains.kotlin.ir.IrStatement>()
         newStatements.add(trackerVariable)
         newStatements.addAll(trackParameterCalls)
-        newStatements.add(logCall)
-        newStatements.addAll(body.statements)
+
+        if (timingAvailable) {
+          // Wrap body in try-finally with timing
+          val startTimeVar = createStartTimeVariable(
+            builder,
+            function,
+          )
+          newStatements.add(startTimeVar)
+          newStatements.add(
+            createTimingTryFinally(
+              builder = builder,
+              function = function,
+              trackerVariable = trackerVariable,
+              startTimeVar = startTimeVar,
+              logCall = logCall,
+              bodyStatements = body.statements,
+            ),
+          )
+        } else {
+          // Fallback: no timing, original behavior
+          newStatements.add(logCall)
+          newStatements.addAll(body.statements)
+        }
 
         body.statements.clear()
         body.statements.addAll(newStatements)
       } else {
-        // State tracking mode: interleave trackState calls after
-        // state variable declarations (may be nested in IrBlocks
-        // due to Compose compiler lowering), and move
-        // logIfThresholdMet to the end
+        // State tracking mode: interleave trackState calls
+        // after state variable declarations
         val stateVarSet = stateVariables.associateBy {
           it.variable
         }
@@ -205,8 +261,29 @@ public class RecompositionIrBuilder(
           mutableListOf<org.jetbrains.kotlin.ir.IrStatement>()
         newStatements.add(trackerVariable)
         newStatements.addAll(trackParameterCalls)
-        newStatements.addAll(body.statements)
-        newStatements.add(logCall)
+
+        if (timingAvailable) {
+          // Wrap body in try-finally with timing
+          val startTimeVar = createStartTimeVariable(
+            builder,
+            function,
+          )
+          newStatements.add(startTimeVar)
+          newStatements.add(
+            createTimingTryFinally(
+              builder = builder,
+              function = function,
+              trackerVariable = trackerVariable,
+              startTimeVar = startTimeVar,
+              logCall = logCall,
+              bodyStatements = body.statements,
+            ),
+          )
+        } else {
+          // Fallback: no timing, original behavior
+          newStatements.addAll(body.statements)
+          newStatements.add(logCall)
+        }
 
         body.statements.clear()
         body.statements.addAll(newStatements)
@@ -293,6 +370,110 @@ public class RecompositionIrBuilder(
 
       i++
     }
+  }
+
+  /**
+   * Creates an IrVariable for the start time:
+   * `val _startTime = System.nanoTime()`
+   */
+  private fun createStartTimeVariable(
+    builder: IrBuilderWithScope,
+    function: IrFunction,
+  ): IrVariable {
+    val nanoTimeCall =
+      builder.irCall(systemNanoTimeFunctionSymbol!!)
+    return buildVariable(
+      parent = function,
+      startOffset = UNDEFINED_OFFSET,
+      endOffset = UNDEFINED_OFFSET,
+      origin = OriginCompat.DEFINED,
+      name = Name.identifier("_startTime"),
+      type = context.irBuiltIns.longType,
+      isVar = false,
+      isConst = false,
+      isLateinit = false,
+    ).apply {
+      initializer = nanoTimeCall
+    }
+  }
+
+  /**
+   * Creates IR call to `tracker.recordDuration(startTimeNanos)`.
+   */
+  private fun createRecordDurationCall(
+    builder: IrBuilderWithScope,
+    trackerVariable: IrVariable,
+    startTimeVar: IrVariable,
+  ): IrExpression {
+    val recordSymbol = recordDurationFunctionSymbol
+      ?: error("recordDuration function symbol not initialized")
+
+    val call = builder.irCall(recordSymbol)
+    // dispatch receiver
+    call.arguments[0] = builder.irGet(trackerVariable)
+    // startTimeNanos: Long
+    call.arguments[1] = builder.irGet(startTimeVar)
+    return call
+  }
+
+  /**
+   * Creates a try-finally expression that wraps the original body
+   * statements, recording duration and logging in the finally block.
+   *
+   * Generates:
+   * ```
+   * try {
+   *   // original body statements
+   * } finally {
+   *   _tracker.recordDuration(_startTime)
+   *   _tracker.logIfThresholdMet()
+   * }
+   * ```
+   */
+  private fun createTimingTryFinally(
+    builder: IrBuilderWithScope,
+    function: IrFunction,
+    trackerVariable: IrVariable,
+    startTimeVar: IrVariable,
+    logCall: IrExpression,
+    bodyStatements: List<org.jetbrains.kotlin.ir.IrStatement>,
+  ): IrExpression {
+    val unitType = context.irBuiltIns.unitType
+
+    // Build the try body as a composite expression
+    val tryBody = IrCompositeImpl(
+      startOffset = UNDEFINED_OFFSET,
+      endOffset = UNDEFINED_OFFSET,
+      type = unitType,
+    ).apply {
+      statements.addAll(bodyStatements)
+    }
+
+    // Build the finally block: recordDuration + logIfThresholdMet
+    val recordDurationCall = createRecordDurationCall(
+      builder,
+      trackerVariable,
+      startTimeVar,
+    )
+
+    val finallyBody = IrCompositeImpl(
+      startOffset = UNDEFINED_OFFSET,
+      endOffset = UNDEFINED_OFFSET,
+      type = unitType,
+    ).apply {
+      statements.add(recordDurationCall)
+      statements.add(logCall)
+    }
+
+    // Build the try-finally expression
+    return IrTryImpl(
+      startOffset = UNDEFINED_OFFSET,
+      endOffset = UNDEFINED_OFFSET,
+      type = unitType,
+      tryResult = tryBody,
+      catches = emptyList(),
+      finallyExpression = finallyBody,
+    )
   }
 
   /**
