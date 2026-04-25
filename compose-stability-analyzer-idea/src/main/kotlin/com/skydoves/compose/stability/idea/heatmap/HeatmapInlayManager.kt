@@ -15,8 +15,8 @@
  */
 package com.skydoves.compose.stability.idea.heatmap
 
-import com.intellij.ide.IdeTooltip
-import com.intellij.ide.IdeTooltipManager
+import com.intellij.codeInsight.hint.HintManager
+import com.intellij.codeInsight.hint.HintManagerImpl
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
@@ -138,12 +138,21 @@ internal class HeatmapInlayManager(
           val label = javax.swing.JLabel(html).apply {
             border = JBUI.Borders.empty(4, 8)
           }
-          val tip = IdeTooltip(
-            editor.contentComponent,
-            pt,
-            label,
-          )
-          IdeTooltipManager.getInstance().show(tip, true)
+          val hint =
+            com.intellij.ui.LightweightHint(label)
+          val flags = HintManager.HIDE_BY_ANY_KEY or
+            HintManager.HIDE_BY_OTHER_HINT or
+            HintManager.HIDE_BY_SCROLLING or
+            HintManager.HIDE_BY_TEXT_CHANGE
+          HintManagerImpl.getInstanceImpl()
+            .showEditorHint(
+              hint,
+              editor,
+              pt,
+              flags,
+              3000,
+              false,
+            )
           return
         }
         activeTooltipInlay = null
