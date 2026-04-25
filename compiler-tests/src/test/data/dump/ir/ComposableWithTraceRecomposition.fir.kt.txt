@@ -64,6 +64,13 @@ fun SimpleCard(text: String) {
 fun UserCard(user: User) {
   val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "UserCard", tag = "user-card", threshold = 1)
   _tracker.trackParameter(name = "user", type = "<root>.User", value = user, isStable = true)
-  _tracker.logIfThresholdMet()
+  val _startTime: Long = nanoTime()
+  try // COMPOSITE {
   println(message = "Rendering: " + user.<get-name>())
+  // }
+  finally // COMPOSITE {
+  _tracker.recordDuration(startTimeNanos = _startTime)
+  _tracker.logIfThresholdMet()
+  // }
 }
+

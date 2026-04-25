@@ -15,8 +15,6 @@
  */
 package com.skydoves.compose.stability.idea.heatmap
 
-import com.intellij.codeInsight.hint.HintManager
-import com.intellij.codeInsight.hint.HintManagerImpl
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
@@ -135,24 +133,26 @@ internal class HeatmapInlayManager(
               ?: return
           val html = renderer.tooltipHtml
           if (html.isEmpty()) return
-          val label = javax.swing.JLabel(html).apply {
-            border = JBUI.Borders.empty(4, 8)
-          }
-          val hint =
-            com.intellij.ui.LightweightHint(label)
-          val flags = HintManager.HIDE_BY_ANY_KEY or
-            HintManager.HIDE_BY_OTHER_HINT or
-            HintManager.HIDE_BY_SCROLLING or
-            HintManager.HIDE_BY_TEXT_CHANGE
-          HintManagerImpl.getInstanceImpl()
-            .showEditorHint(
-              hint,
-              editor,
-              pt,
-              flags,
-              3000,
-              false,
+          val balloon = com.intellij.openapi.ui.popup
+            .JBPopupFactory.getInstance()
+            .createHtmlTextBalloonBuilder(
+              html,
+              com.intellij.openapi.ui.MessageType.INFO,
+              null,
             )
+            .setFadeoutTime(3000)
+            .setAnimationCycle(0)
+            .createBalloon()
+          val relPoint =
+            com.intellij.ui.awt.RelativePoint(
+              editor.contentComponent,
+              pt,
+            )
+          balloon.show(
+            relPoint,
+            com.intellij.openapi.ui.popup
+              .Balloon.Position.above,
+          )
           return
         }
         activeTooltipInlay = null
