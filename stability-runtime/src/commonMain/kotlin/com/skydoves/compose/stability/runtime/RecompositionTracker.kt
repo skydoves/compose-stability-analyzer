@@ -51,6 +51,7 @@ public class RecompositionTracker(
   private val threshold: Int = 1,
 ) {
   private var recompositionCount = 0
+  private var lastDurationNanos: Long = 0L
   private val currentParameters = mutableMapOf<String, TrackedParameter>()
   private val previousParameters = mutableMapOf<String, Any?>()
   private val currentStates = mutableMapOf<String, TrackedState>()
@@ -106,6 +107,16 @@ public class RecompositionTracker(
   }
 
   /**
+   * Records the duration of the current recomposition.
+   * Called by generated code with the start time from System.nanoTime().
+   *
+   * @param startTimeNanos The System.nanoTime() value captured at composable entry
+   */
+  public fun recordDuration(startTimeNanos: Long) {
+    lastDurationNanos = currentNanoTime() - startTimeNanos
+  }
+
+  /**
    * Increments recomposition count and logs if threshold is met.
    *
    * This method should be called after all parameters are tracked.
@@ -146,10 +157,13 @@ public class RecompositionTracker(
         parameterChanges = parameterChanges,
         unstableParameters = unstableParameters,
         stateChanges = stateChanges,
+        durationNanos = lastDurationNanos,
       )
 
       ComposeStabilityAnalyzer.logEvent(event)
     }
+
+    lastDurationNanos = 0L
 
     // Update previous values for next recomposition
     currentParameters.forEach { (name, tracked) ->

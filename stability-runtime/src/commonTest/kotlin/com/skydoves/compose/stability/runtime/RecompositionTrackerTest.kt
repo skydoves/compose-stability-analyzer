@@ -379,6 +379,38 @@ class RecompositionTrackerTest {
     assertTrue(testLogger.events[0].stateChanges.isEmpty())
   }
 
+  @Test
+  fun testRecompositionTracker_recordDuration() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    tracker.trackParameter("x", "Int", 1, isStable = true)
+    // Simulate timing: record a start time in the past
+    val fakeStartTime = currentNanoTime() - 5_000_000L // ~5ms ago
+    tracker.recordDuration(fakeStartTime)
+    tracker.logIfThresholdMet()
+
+    assertEquals(1, testLogger.events.size)
+    assertTrue(testLogger.events[0].durationNanos > 0)
+  }
+
+  @Test
+  fun testRecompositionTracker_durationResetBetweenRecompositions() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    // First recomposition with duration
+    tracker.trackParameter("x", "Int", 1, isStable = true)
+    tracker.recordDuration(currentNanoTime() - 1_000_000L)
+    tracker.logIfThresholdMet()
+
+    // Second recomposition without recordDuration call
+    tracker.trackParameter("x", "Int", 2, isStable = true)
+    tracker.logIfThresholdMet()
+
+    assertEquals(2, testLogger.events.size)
+    assertTrue(testLogger.events[0].durationNanos > 0)
+    assertEquals(0L, testLogger.events[1].durationNanos)
+  }
+
   /**
    * Test logger that captures events for verification.
    */

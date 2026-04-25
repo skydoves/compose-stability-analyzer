@@ -121,18 +121,20 @@ public final class com/skydoves/compose/stability/runtime/ReceiverStabilityInfo 
 }
 
 public final class com/skydoves/compose/stability/runtime/RecompositionEvent {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;Ljava/util/List;J)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;Ljava/util/List;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()I
 	public final fun component4 ()Ljava/util/List;
 	public final fun component5 ()Ljava/util/List;
 	public final fun component6 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;Ljava/util/List;)Lcom/skydoves/compose/stability/runtime/RecompositionEvent;
-	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/runtime/RecompositionEvent;Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/skydoves/compose/stability/runtime/RecompositionEvent;
+	public final fun component7 ()J
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;Ljava/util/List;J)Lcom/skydoves/compose/stability/runtime/RecompositionEvent;
+	public static synthetic fun copy$default (Lcom/skydoves/compose/stability/runtime/RecompositionEvent;Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;Ljava/util/List;JILjava/lang/Object;)Lcom/skydoves/compose/stability/runtime/RecompositionEvent;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getComposableName ()Ljava/lang/String;
+	public final fun getDurationNanos ()J
 	public final fun getParameterChanges ()Ljava/util/List;
 	public final fun getRecompositionCount ()I
 	public final fun getStateChanges ()Ljava/util/List;
@@ -150,6 +152,7 @@ public final class com/skydoves/compose/stability/runtime/RecompositionTracker {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;I)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun logIfThresholdMet ()V
+	public final fun recordDuration (J)V
 	public final fun trackParameter (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Z)V
 	public final fun trackState (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V
 }

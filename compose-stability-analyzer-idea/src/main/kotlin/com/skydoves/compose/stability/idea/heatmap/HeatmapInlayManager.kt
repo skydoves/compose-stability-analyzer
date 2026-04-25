@@ -15,6 +15,8 @@
  */
 package com.skydoves.compose.stability.idea.heatmap
 
+import com.intellij.ide.IdeTooltip
+import com.intellij.ide.IdeTooltipManager
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
@@ -78,7 +80,7 @@ internal class HeatmapInlayManager(
   private var refreshTask: ScheduledFuture<*>? = null
 
   @Volatile
-  private var clickListenerRegistered = false
+  private var listenersRegistered = false
 
   /**
    * Mouse listener that detects clicks on heatmap block inlays
@@ -105,11 +107,59 @@ internal class HeatmapInlayManager(
     }
   }
 
+  /** Tracks the inlay currently showing a tooltip. */
+  private var activeTooltipInlay: Inlay<*>? = null
+
+  /**
+   * Mouse motion listener that shows a tooltip when the cursor
+   * hovers over a heatmap block inlay. Uses [IdeTooltipManager]
+   * which handles positioning automatically.
+   */
+  private val hoverListener =
+    object : com.intellij.openapi.editor.event.EditorMouseMotionListener {
+      override fun mouseMoved(event: EditorMouseEvent) {
+        val editor = event.editor
+        if (editor.project != project) return
+        val key = System.identityHashCode(editor)
+        val entries = editorState[key] ?: return
+        val pt = event.mouseEvent.point
+
+        for ((name, entry) in entries) {
+          if (!entry.inlay.isValid) continue
+          val b = entry.inlay.bounds ?: continue
+          if (!b.contains(pt)) continue
+          if (activeTooltipInlay == entry.inlay) return
+          activeTooltipInlay = entry.inlay
+          val renderer =
+            entry.inlay.renderer as? HeatmapBlockRenderer
+              ?: return
+          val html = renderer.tooltipHtml
+          if (html.isEmpty()) return
+          val label = javax.swing.JLabel(html).apply {
+            border = JBUI.Borders.empty(4, 8)
+          }
+          val tip = IdeTooltip(
+            editor.contentComponent,
+            pt,
+            label,
+          )
+          IdeTooltipManager.getInstance().show(tip, true)
+          return
+        }
+        activeTooltipInlay = null
+      }
+    }
+
   fun start() {
-    if (!clickListenerRegistered) {
-      clickListenerRegistered = true
-      EditorFactory.getInstance().eventMulticaster
-        .addEditorMouseListener(clickListener, this)
+    if (!listenersRegistered) {
+      listenersRegistered = true
+      val multicaster =
+        EditorFactory.getInstance().eventMulticaster
+      multicaster.addEditorMouseListener(clickListener, this)
+      multicaster.addEditorMouseMotionListener(
+        hoverListener,
+        this,
+      )
     }
 
     refreshTask = com.intellij.util.concurrency.AppExecutorUtil
@@ -137,7 +187,11 @@ internal class HeatmapInlayManager(
     refreshTask?.cancel(false)
     refreshTask = null
     ApplicationManager.getApplication().invokeLater(
-      { clearAllInlays() },
+      {
+        if (!project.isDisposed) {
+          clearAllInlays()
+        }
+      },
       ModalityState.any(),
     )
   }
@@ -212,7 +266,9 @@ internal class HeatmapInlayManager(
 
       val data = service.getHeatmapData(name) ?: continue
       val color = severityColor(data.totalRecompositionCount)
-      val renderer = HeatmapBlockRenderer(newText, color, editor)
+      val tooltip = buildTooltipHtml(data)
+      val renderer =
+        HeatmapBlockRenderer(newText, color, editor, tooltip)
       val inlay = editor.inlayModel.addBlockElement(
         offset,
         true, // relatesToPrecedingText
@@ -275,6 +331,7 @@ internal class HeatmapInlayManager(
     private val text: String,
     private val color: Color,
     editor: Editor,
+    val tooltipHtml: String = "",
   ) : EditorCustomElementRenderer {
 
     // Pre-compute the background color once at creation time
@@ -318,6 +375,65 @@ internal class HeatmapInlayManager(
       g.color = color
       g.drawString(text, x, baseline)
     }
+  }
+
+  /**
+   * Builds an HTML tooltip string summarising the most recent
+   * recomposition event and cumulative totals.
+   */
+  private fun buildTooltipHtml(
+    data: ComposableHeatmapData,
+  ): String {
+    return buildString {
+      append("<html><body style='font-size:11px'>")
+      append("<b>Last Recomposition (#")
+      append(data.totalRecompositionCount)
+      append(")</b>")
+      if (data.lastDurationMs > 0) {
+        append(" &mdash; ")
+        append("%.2f".format(data.lastDurationMs))
+        append("ms")
+      }
+      append("<br>")
+
+      if (data.lastParameterChanges.isNotEmpty()) {
+        data.lastParameterChanges.forEach { line ->
+          append(escapeHtml(line))
+          append("<br>")
+        }
+      }
+
+      if (data.lastStateChanges.isNotEmpty()) {
+        data.lastStateChanges.forEach { line ->
+          append(escapeHtml(line))
+          append("<br>")
+        }
+      }
+
+      if (data.unstableParameters.isNotEmpty()) {
+        append("Unstable: ")
+        append(escapeHtml(data.unstableParameters.toString()))
+        append("<br>")
+      }
+
+      append("<br><i>Total: ")
+      append(data.totalRecompositionCount)
+      append(" recomposition")
+      if (data.totalRecompositionCount != 1) append("s")
+      if (data.totalDurationMs > 0) {
+        append(", ")
+        append("%.1f".format(data.totalDurationMs))
+        append("ms cumulative")
+      }
+      append("</i></body></html>")
+    }
+  }
+
+  private fun escapeHtml(text: String): String {
+    return text
+      .replace("&", "&amp;")
+      .replace("<", "&lt;")
+      .replace(">", "&gt;")
   }
 
   /**

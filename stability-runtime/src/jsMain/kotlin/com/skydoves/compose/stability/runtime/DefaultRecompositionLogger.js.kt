@@ -32,8 +32,18 @@ public actual class DefaultRecompositionLogger : RecompositionLogger {
 
   actual override fun log(event: RecompositionEvent) {
     val tagSuffix = if (event.tag.isNotEmpty()) " (tag: ${event.tag})" else ""
+    val durationStr = if (event.durationNanos > 0) {
+      val ms = event.durationNanos / 1_000_000
+      val fraction = (event.durationNanos % 1_000_000) / 10_000
+      " ($ms.${fraction.toString().padStart(2, '0')}ms)"
+    } else {
+      ""
+    }
 
-    console.log("[Recomposition #${event.recompositionCount}] ${event.composableName}$tagSuffix")
+    console.log(
+      "[Recomposition #${event.recompositionCount}] " +
+        "${event.composableName}$tagSuffix$durationStr",
+    )
 
     val lines = buildTreeLines(event)
     lines.forEachIndexed { index, line ->

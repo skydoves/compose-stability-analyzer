@@ -24,30 +24,58 @@ package com.skydoves.compose.stability.idea.heatmap
  *
  * Expected format:
  * ```
- * [Recomposition #3] UserProfile (tag: user-screen)
- *   ├─ user: User changed (User@abc123 → User@def456)
- *   ├─ count: Int stable (42)
+ * [Recomposition #3] UserProfile (tag: user-screen) (2.30ms)
+ *   ├─ [param] user: User changed (User@abc123 → User@def456)
+ *   ├─ [param] count: Int stable (42)
+ *   ├─ [state] counter: Int changed (5 → 6)
  *   └─ Unstable parameters: [user]
  * ```
+ *
+ * Also supports the legacy format without `[param]`/`[state]` prefixes
+ * and without duration.
  */
 internal class LogcatParser(
   private val onEvent: (ParsedRecompositionEvent) -> Unit,
 ) {
 
   private companion object {
+    /** Header: `[Recomposition #N] Name (tag: t) (2.30ms)` */
     val HEADER_REGEX =
-      """\[Recomposition #(\d+)] (\S+)(?:\s+\(tag:\s+(.+?)\))?""".toRegex()
+      """\[Recomposition #(\d+)] (\S+)(?:\s+\(tag:\s+(.+?)\))?(?:\s+\((\d+\.?\d*)ms\))?"""
+        .toRegex()
+
+    /**
+     * Parameter line with optional `[param]` prefix:
+     *   `├─ [param] user: User changed (User@abc → User@def)`
+     *   `├─ user: User changed (User@abc → User@def)`
+     */
     val PARAM_REGEX =
-      """\s*[├└]─\s+(\w+):\s+(.+?)\s+(changed|stable|unstable)(?:\s+\((.+)\))?""".toRegex()
+      ("""\s*[├└]─\s+(?:\[param]\s+)?""" +
+        """(\w+):\s+(.+?)\s+(changed|stable|unstable)""" +
+        """(?:\s+\((.+)\))?""").toRegex()
+
+    /**
+     * State change line:
+     *   `├─ [state] counter: Int changed (5 → 6)`
+     */
+    val STATE_REGEX =
+      """\s*[├└]─\s+\[state]\s+(.+)"""
+        .toRegex()
+
     val UNSTABLE_SUMMARY_REGEX =
       """\s*[├└]─\s+Unstable parameters:\s+\[(.+)]""".toRegex()
+
+    val STATE_SUMMARY_REGEX =
+      """\s*[├└]─\s+State changes:\s+\[(.+)]""".toRegex()
   }
 
   private var currentName: String? = null
   private var currentTag: String = ""
   private var currentCount: Int = 0
+  private var currentDurationMs: Double = 0.0
   private var currentParams: MutableList<ParsedParameterEntry> = mutableListOf()
   private var currentUnstable: MutableList<String> = mutableListOf()
+  private var currentStateEntries: MutableList<String> = mutableListOf()
 
   /**
    * Feed a single logcat message line (after stripping the `D/Recomposition: ` prefix).
@@ -56,11 +84,15 @@ internal class LogcatParser(
     val headerMatch = HEADER_REGEX.find(line)
     if (headerMatch != null) {
       emitCurrent()
-      currentCount = headerMatch.groupValues[1].toIntOrNull() ?: 0
+      currentCount =
+        headerMatch.groupValues[1].toIntOrNull() ?: 0
       currentName = headerMatch.groupValues[2]
       currentTag = headerMatch.groupValues[3]
+      currentDurationMs =
+        headerMatch.groupValues[4].toDoubleOrNull() ?: 0.0
       currentParams = mutableListOf()
       currentUnstable = mutableListOf()
+      currentStateEntries = mutableListOf()
       return
     }
 
@@ -73,6 +105,16 @@ internal class LogcatParser(
         .map { it.trim() }
         .filter { it.isNotEmpty() }
         .toMutableList()
+      return
+    }
+
+    // Skip state summary lines (not individual state entries)
+    if (STATE_SUMMARY_REGEX.find(line) != null) return
+
+    // [state] lines: capture the raw detail text
+    val stateMatch = STATE_REGEX.find(line)
+    if (stateMatch != null) {
+      currentStateEntries.add(stateMatch.groupValues[1])
       return
     }
 
@@ -111,6 +153,8 @@ internal class LogcatParser(
         parameterEntries = currentParams.toList(),
         unstableParameters = currentUnstable.toList(),
         timestampMs = System.currentTimeMillis(),
+        durationMs = currentDurationMs,
+        stateEntries = currentStateEntries.toList(),
       ),
     )
     currentName = null

@@ -190,6 +190,9 @@ internal class AdbLogcatService(
     )
 
     val maxRecent = settings.heatmapMaxRecentEvents
+    val paramChanges = buildParameterChangeLines(event)
+    val stateChanges = event.stateEntries.map { "[state] $it" }
+
     dataMap.compute(event.composableName) { _, existing ->
       if (existing == null) {
         ComposableHeatmapData(
@@ -202,24 +205,60 @@ internal class AdbLogcatService(
             .filter { it.status == ParameterStatus.CHANGED }
             .associate { it.name to 1 },
           unstableParameters = event.unstableParameters.toSet(),
+          lastDurationMs = event.durationMs,
+          totalDurationMs = event.durationMs,
+          lastParameterChanges = paramChanges,
+          lastStateChanges = stateChanges,
         )
       } else {
-        val mergedChanged = existing.changedParameters.toMutableMap()
+        val mergedChanged =
+          existing.changedParameters.toMutableMap()
         event.parameterEntries
           .filter { it.status == ParameterStatus.CHANGED }
-          .forEach { mergedChanged[it.name] = (mergedChanged[it.name] ?: 0) + 1 }
+          .forEach {
+            mergedChanged[it.name] =
+              (mergedChanged[it.name] ?: 0) + 1
+          }
 
-        val recentCapped = (existing.recentEvents + event).takeLast(maxRecent)
+        val recentCapped =
+          (existing.recentEvents + event).takeLast(maxRecent)
 
         existing.copy(
-          totalRecompositionCount = existing.totalRecompositionCount + 1,
-          maxSingleCount = maxOf(existing.maxSingleCount, event.recompositionCount),
+          totalRecompositionCount =
+            existing.totalRecompositionCount + 1,
+          maxSingleCount = maxOf(
+            existing.maxSingleCount,
+            event.recompositionCount,
+          ),
           recentEvents = recentCapped,
           lastSeenTimestampMs = event.timestampMs,
           changedParameters = mergedChanged,
-          unstableParameters = existing.unstableParameters + event.unstableParameters,
+          unstableParameters =
+            existing.unstableParameters + event.unstableParameters,
+          lastDurationMs = event.durationMs,
+          totalDurationMs =
+            existing.totalDurationMs + event.durationMs,
+          lastParameterChanges = paramChanges,
+          lastStateChanges = stateChanges,
         )
       }
+    }
+  }
+
+  /**
+   * Format parameter entries into readable lines for tooltip
+   * display (e.g. `[param] user: User changed (User@abc)`).
+   */
+  private fun buildParameterChangeLines(
+    event: ParsedRecompositionEvent,
+  ): List<String> {
+    return event.parameterEntries.map { entry ->
+      val detail = if (entry.detail.isNotEmpty()) {
+        " (${entry.detail})"
+      } else {
+        ""
+      }
+      "[param] ${entry.name}: ${entry.type} ${entry.status.name.lowercase()}$detail"
     }
   }
 
