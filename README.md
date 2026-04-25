@@ -212,7 +212,7 @@ This is incredibly useful for:
 First, add the plugin to the `[plugins]` section of your `libs.versions.toml` file:
 
 ```toml
-stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.7.3" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.7.4" }
 ```
 
 Then, apply it to your root `build.gradle.kts` with `apply false`:
@@ -234,7 +234,7 @@ It’s **strongly recommended to use the exact same Kotlin version** as this lib
 
 | Stability Analyzer | Kotlin |
 |--------------------|-------------|
-| 0.7.3+             | 2.3.20 |
+| 0.7.4+             | 2.3.20 |
 | 0.6.5~0.7.0        | 2.3.0 |
 | 0.4.0~0.6.4        | 2.2.21 |
 
@@ -256,9 +256,9 @@ fun UserProfile(user: User) {
 That's it. When this composable recomposes, you'll see logs like:
 
 ```
-D/Recomposition: [Recomposition #1] UserProfile
+D/Recomposition: [Recomposition #1] UserProfile (0.12ms)
 D/Recomposition:   └─ [param] user: User stable (User@abc123)
-D/Recomposition: [Recomposition #2] UserProfile
+D/Recomposition: [Recomposition #2] UserProfile (0.15ms)
 D/Recomposition:   └─ [param] user: User changed (User@abc123 → User@def456)
 ```
 
@@ -316,7 +316,7 @@ fun UserProfile(user: User) {
 Now logs include the tag:
 
 ```
-D/Recomposition: [Recomposition #1] UserProfile (tag: user-profile)
+D/Recomposition: [Recomposition #1] UserProfile (tag: user-profile) (0.08ms)
 D/Recomposition:   └─ [param] user: User stable (User@abc123)
 ```
 
@@ -414,7 +414,7 @@ Let's understand what each log tells you:
 #### First Recomposition
 
 ```
-D/Recomposition: [Recomposition #1] UserProfile
+D/Recomposition: [Recomposition #1] UserProfile (0.12ms)
 D/Recomposition:   └─ [param] user: User stable (User@abc123)
 ```
 
@@ -430,7 +430,7 @@ This log confirms the composable is working correctly. The parameter is stable a
 #### Parameter Changed
 
 ```
-D/Recomposition: [Recomposition #2] UserProfile
+D/Recomposition: [Recomposition #2] UserProfile (0.15ms)
 D/Recomposition:   └─ [param] user: User changed (User@abc123 → User@def456)
 ```
 
@@ -444,7 +444,7 @@ This is normal behavior. The parameter changed, so the composable recomposed to 
 #### Unstable Parameter
 
 ```
-D/Recomposition: [Recomposition #1] UserCard (tag: user-card)
+D/Recomposition: [Recomposition #1] UserCard (tag: user-card) (0.25ms)
 D/Recomposition:   ├─ [param] user: MutableUser unstable (MutableUser@xyz789)
 D/Recomposition:   └─ Unstable parameters: [user]
 ```
@@ -452,7 +452,7 @@ D/Recomposition:   └─ Unstable parameters: [user]
 #### Multiple Parameters (Mixed Stability)
 
 ```
-D/Recomposition: [Recomposition #5] ProductList (tag: products)
+D/Recomposition: [Recomposition #5] ProductList (tag: products) (3.40ms)
 D/Recomposition:   ├─ [param] title: String stable (Products)
 D/Recomposition:   ├─ [param] count: Int changed (4 → 5)
 D/Recomposition:   ├─ [param] items: List<Product> unstable (List@abc)
@@ -491,12 +491,12 @@ fun ProductCard(
 **Step 2: Run your app and check Logcat**
 
 ```
-D/Recomposition: [Recomposition #3] ProductCard (tag: product-card)
+D/Recomposition: [Recomposition #3] ProductCard (tag: product-card) (0.45ms)
 D/Recomposition:   ├─ [param] product: Product unstable (Product@abc)
 D/Recomposition:   ├─ [param] onClick: () -> Unit stable (Function@xyz)
 D/Recomposition:   └─ Unstable parameters: [product]
 
-D/Recomposition: [Recomposition #4] ProductCard (tag: product-card)
+D/Recomposition: [Recomposition #4] ProductCard (tag: product-card) (0.42ms)
 D/Recomposition:   ├─ [param] product: Product unstable (Product@abc)
 D/Recomposition:   ├─ [param] onClick: () -> Unit stable (Function@xyz)
 D/Recomposition:   └─ Unstable parameters: [product]
@@ -536,7 +536,7 @@ data class Product(
 Run the app again and check Logcat:
 
 ```
-D/Recomposition: [Recomposition #3] ProductCard (tag: product-card)
+D/Recomposition: [Recomposition #3] ProductCard (tag: product-card) (0.45ms)
 D/Recomposition:   ├─ [param] product: Product stable (Product@abc)
 D/Recomposition:   └─ [param] onClick: () -> Unit stable (Function@xyz)
 
@@ -568,7 +568,7 @@ fun CounterScreen(title: String) {
 After clicking the button:
 
 ```
-D/Recomposition: [Recomposition #2] CounterScreen
+D/Recomposition: [Recomposition #2] CounterScreen (1.20ms)
 D/Recomposition:   ├─ [param] title: String stable (Counter)
 D/Recomposition:   ├─ [state] counter: Int changed (0 → 1)
 D/Recomposition:   └─ State changes: [counter]

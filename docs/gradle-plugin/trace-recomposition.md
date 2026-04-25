@@ -20,9 +20,9 @@ fun UserProfile(user: User) {
 When this composable recomposes, detailed logs appear in Logcat showing the recomposition count, each parameter's stability status, and whether the parameter's value changed since the last composition.
 
 ```
-D/Recomposition: [Recomposition #1] UserProfile
+D/Recomposition: [Recomposition #1] UserProfile (0.12ms)
 D/Recomposition:   └─ [param] user: User stable (User@abc123)
-D/Recomposition: [Recomposition #2] UserProfile
+D/Recomposition: [Recomposition #2] UserProfile (0.15ms)
 D/Recomposition:   └─ [param] user: User changed (User@abc123 → User@def456)
 ```
 
@@ -45,7 +45,7 @@ fun UserProfile(user: User) {
 Logs now include the tag, making it easy to filter in Logcat:
 
 ```
-D/Recomposition: [Recomposition #1] UserProfile (tag: user-profile)
+D/Recomposition: [Recomposition #1] UserProfile (tag: user-profile) (0.08ms)
 D/Recomposition:   └─ [param] user: User stable (User@abc123)
 ```
 
@@ -94,7 +94,7 @@ fun CounterScreen(title: String) {
 After clicking the button, the log now shows both parameter and state information:
 
 ```
-D/Recomposition: [Recomposition #2] CounterScreen
+D/Recomposition: [Recomposition #2] CounterScreen (1.20ms)
 D/Recomposition:   ├─ [param] title: String stable (Counter)
 D/Recomposition:   ├─ [state] counter: Int changed (0 → 1)
 D/Recomposition:   └─ State changes: [counter]
@@ -110,6 +110,23 @@ The `[param]` prefix identifies parameter tracking entries, while `[state]` iden
 
     Use `traceStates = true` when a composable is recomposing but the parameter logs show no changes. This typically means an internal state or `CompositionLocal` is causing the recomposition, and state tracking will reveal which one.
 
+## Recomposition Duration
+
+Every `@TraceRecomposition` composable automatically measures how long each recomposition takes. The duration appears in the log header:
+
+```
+D/Recomposition: [Recomposition #3] UserCard (2.30ms)
+D/Recomposition:   └─ [param] user: User changed (User@abc → User@def)
+```
+
+The `(2.30ms)` shows how long the composable body took to execute during this recomposition. This helps identify which composables are expensive, not just which ones recompose frequently.
+
+Duration data is also available in `RecompositionEvent.durationNanos` for custom loggers, and is displayed in the IDE's heatmap tooltip when hovering over the recomposition count inlay.
+
+!!! note "Platform support"
+
+    Duration measurement uses `System.nanoTime()` and is available on Android and JVM. On other KMP platforms (iOS, JS, WASM), timing is gracefully skipped and `durationNanos` will be `0`.
+
 ## Reading the Logs
 
 Understanding the log output is key to diagnosing recomposition issues. Each log entry contains several pieces of information that, together, tell you exactly what happened and why.
@@ -117,7 +134,7 @@ Understanding the log output is key to diagnosing recomposition issues. Each log
 ### First Recomposition
 
 ```
-D/Recomposition: [Recomposition #1] UserProfile
+D/Recomposition: [Recomposition #1] UserProfile (0.12ms)
 D/Recomposition:   └─ [param] user: User stable (User@abc123)
 ```
 
@@ -128,7 +145,7 @@ This log confirms the composable is working correctly. A stable parameter on the
 ### Parameter Changed
 
 ```
-D/Recomposition: [Recomposition #2] UserProfile
+D/Recomposition: [Recomposition #2] UserProfile (0.15ms)
 D/Recomposition:   └─ [param] user: User changed (User@abc123 → User@def456)
 ```
 
@@ -139,7 +156,7 @@ This is normal behavior. The parameter changed, so the composable recomposed to 
 ### Unstable Parameter
 
 ```
-D/Recomposition: [Recomposition #1] UserCard (tag: user-card)
+D/Recomposition: [Recomposition #1] UserCard (tag: user-card) (0.25ms)
 D/Recomposition:   ├─ [param] user: MutableUser unstable (MutableUser@xyz789)
 D/Recomposition:   └─ Unstable parameters: [user]
 ```
@@ -149,7 +166,7 @@ The `unstable` label means the Compose compiler cannot guarantee this parameter 
 ### Multiple Parameters (Mixed Stability)
 
 ```
-D/Recomposition: [Recomposition #5] ProductList (tag: products)
+D/Recomposition: [Recomposition #5] ProductList (tag: products) (3.40ms)
 D/Recomposition:   ├─ [param] title: String stable (Products)
 D/Recomposition:   ├─ [param] count: Int changed (4 → 5)
 D/Recomposition:   ├─ [param] items: List<Product> unstable (List@abc)
@@ -195,7 +212,7 @@ fun ProductCard(product: Product, onClick: () -> Unit) {
 **Run the app and check Logcat.** Filter by `product-card` to see only this composable's events. After scrolling through the list, you see logs appearing rapidly:
 
 ```
-D/Recomposition: [Recomposition #3] ProductCard (tag: product-card)
+D/Recomposition: [Recomposition #3] ProductCard (tag: product-card) (0.45ms)
 D/Recomposition:   ├─ [param] product: Product unstable (Product@abc)
 D/Recomposition:   ├─ [param] onClick: () -> Unit stable (Function@xyz)
 D/Recomposition:   └─ Unstable parameters: [product]
@@ -216,7 +233,7 @@ data class Product(val name: String, val price: Double)
 **Verify the fix** by running the app again. The logs now show stable parameters:
 
 ```
-D/Recomposition: [Recomposition #3] ProductCard (tag: product-card)
+D/Recomposition: [Recomposition #3] ProductCard (tag: product-card) (0.45ms)
 D/Recomposition:   ├─ [param] product: Product stable (Product@abc)
 D/Recomposition:   └─ [param] onClick: () -> Unit stable (Function@xyz)
 ```
