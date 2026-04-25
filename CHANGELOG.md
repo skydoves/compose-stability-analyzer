@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.4] - 2026-04-25
+
+### Added
+- **Recomposition Profiler: Timing measurement** (Issue #89)
+  - `@TraceRecomposition` now measures composable recomposition duration via `System.nanoTime()` IR injection
+  - Duration displayed in logcat output: `[Recomposition #3] UserCard (2.30ms)`
+  - Compiler plugin wraps composable body in try-finally for accurate timing even on exceptions
+  - `RecompositionEvent.durationNanos` field added for custom logger consumption
+  - KMP-compatible via `expect/actual currentNanoTime()` (Android/JVM supported, other platforms gracefully skip)
+- **Heatmap Tooltip** — Hover over recomposition count inlay in the editor to see:
+  - Last recomposition duration
+  - Parameter changes with old/new values
+  - State changes with old/new values
+  - Unstable parameter summary
+  - Cumulative total recomposition count and duration
+- **Heatmap logcat parser updates** — Parses `[param]` and `[state]` prefixed lines and duration from log output
+
+### Changed
+- **Shadow plugin upgraded to 9.0.0-beta12** for Gradle 9.x compatibility (plugin ID changed from `com.github.johnrengelman.shadow` to `com.gradleup.shadow`)
+
 ## [0.7.3] - 2026-04-11
 
 ### Added

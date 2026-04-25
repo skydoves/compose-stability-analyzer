@@ -2,6 +2,16 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.7.4] - 2026-04-25
+
+### Added
+- **Heatmap Tooltip** — Hover over recomposition count inlay to see last recomposition details: duration, parameter/state changes, unstable params, and cumulative totals
+- **Duration display in heatmap** — Logcat parser now captures recomposition timing from `(X.XXms)` format
+- **`[param]` and `[state]` prefix parsing** — Updated logcat parser to handle new log format
+
+### Changed
+- Removed manual `HintManager` tooltip in favor of `IdeTooltipManager` for correct positioning
+
 ## [0.7.3] - 2026-04-11
 
 ### Fixed
