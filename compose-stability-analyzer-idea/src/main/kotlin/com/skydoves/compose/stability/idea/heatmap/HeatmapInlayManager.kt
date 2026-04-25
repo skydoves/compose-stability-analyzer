@@ -107,6 +107,8 @@ internal class HeatmapInlayManager(
 
   /** Tracks the inlay currently showing a tooltip. */
   private var activeTooltipInlay: Inlay<*>? = null
+  private var activeBalloon:
+    com.intellij.openapi.ui.popup.Balloon? = null
 
   /**
    * Mouse motion listener that shows a tooltip when the cursor
@@ -126,12 +128,16 @@ internal class HeatmapInlayManager(
           if (!entry.inlay.isValid) continue
           val b = entry.inlay.bounds ?: continue
           if (!b.contains(pt)) continue
+          // Same inlay — don't re-show
           if (activeTooltipInlay == entry.inlay) return
+          // Dismiss previous balloon
+          activeBalloon?.hide()
+          activeBalloon = null
           activeTooltipInlay = entry.inlay
-          val renderer =
-            entry.inlay.renderer as? HeatmapBlockRenderer
-              ?: return
-          val html = renderer.tooltipHtml
+          // Get LIVE data (not cached renderer html)
+          val data =
+            service.getHeatmapData(name) ?: return
+          val html = buildTooltipHtml(data)
           if (html.isEmpty()) return
           val balloon = com.intellij.openapi.ui.popup
             .JBPopupFactory.getInstance()
@@ -140,9 +146,10 @@ internal class HeatmapInlayManager(
               com.intellij.openapi.ui.MessageType.INFO,
               null,
             )
-            .setFadeoutTime(3000)
+            .setFadeoutTime(5000)
             .setAnimationCycle(0)
             .createBalloon()
+          activeBalloon = balloon
           val relPoint =
             com.intellij.ui.awt.RelativePoint(
               editor.contentComponent,
@@ -155,6 +162,9 @@ internal class HeatmapInlayManager(
           )
           return
         }
+        // Mouse left all inlays — dismiss
+        activeBalloon?.hide()
+        activeBalloon = null
         activeTooltipInlay = null
       }
     }
