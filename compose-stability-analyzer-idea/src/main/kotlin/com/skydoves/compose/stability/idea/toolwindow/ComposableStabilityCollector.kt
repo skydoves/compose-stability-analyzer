@@ -58,12 +58,16 @@ public class ComposableStabilityCollector(private val project: Project) {
       val contentRoots = moduleRootManager.contentRoots
 
       for (contentRoot in contentRoots) {
-        // Look for build/stability/*/stability-info.json (per-compilation directories)
+        // Look for stability-info.json in build/stability/ (supports both old and new layouts)
         val stabilityDir = File(contentRoot.path, "build/stability")
-        val jsonFile = stabilityDir.listFiles { file -> file.isDirectory }
-          ?.map { File(it, "stability-info.json") }
-          ?.firstOrNull { it.exists() }
-          ?: continue
+        val legacyFile = File(stabilityDir, "stability-info.json")
+        val jsonFile = if (legacyFile.exists()) {
+          legacyFile
+        } else {
+          stabilityDir.listFiles { file -> file.isDirectory }
+            ?.map { File(it, "stability-info.json") }
+            ?.firstOrNull { it.exists() }
+        } ?: continue
 
         try {
           val jsonContent = jsonFile.readText()
