@@ -107,8 +107,8 @@ public abstract class StabilityCheckTask : DefaultTask() {
 
   @TaskAction
   public fun check() {
-    val inputFile = stabilityInputFiles.files.firstOrNull()
-    if (inputFile == null || !inputFile.exists()) {
+    val inputFile = stabilityInputFiles.files.firstOrNull { it.exists() }
+    if (inputFile == null) {
       // If the file doesn't exist, it means the module has no composable functions
       // This is expected for modules like activities or utilities without composables
       logger.lifecycle(

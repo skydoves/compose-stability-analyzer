@@ -47,7 +47,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
     // This version should match the version in gradle.properties
     // Update this when bumping the library version
-    private const val VERSION = "0.7.4"
+    private const val VERSION = "0.7.5-SNAPSHOT"
 
     // Compiler option keys
     private const val OPTION_ENABLED = "enabled"
@@ -73,9 +73,9 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       registerTasksAndroid(target, extension, androidComponents)
     }
 
-    // Add output parameter to the Kotlin tasks to ensure it is compatible with the Build Cache
+    // Per-task output directory to avoid shared output conflicts with other plugins (Issue #153)
     target.tasks.withType(KotlinCompile::class.java).configureEach {
-      val stabilityDir = target.layout.buildDirectory.dir("stability").get()
+      val stabilityDir = target.layout.buildDirectory.dir("stability/$name")
       outputs.dir(stabilityDir).optional(true)
     }
   }
@@ -91,7 +91,9 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     ) {
       projectName.set(target.name)
       stabilityInputFiles.setFrom(
-        target.layout.buildDirectory.file("stability/stability-info.json"),
+        target.fileTree(target.layout.buildDirectory.dir("stability")) {
+          include("*/stability-info.json")
+        },
       )
       outputDir.set(extension.stabilityValidation.outputDir)
       ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
@@ -107,7 +109,9 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     ) {
       projectName.set(target.name)
       stabilityInputFiles.from(
-        target.layout.buildDirectory.file("stability/stability-info.json"),
+        target.fileTree(target.layout.buildDirectory.dir("stability")) {
+          include("*/stability-info.json")
+        },
       )
       stabilityReferenceFiles.from(extension.stabilityValidation.outputDir)
       ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
@@ -158,7 +162,9 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       ) {
         projectName.set(target.name)
         stabilityInputFiles.setFrom(
-          target.layout.buildDirectory.file("stability/stability-info.json"),
+          target.layout.buildDirectory.file(
+            "stability/compile${variantNameUpperCase}Kotlin/stability-info.json",
+          ),
         )
         outputDir.set(extension.stabilityValidation.outputDir)
         ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
@@ -175,7 +181,9 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       ) {
         projectName.set(target.name)
         stabilityInputFiles.from(
-          target.layout.buildDirectory.file("stability/stability-info.json"),
+          target.layout.buildDirectory.file(
+            "stability/compile${variantNameUpperCase}Kotlin/stability-info.json",
+          ),
         )
         stabilityReferenceFiles.from(extension.stabilityValidation.outputDir)
         ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
@@ -266,8 +274,10 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     return project.provider {
       val projectDependencies = collectProjectDependencies(project)
 
-      // Write project dependencies to a file to avoid empty string issues with SubpluginOption
-      val stabilityDir = project.layout.buildDirectory.dir("stability").get().asFile
+      // Per-compilation output directory to avoid shared output conflicts (Issue #153)
+      val compileTaskName = kotlinCompilation.compileTaskProvider.name
+      val stabilityDir = project.layout.buildDirectory
+        .dir("stability/$compileTaskName").get().asFile
       stabilityDir.mkdirs()
       val dependenciesFile = java.io.File(stabilityDir, "project-dependencies.txt")
       dependenciesFile.writeText(projectDependencies.joinToString("\n"))
@@ -356,7 +366,6 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
     // Configure dependencies lazily using TaskProvider
     stabilityDumpTask.configure {
-      // Use provider to lazily collect Kotlin compile task names
       dependsOn(
         includeTestsProvider.map { includeTests ->
           project.tasks.matching { task ->
@@ -365,27 +374,9 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
           }
         },
       )
-
-      if (filter != null) {
-        // For now, stability check compiler plugin still creates the same files
-        // for different variant tasks. That means that even though our variant task
-        // is not dependent on the other-variant kotlin tasks, it is still implicitly coupled
-        // with them as it reads the same files. To mitigate for this,
-        // we tell Gradle that this task must run after any kotlin tasks, even
-        // if their variant does not match ours
-        mustRunAfter(
-          includeTestsProvider.map { includeTests ->
-            project.tasks.matching { task ->
-              isKotlinTaskApplicable(task.name, includeTests) &&
-                !task.name.contains(filter)
-            }
-          },
-        )
-      }
     }
 
     stabilityCheckTask.configure {
-      // Use provider to lazily collect Kotlin compile task names
       dependsOn(
         includeTestsProvider.map { includeTests ->
           project.tasks.matching { task ->
@@ -394,26 +385,6 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
           }
         },
       )
-
-      if (filter != null) {
-        // For now, stability check compiler plugin still creates the same files
-        // for different variant tasks. That means that even though our variant task
-        // is not dependent on the other-variant kotlin tasks, it is still implicitly coupled
-        // with them as it reads the same files. To mitigate for this,
-        // we tell Gradle that this task must run after any kotlin tasks, even
-        // if their variant does not match ours
-        mustRunAfter(
-          includeTestsProvider.map { includeTests ->
-            project.tasks.matching { task ->
-              isKotlinTaskApplicable(
-                task.name,
-                includeTests,
-              ) &&
-                !task.name.contains(filter)
-            }
-          },
-        )
-      }
     }
   }
 
