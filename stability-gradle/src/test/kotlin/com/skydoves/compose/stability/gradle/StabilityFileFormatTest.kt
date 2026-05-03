@@ -320,9 +320,7 @@ class StabilityFileFormatTest {
     assertEquals("marked @Immutable", entry.parameters[0].reason)
   }
 
-  private fun createTempFile(): File {
-    return tempFolder.newFile()
-  }
+  private fun createTempFile(): File = tempFolder.newFile()
 
   private fun createTempFileWithContent(content: String): File {
     val file = tempFolder.newFile()
@@ -389,7 +387,8 @@ class StabilityFileFormatTest {
           inParams = false
         }
 
-        line.startsWith("public ") || line.startsWith("internal ") ||
+        line.startsWith("public ") ||
+          line.startsWith("internal ") ||
           line.startsWith("private ") -> {
           currentVisibility = line.substringBefore(" fun ").trim()
           val signature = line.substringAfter(" fun ").trim()

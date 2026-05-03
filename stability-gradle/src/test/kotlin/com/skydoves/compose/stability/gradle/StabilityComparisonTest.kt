@@ -841,15 +841,13 @@ class StabilityComparisonTest {
     qualifiedName: String,
     skippable: Boolean = true,
     params: List<ParameterInfo> = emptyList(),
-  ): Pair<String, StabilityEntry> {
-    return qualifiedName to StabilityEntry(
-      qualifiedName = qualifiedName,
-      simpleName = qualifiedName.substringAfterLast("."),
-      visibility = "public",
-      parameters = params,
-      returnType = "kotlin.Unit",
-      skippable = skippable,
-      restartable = true,
-    )
-  }
+  ): Pair<String, StabilityEntry> = qualifiedName to StabilityEntry(
+    qualifiedName = qualifiedName,
+    simpleName = qualifiedName.substringAfterLast("."),
+    visibility = "public",
+    parameters = params,
+    returnType = "kotlin.Unit",
+    skippable = skippable,
+    restartable = true,
+  )
 }

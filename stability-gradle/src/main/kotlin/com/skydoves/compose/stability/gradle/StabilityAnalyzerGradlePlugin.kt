@@ -80,10 +80,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     }
   }
 
-  private fun registerTasksNonAndroid(
-    target: Project,
-    extension: StabilityAnalyzerExtension,
-  ) {
+  private fun registerTasksNonAndroid(target: Project, extension: StabilityAnalyzerExtension) {
     // Register stability dump task
     val stabilityDumpTask = target.tasks.register(
       "stabilityDump",
@@ -249,21 +246,17 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
   override fun getCompilerPluginId(): String = COMPILER_PLUGIN_ID
 
-  override fun getPluginArtifact(): SubpluginArtifact {
-    return SubpluginArtifact(
-      groupId = GROUP_ID,
-      artifactId = COMPILER_ARTIFACT_ID,
-      version = VERSION,
-    )
-  }
+  override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
+    groupId = GROUP_ID,
+    artifactId = COMPILER_ARTIFACT_ID,
+    version = VERSION,
+  )
 
-  override fun getPluginArtifactForNative(): SubpluginArtifact {
-    return SubpluginArtifact(
-      groupId = GROUP_ID,
-      artifactId = COMPILER_ARTIFACT_ID,
-      version = VERSION,
-    )
-  }
+  override fun getPluginArtifactForNative(): SubpluginArtifact = SubpluginArtifact(
+    groupId = GROUP_ID,
+    artifactId = COMPILER_ARTIFACT_ID,
+    version = VERSION,
+  )
 
   override fun applyToCompilation(
     kotlinCompilation: KotlinCompilation<*>,
@@ -359,7 +352,6 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     filter: String? = null,
     stabilityDumpTask: org.gradle.api.tasks.TaskProvider<StabilityDumpTask>,
     stabilityCheckTask: org.gradle.api.tasks.TaskProvider<StabilityCheckTask>,
-
   ) {
     // Get the includeTests provider for lazy evaluation
     val includeTestsProvider = extension.stabilityValidation.includeTests
@@ -425,25 +417,23 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
    * Collects package names from project dependencies for cross-module detection.
    * Used by compiler plugin to identify classes from other Gradle modules.
    */
-  private fun collectProjectDependencies(project: Project): List<String> {
-    return try {
-      val dependencies = mutableSetOf<String>()
+  private fun collectProjectDependencies(project: Project): List<String> = try {
+    val dependencies = mutableSetOf<String>()
 
-      // Collect packages from all other subprojects
-      // This is a conservative approach: mark all cross-module classes as requiring annotations
-      project.rootProject.allprojects.forEach { subproject ->
-        if (subproject != project && subproject.name != project.rootProject.name) {
-          val packageName = extractPackageName(subproject)
-          if (packageName.isNotEmpty()) {
-            dependencies.add(packageName)
-          }
+    // Collect packages from all other subprojects
+    // This is a conservative approach: mark all cross-module classes as requiring annotations
+    project.rootProject.allprojects.forEach { subproject ->
+      if (subproject != project && subproject.name != project.rootProject.name) {
+        val packageName = extractPackageName(subproject)
+        if (packageName.isNotEmpty()) {
+          dependencies.add(packageName)
         }
       }
-
-      dependencies.toList()
-    } catch (e: Exception) {
-      emptyList()
     }
+
+    dependencies.toList()
+  } catch (e: Exception) {
+    emptyList()
   }
 
   /**
@@ -480,21 +470,19 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
   /**
    * Finds the base package name from a source directory by reading the first .kt file.
    */
-  private fun findPackageFromSourceDir(dir: java.io.File): String {
-    return try {
-      dir.walkTopDown()
-        .filter { it.extension == "kt" }
-        .firstOrNull()
-        ?.let { file ->
-          file.readLines()
-            .firstOrNull { it.trim().startsWith("package ") }
-            ?.removePrefix("package ")
-            ?.trim()
-            ?.removeSuffix(";")
-        } ?: ""
-    } catch (e: Exception) {
-      ""
-    }
+  private fun findPackageFromSourceDir(dir: java.io.File): String = try {
+    dir.walkTopDown()
+      .filter { it.extension == "kt" }
+      .firstOrNull()
+      ?.let { file ->
+        file.readLines()
+          .firstOrNull { it.trim().startsWith("package ") }
+          ?.removePrefix("package ")
+          ?.trim()
+          ?.removeSuffix(";")
+      } ?: ""
+  } catch (e: Exception) {
+    ""
   }
 
   /**
@@ -507,14 +495,12 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
   /**
    * Get the runtime project if available.
    */
-  private fun getRuntimeProject(project: Project): Project? {
-    return project.rootProject.findProject(":stability-runtime")
-  }
+  private fun getRuntimeProject(project: Project): Project? =
+    project.rootProject.findProject(":stability-runtime")
 
   /**
    * Get the lint project if available.
    */
-  private fun getLintProject(project: Project): Project? {
-    return project.rootProject.findProject(":stability-lint")
-  }
+  private fun getLintProject(project: Project): Project? =
+    project.rootProject.findProject(":stability-lint")
 }

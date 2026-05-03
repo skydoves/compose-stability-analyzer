@@ -28,9 +28,8 @@ import java.io.File
  * This makes runtime classes (like @TraceRecomposition, @Composable, etc.) available
  * during compilation of test data files.
  */
-class StabilityRuntimeEnvironmentConfigurator(
-  testServices: TestServices,
-) : EnvironmentConfigurator(testServices) {
+class StabilityRuntimeEnvironmentConfigurator(testServices: TestServices) :
+  EnvironmentConfigurator(testServices) {
 
   private val stabilityRuntimeClasspath: List<File> by lazy {
     System.getProperty("stabilityRuntime.classpath")

@@ -17,13 +17,7 @@ package com.skydoves.myapplication.model
 
 import androidx.compose.runtime.Stable
 
-data class ThirdPartyModel(
-  val name: String,
-  val count: Int,
-)
+data class ThirdPartyModel(val name: String, val count: Int)
 
 @Stable
-data class ThirdPartyModelStable(
-  val name: String,
-  val count: Int,
-)
+data class ThirdPartyModelStable(val name: String, val count: Int)

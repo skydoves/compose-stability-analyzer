@@ -34,7 +34,7 @@ fun CorrectUsage() {
 // 1. Add @Composable annotation
 // 2. Remove @TraceRecomposition annotation
 // @TraceRecomposition
-fun IncorrectUsage() {
+fun incorrectUsage() {
   // This will trigger a lint error in Android Studio!
   // Try hovering over @TraceRecomposition to see the error message
 }

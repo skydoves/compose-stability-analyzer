@@ -60,9 +60,8 @@ import org.jetbrains.kotlin.test.services.KotlinStandardLibrariesPathProvider
  * - Our plugin's IR transformations
  */
 open class AbstractIrDumpTest : AbstractFirLightTreeJvmIrTextTest() {
-  override fun createKotlinStandardLibrariesPathProvider(): KotlinStandardLibrariesPathProvider {
-    return ClasspathBasedStandardLibrariesPathProvider
-  }
+  override fun createKotlinStandardLibrariesPathProvider(): KotlinStandardLibrariesPathProvider =
+    ClasspathBasedStandardLibrariesPathProvider
 
   override fun configure(builder: TestConfigurationBuilder) {
     super.configure(builder)

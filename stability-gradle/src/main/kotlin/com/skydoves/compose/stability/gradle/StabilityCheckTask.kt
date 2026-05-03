@@ -195,9 +195,7 @@ public abstract class StabilityCheckTask : DefaultTask() {
     }
   }
 
-  private fun parseStabilityFromCompiler(
-    file: java.io.File,
-  ): Map<String, StabilityEntry> {
+  private fun parseStabilityFromCompiler(file: java.io.File): Map<String, StabilityEntry> {
     val content = file.readText()
     val entries = mutableMapOf<String, StabilityEntry>()
 
@@ -347,14 +345,12 @@ public abstract class StabilityCheckTask : DefaultTask() {
     return match.groupValues[1].toBoolean()
   }
 
-  private fun String.unescapeJson(): String {
-    return this
-      .replace("\\\\", "\\")
-      .replace("\\\"", "\"")
-      .replace("\\n", "\n")
-      .replace("\\r", "\r")
-      .replace("\\t", "\t")
-  }
+  private fun String.unescapeJson(): String = this
+    .replace("\\\\", "\\")
+    .replace("\\\"", "\"")
+    .replace("\\n", "\n")
+    .replace("\\r", "\r")
+    .replace("\\t", "\t")
 
   private fun parseStabilityFile(file: java.io.File?): Map<String, StabilityEntry> {
     if (file?.exists() != true) {
@@ -508,17 +504,13 @@ public abstract class StabilityCheckTask : DefaultTask() {
 internal sealed class StabilityDifference {
   public abstract fun format(): String
 
-  public data class NewFunction(
-    val name: String,
-    val parameters: List<ParameterInfo>,
-  ) : StabilityDifference() {
-    override fun format(): String {
-      return if (parameters.isEmpty()) {
-        "+ $name (new composable)"
-      } else {
-        "+ $name (new composable):\n" +
-          parameters.joinToString("\n") { "    ${it.name}: ${it.stability}" }
-      }
+  public data class NewFunction(val name: String, val parameters: List<ParameterInfo>) :
+    StabilityDifference() {
+    override fun format(): String = if (parameters.isEmpty()) {
+      "+ $name (new composable)"
+    } else {
+      "+ $name (new composable):\n" +
+        parameters.joinToString("\n") { "    ${it.name}: ${it.stability}" }
     }
   }
 
@@ -526,22 +518,14 @@ internal sealed class StabilityDifference {
     override fun format(): String = "- $name (removed composable)"
   }
 
-  public data class SkippabilityChanged(
-    val function: String,
-    val from: Boolean,
-    val to: Boolean,
-  ) : StabilityDifference() {
-    override fun format(): String =
-      "~ $function: skippable changed from $from to $to"
+  public data class SkippabilityChanged(val function: String, val from: Boolean, val to: Boolean) :
+    StabilityDifference() {
+    override fun format(): String = "~ $function: skippable changed from $from to $to"
   }
 
-  public data class ParameterCountChanged(
-    val function: String,
-    val from: Int,
-    val to: Int,
-  ) : StabilityDifference() {
-    override fun format(): String =
-      "~ $function: parameter count changed from $from to $to"
+  public data class ParameterCountChanged(val function: String, val from: Int, val to: Int) :
+    StabilityDifference() {
+    override fun format(): String = "~ $function: parameter count changed from $from to $to"
   }
 
   public data class ParameterStabilityChanged(
@@ -550,7 +534,6 @@ internal sealed class StabilityDifference {
     val from: String,
     val to: String,
   ) : StabilityDifference() {
-    override fun format(): String =
-      "~ $function($parameter): stability changed from $from to $to"
+    override fun format(): String = "~ $function($parameter): stability changed from $from to $to"
   }
 }

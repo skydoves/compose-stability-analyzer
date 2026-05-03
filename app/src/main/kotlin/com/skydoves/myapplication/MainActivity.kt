@@ -78,10 +78,7 @@ private val String.Companion.ComposableValue
   @Composable
   get() = "ComposableValue"
 
-data class UiResult<T>(
-  val data: T,
-  val isPending: Boolean,
-)
+data class UiResult<T>(val data: T, val isPending: Boolean)
 
 @Composable
 fun MyComposable(
@@ -244,11 +241,7 @@ fun UnstableUser.Test(stableUser2: StableUser) {
 }
 
 @Composable
-fun Test(
-  myClass2: MyClass2,
-  normalClass: NormalClass,
-  immutableList: ImmutableList<String>,
-) {
+fun Test(myClass2: MyClass2, normalClass: NormalClass, immutableList: ImmutableList<String>) {
 }
 
 @Composable
@@ -362,10 +355,7 @@ fun <T> GenericDisplay(
  * Should be skippable - lambdas are stable.
  */
 @Composable
-fun ActionButton(
-  text: String,
-  onClick: () -> Unit,
-) {
+fun ActionButton(text: String, onClick: () -> Unit) {
   Button(onClick = onClick) {
     Text(text)
   }

@@ -54,17 +54,13 @@ internal interface StabilityConfigParser {
       return StabilityConfigParserImpl(confFile.readLines())
     }
 
-    fun fromLines(lines: List<String>): StabilityConfigParser {
-      return StabilityConfigParserImpl(lines)
-    }
+    fun fromLines(lines: List<String>): StabilityConfigParser = StabilityConfigParserImpl(lines)
   }
 }
 
 private const val COMMENT_DELIMITER = "//"
 
-private class StabilityConfigParserImpl(
-  lines: List<String>,
-) : StabilityConfigParser {
+private class StabilityConfigParserImpl(lines: List<String>) : StabilityConfigParser {
   override val stableTypeMatchers: Set<FqNameMatcher>
 
   init {
@@ -95,13 +91,11 @@ private class StabilityConfigParserImpl(
     stableTypeMatchers = matchers.toSet()
   }
 
-  fun errorMessage(line: String, lineNumber: Int, message: String): String {
-    return """
+  fun errorMessage(line: String, lineNumber: Int, message: String): String = """
             Error parsing stability configuration file on line $lineNumber.
             $message
             $line
-    """.trimIndent()
-  }
+  """.trimIndent()
 }
 
 internal class FqNameMatcher(val pattern: String) {
@@ -218,9 +212,7 @@ internal class FqNameMatcher(val pattern: String) {
     return this.pattern == otherMatcher.pattern
   }
 
-  override fun hashCode(): Int {
-    return pattern.hashCode()
-  }
+  override fun hashCode(): Int = pattern.hashCode()
 
   companion object {
     private const val PATTERN_SINGLE_WILD = "\\w+"

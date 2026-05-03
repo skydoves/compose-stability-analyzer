@@ -318,7 +318,7 @@ public class StabilityAnalyzerTransformer(
           val branchResult = branch.result
           if (
             branchResult is
-            org.jetbrains.kotlin.ir.expressions.IrBlock
+              org.jetbrains.kotlin.ir.expressions.IrBlock
           ) {
             collectStateVariablesRecursive(
               branchResult.statements,
@@ -591,7 +591,8 @@ public class StabilityAnalyzerTransformer(
     }
 
     // 17. Cross-module types require explicit @Stable/@Immutable/@StabilityInferred
-    if (isFromDifferentModule(clazz) && !type.hasStableAnnotation() &&
+    if (isFromDifferentModule(clazz) &&
+      !type.hasStableAnnotation() &&
       !type.hasStabilityInferredAnnotation()
     ) {
       return ParameterStability.UNSTABLE
@@ -787,8 +788,8 @@ public class StabilityAnalyzerTransformer(
     return this.hasAnnotation(jvmInlineFqName)
   }
 
-  private fun IrClass.isEnumClassIr(): Boolean {
-    return this.superTypes.any { it.classFqName?.asString() == "kotlin.Enum" }
+  private fun IrClass.isEnumClassIr(): Boolean = this.superTypes.any {
+    it.classFqName?.asString() == "kotlin.Enum"
   }
 
   private fun IrClass.isInterfaceIr(): Boolean {
@@ -939,38 +940,34 @@ public class StabilityAnalyzerTransformer(
   /**
    * Analyze parameter stability and return as string.
    */
-  private fun analyzeParameterStability(type: IrType): String {
-    return when (analyzeTypeStability(type)) {
-      ParameterStability.STABLE -> "STABLE"
-      ParameterStability.UNSTABLE -> "UNSTABLE"
-      ParameterStability.RUNTIME -> "RUNTIME"
-    }
+  private fun analyzeParameterStability(type: IrType): String = when (analyzeTypeStability(type)) {
+    ParameterStability.STABLE -> "STABLE"
+    ParameterStability.UNSTABLE -> "UNSTABLE"
+    ParameterStability.RUNTIME -> "RUNTIME"
   }
 
   /**
    * Get the reason why a type has the given stability.
    */
-  private fun getStabilityReason(type: IrType, stability: String): String? {
-    return when (stability) {
-      "STABLE" -> when {
-        type.isPrimitiveType() -> "primitive type"
-        type.isString() -> "String is immutable"
-        type.isFunctionOrKFunction() ||
-          type.isSuspendFunctionTypeOrSubtype() ||
-          type.render().contains("suspend ") ||
-          type.render().contains("SuspendFunction") -> "function type"
-        type.hasStableAnnotation() -> "marked @Stable or @Immutable"
-        isKnownStableType(type) -> "known stable type"
-        else -> "class with no mutable properties"
-      }
-      "UNSTABLE" -> when {
-        type.isMutableCollection() -> "mutable collection"
-        isKnownUnstableJavaType(type.classFqName?.asString()) -> "mutable Java class"
-        else -> "has mutable properties or unstable members"
-      }
-      "RUNTIME" -> "requires runtime check"
-      else -> null
+  private fun getStabilityReason(type: IrType, stability: String): String? = when (stability) {
+    "STABLE" -> when {
+      type.isPrimitiveType() -> "primitive type"
+      type.isString() -> "String is immutable"
+      type.isFunctionOrKFunction() ||
+        type.isSuspendFunctionTypeOrSubtype() ||
+        type.render().contains("suspend ") ||
+        type.render().contains("SuspendFunction") -> "function type"
+      type.hasStableAnnotation() -> "marked @Stable or @Immutable"
+      isKnownStableType(type) -> "known stable type"
+      else -> "class with no mutable properties"
     }
+    "UNSTABLE" -> when {
+      type.isMutableCollection() -> "mutable collection"
+      isKnownUnstableJavaType(type.classFqName?.asString()) -> "mutable Java class"
+      else -> "has mutable properties or unstable members"
+    }
+    "RUNTIME" -> "requires runtime check"
+    else -> null
   }
 
   /**

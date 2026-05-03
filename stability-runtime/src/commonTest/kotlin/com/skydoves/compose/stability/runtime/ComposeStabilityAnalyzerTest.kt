@@ -151,8 +151,8 @@ class ComposeStabilityAnalyzerTest {
     assertEquals("Event3", customLogger.events[1].composableName)
   }
 
-  private fun createTestEvent(name: String = "TestComposable"): RecompositionEvent {
-    return RecompositionEvent(
+  private fun createTestEvent(name: String = "TestComposable"): RecompositionEvent =
+    RecompositionEvent(
       composableName = name,
       tag = "test",
       recompositionCount = 1,
@@ -168,7 +168,6 @@ class ComposeStabilityAnalyzerTest {
       ),
       unstableParameters = emptyList(),
     )
-  }
 
   private class TestLogger : RecompositionLogger {
     val events = mutableListOf<RecompositionEvent>()

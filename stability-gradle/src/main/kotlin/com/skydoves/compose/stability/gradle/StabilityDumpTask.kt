@@ -282,29 +282,25 @@ public abstract class StabilityDumpTask : DefaultTask() {
     return match.groupValues[1].toBoolean()
   }
 
-  private fun String.unescapeJson(): String {
-    return this
-      .replace("\\\\", "\\")
-      .replace("\\\"", "\"")
-      .replace("\\n", "\n")
-      .replace("\\r", "\r")
-      .replace("\\t", "\t")
-  }
+  private fun String.unescapeJson(): String = this
+    .replace("\\\\", "\\")
+    .replace("\\\"", "\"")
+    .replace("\\n", "\n")
+    .replace("\\r", "\r")
+    .replace("\\t", "\t")
 
   private fun filterStabilityInfo(
     entries: List<StabilityEntry>,
     ignoredPackages: List<String>,
     ignoredClasses: List<String>,
-  ): List<StabilityEntry> {
-    return entries.filter { entry ->
-      val packageName = entry.qualifiedName.substringBeforeLast('.', "")
-      val className = entry.qualifiedName.substringAfterLast('.')
+  ): List<StabilityEntry> = entries.filter { entry ->
+    val packageName = entry.qualifiedName.substringBeforeLast('.', "")
+    val className = entry.qualifiedName.substringAfterLast('.')
 
-      // Filter out compiler-generated anonymous composables
-      !entry.qualifiedName.contains("<anonymous>") &&
-        !ignoredPackages.any { packageName.startsWith(it) } &&
-        !ignoredClasses.contains(className)
-    }
+    // Filter out compiler-generated anonymous composables
+    !entry.qualifiedName.contains("<anonymous>") &&
+      !ignoredPackages.any { packageName.startsWith(it) } &&
+      !ignoredClasses.contains(className)
   }
 
   private fun applyStabilityConfiguration(
@@ -327,10 +323,7 @@ public abstract class StabilityDumpTask : DefaultTask() {
     }
   }
 
-  private fun writeStabilityFile(
-    file: java.io.File,
-    entries: List<StabilityEntry>,
-  ) {
+  private fun writeStabilityFile(file: java.io.File, entries: List<StabilityEntry>) {
     if (entries.isEmpty()) {
       if (file.exists()) {
         file.delete()

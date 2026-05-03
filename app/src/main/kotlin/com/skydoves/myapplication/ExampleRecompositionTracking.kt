@@ -113,10 +113,7 @@ fun RecompositionTrackingExample() {
  */
 @TraceRecomposition(threshold = 3)
 @Composable
-fun TrackedCounterDisplay(
-  count: Int,
-  content: @Composable () -> Unit,
-) {
+fun TrackedCounterDisplay(count: Int, content: @Composable () -> Unit) {
   Text(
     text = "Count: $count",
     modifier = Modifier.padding(16.dp),
@@ -192,11 +189,7 @@ fun TrackedUnstableUserCard(user: UnstableUser) {
  */
 @TraceRecomposition(tag = "mixed-example", threshold = 5)
 @Composable
-fun TrackedMixedParameters(
-  title: String,
-  count: Int,
-  user: StableUser,
-) {
+fun TrackedMixedParameters(title: String, count: Int, user: StableUser) {
   Column(modifier = Modifier.padding(16.dp)) {
     Text(title)
     Text("Count: $count")
@@ -212,10 +205,7 @@ fun TrackedMixedParameters(
  */
 @TraceRecomposition(tag = "button-click")
 @Composable
-fun TrackedActionButton(
-  text: String,
-  onClick: () -> Unit,
-) {
+fun TrackedActionButton(text: String, onClick: () -> Unit) {
   Button(onClick = onClick) {
     Text(text)
   }

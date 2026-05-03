@@ -49,13 +49,11 @@ object ClasspathBasedStandardLibrariesPathProvider : KotlinStandardLibrariesPath
         }
       }
 
-  private fun getFile(name: String): File {
-    return jars[name]
-      ?: error(
-        "Jar $name not found in classpath. Available jars:\n" +
-          jars.keys.sorted().joinToString("\n"),
-      )
-  }
+  private fun getFile(name: String): File = jars[name]
+    ?: error(
+      "Jar $name not found in classpath. Available jars:\n" +
+        jars.keys.sorted().joinToString("\n"),
+    )
 
   override fun runtimeJarForTests(): File = getFile("kotlin-stdlib")
 
