@@ -35,7 +35,9 @@ import org.jetbrains.uast.UMethod
  * - Add @Composable annotation
  * - Remove @TraceRecomposition annotation
  */
-public class TraceRecompositionDetector : Detector(), SourceCodeScanner {
+public class TraceRecompositionDetector :
+  Detector(),
+  SourceCodeScanner {
 
   public companion object {
     private const val TRACE_RECOMPOSITION: String =
@@ -98,11 +100,7 @@ public class TraceRecompositionDetector : Detector(), SourceCodeScanner {
       }
     }
 
-  private fun reportIssue(
-    context: JavaContext,
-    method: UMethod,
-    traceAnnotation: UAnnotation,
-  ) {
+  private fun reportIssue(context: JavaContext, method: UMethod, traceAnnotation: UAnnotation) {
     val methodName = method.name
     val annotationElement = traceAnnotation.sourcePsi ?: traceAnnotation.javaPsi
     val location = context.getLocation(annotationElement)

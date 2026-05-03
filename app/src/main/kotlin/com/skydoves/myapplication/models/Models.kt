@@ -23,48 +23,30 @@ import com.skydoves.compose.stability.runtime.StableForAnalysis
  * Immutable data class - should be stable.
  * All properties are val and the class is a data class.
  */
-data class StableUser(
-  val name: String,
-  val age: Int,
-)
+data class StableUser(val name: String, val age: Int)
 
 /**
  * Mutable data class - should be unstable.
  * Has mutable (var) properties.
  */
-data class UnstableUser(
-  var name: String,
-  var age: Int,
-)
+data class UnstableUser(var name: String, var age: Int)
 
 /**
  * Explicitly marked as @Immutable - should be stable.
  */
 @Immutable
-data class ImmutableData(
-  val text: String,
-  val number: Int,
-)
+data class ImmutableData(val text: String, val number: Int)
 
-class NormalClass(
-  val asda: String,
-  val qwea: Boolean,
-)
+class NormalClass(val asda: String, val qwea: Boolean)
 
-class MyClass2(
-  val asd: String,
-  var asdasd: Int,
-
-)
+class MyClass2(val asd: String, var asdasd: Int)
 
 /**
  * Explicitly marked as @Stable - should be stable.
  * Even with var properties, the annotation overrides.
  */
 @Stable
-class StableClass(
-  private var internalCounter: Int = 0,
-) {
+class StableClass(private var internalCounter: Int = 0) {
   fun getCount(): Int = internalCounter
 
   // The mutation is internal and doesn't affect equality
@@ -114,9 +96,7 @@ sealed class UserState {
  * The analyzer should recognize this as stable.
  */
 @StableForAnalysis
-class CustomStableClass(
-  private val data: Any,
-) {
+class CustomStableClass(private val data: Any) {
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (other !is CustomStableClass) return false
@@ -129,9 +109,7 @@ class CustomStableClass(
 /**
  * Generic container - stability depends on type parameter.
  */
-data class Container<T>(
-  val value: T,
-)
+data class Container<T>(val value: T)
 
 /**
  * Interface - stability cannot be determined.

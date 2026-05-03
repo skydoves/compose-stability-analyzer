@@ -24,9 +24,7 @@ import java.io.File
  * Collects stability information about composable functions during compilation
  * and exports it to a JSON file for use by Gradle tasks.
  */
-public class StabilityInfoCollector(
-  private val outputFile: File,
-) {
+public class StabilityInfoCollector(private val outputFile: File) {
 
   private val composables = mutableListOf<ComposableStabilityInfo>()
 
@@ -72,9 +70,7 @@ public class StabilityInfoCollector(
  * Root stability report containing all composables.
  */
 @Serializable
-public data class StabilityReport(
-  val composables: List<ComposableStabilityInfo>,
-)
+public data class StabilityReport(val composables: List<ComposableStabilityInfo>)
 
 /**
  * Stability information for a single composable function.

@@ -368,10 +368,7 @@ class GetCustomStableTypesAsRegexTest {
     return getMatches(listOf(file), classes)
   }
 
-  private fun getMatches(
-    fileList: List<File>,
-    classes: List<String>,
-  ): List<String> {
+  private fun getMatches(fileList: List<File>, classes: List<String>): List<String> {
     val parsers = fileList.map { StabilityConfigParser.fromFile(it.path) }
 
     return classes.filter { clazz ->

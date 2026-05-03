@@ -26,9 +26,8 @@ import java.io.File
  * This ensures that test code has access to required runtime classes like
  * @Composable, @Stable, @Immutable, etc.
  */
-class StabilityRuntimeClasspathProvider(
-  testServices: TestServices,
-) : RuntimeClasspathProvider(testServices) {
+class StabilityRuntimeClasspathProvider(testServices: TestServices) :
+  RuntimeClasspathProvider(testServices) {
 
   private val stabilityRuntimeClasspath: List<File> by lazy {
     System.getProperty("stabilityRuntime.classpath")
@@ -44,7 +43,6 @@ class StabilityRuntimeClasspathProvider(
       ?: emptyList()
   }
 
-  override fun runtimeClassPaths(module: TestModule): List<File> {
-    return stabilityRuntimeClasspath + composeRuntimeClasspath
-  }
+  override fun runtimeClassPaths(module: TestModule): List<File> =
+    stabilityRuntimeClasspath + composeRuntimeClasspath
 }

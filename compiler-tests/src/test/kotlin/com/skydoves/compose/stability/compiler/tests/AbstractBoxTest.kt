@@ -53,9 +53,8 @@ import org.jetbrains.kotlin.test.services.KotlinStandardLibrariesPathProvider
  */
 open class AbstractBoxTest : AbstractFirLightTreeBlackBoxCodegenTest() {
 
-  override fun createKotlinStandardLibrariesPathProvider(): KotlinStandardLibrariesPathProvider {
-    return ClasspathBasedStandardLibrariesPathProvider
-  }
+  override fun createKotlinStandardLibrariesPathProvider(): KotlinStandardLibrariesPathProvider =
+    ClasspathBasedStandardLibrariesPathProvider
 
   override fun configure(builder: TestConfigurationBuilder) {
     super.configure(builder)

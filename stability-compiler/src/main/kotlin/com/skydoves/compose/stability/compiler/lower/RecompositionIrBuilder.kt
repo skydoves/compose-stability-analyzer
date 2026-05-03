@@ -56,9 +56,7 @@ import org.jetbrains.kotlin.name.Name
  * - Calling logIfThresholdMet to trigger logging
  */
 @OptIn(UnsafeDuringIrConstructionAPI::class)
-public class RecompositionIrBuilder(
-  private val context: IrPluginContext,
-) {
+public class RecompositionIrBuilder(private val context: IrPluginContext) {
 
   // FqNames for runtime classes and functions
   private val recompositionTrackerFqName =
