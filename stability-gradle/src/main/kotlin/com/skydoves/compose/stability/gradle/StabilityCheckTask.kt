@@ -388,7 +388,8 @@ public abstract class StabilityCheckTask : DefaultTask() {
           inParams = false
         }
 
-        line.startsWith("public ") || line.startsWith("internal ") ||
+        line.startsWith("public ") ||
+          line.startsWith("internal ") ||
           line.startsWith("private ") -> {
           currentVisibility = line.substringBefore(" fun ").trim()
           val signature = line.substringAfter(" fun ").trim()
