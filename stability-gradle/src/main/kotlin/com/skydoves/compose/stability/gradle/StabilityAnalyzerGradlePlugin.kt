@@ -78,6 +78,20 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       val stabilityDir = target.layout.buildDirectory.dir("stability/$name")
       outputs.dir(stabilityDir).optional(true)
     }
+
+    // Disable incremental compilation when stability tasks are in the graph (Issue #156)
+    // Kotlin IC may skip recompiling files when dependency changes are binary-compatible,
+    // but stability can still change (e.g., val → var makes a type UNSTABLE).
+    target.gradle.taskGraph.whenReady {
+      val hasStabilityTasks = allTasks.any {
+        it is StabilityDumpTask || it is StabilityCheckTask
+      }
+      if (hasStabilityTasks) {
+        target.tasks.withType(KotlinCompile::class.java).configureEach {
+          incremental = false
+        }
+      }
+    }
   }
 
   private fun registerTasksNonAndroid(target: Project, extension: StabilityAnalyzerExtension) {
