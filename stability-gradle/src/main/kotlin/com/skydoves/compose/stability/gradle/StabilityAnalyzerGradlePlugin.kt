@@ -105,6 +105,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       projectName.set(target.name)
       stabilityInputFiles.setFrom(
         target.fileTree(target.layout.buildDirectory.dir("stability")) {
+          include("stability-info.json")
           include("*/stability-info.json")
         },
       )
@@ -123,6 +124,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       projectName.set(target.name)
       stabilityInputFiles.from(
         target.fileTree(target.layout.buildDirectory.dir("stability")) {
+          include("stability-info.json")
           include("*/stability-info.json")
         },
       )
