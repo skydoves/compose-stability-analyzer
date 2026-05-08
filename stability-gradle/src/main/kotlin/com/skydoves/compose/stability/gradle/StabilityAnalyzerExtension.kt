@@ -202,4 +202,15 @@ public abstract class StabilityValidationConfig @Inject constructor(
   public val stabilityConfigurationFiles: ListProperty<RegularFile> = objects
     .listProperty(RegularFile::class.java)
     .convention(emptyList())
+
+  /**
+   * When true, plugin may disable Kotlin's incremental compilation in some cases
+   * to improve accuracy.
+   *
+   * See https://github.com/skydoves/compose-stability-analyzer/issues/156
+   *
+   * Default: true
+   */
+  public val allowIncrementalDisabling: Property<Boolean> =
+    objects.property(Boolean::class.javaObjectType).convention(true)
 }

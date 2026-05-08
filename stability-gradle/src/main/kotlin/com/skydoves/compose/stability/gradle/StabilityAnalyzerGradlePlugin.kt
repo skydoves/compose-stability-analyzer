@@ -83,12 +83,14 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     // Kotlin IC may skip recompiling files when dependency changes are binary-compatible,
     // but stability can still change (e.g., val → var makes a type UNSTABLE).
     target.gradle.taskGraph.whenReady {
-      val hasStabilityTasks = allTasks.any {
-        it is StabilityDumpTask || it is StabilityCheckTask
-      }
-      if (hasStabilityTasks) {
-        target.tasks.withType(KotlinCompile::class.java).configureEach {
-          incremental = false
+      if (extension.stabilityValidation.allowIncrementalDisabling.get()) {
+        val hasStabilityTasks = allTasks.any {
+          it is StabilityDumpTask || it is StabilityCheckTask
+        }
+        if (hasStabilityTasks) {
+          target.tasks.withType(KotlinCompile::class.java).configureEach {
+            incremental = false
+          }
         }
       }
     }
