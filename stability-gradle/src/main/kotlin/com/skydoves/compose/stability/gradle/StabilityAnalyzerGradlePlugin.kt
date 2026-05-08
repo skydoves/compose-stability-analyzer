@@ -75,7 +75,9 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
     // Per-task output directory to avoid shared output conflicts with other plugins (Issue #153)
     target.tasks.withType(KotlinCompile::class.java).configureEach {
-      val stabilityDir = target.layout.buildDirectory.dir("stability/$name")
+      val stabilityDir = target.layout.buildDirectory.dir(
+        getKotlinTaskStabilityFolderName(name),
+      )
       outputs.dir(stabilityDir).optional(true)
     }
 
@@ -174,7 +176,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         projectName.set(target.name)
         stabilityInputFiles.setFrom(
           target.layout.buildDirectory.file(
-            "stability/compile${variantNameUpperCase}Kotlin/stability-info.json",
+            "stability/$variantNameLowerCase/stability-info.json",
           ),
         )
         outputDir.set(extension.stabilityValidation.outputDir)
@@ -193,7 +195,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         projectName.set(target.name)
         stabilityInputFiles.from(
           target.layout.buildDirectory.file(
-            "stability/compile${variantNameUpperCase}Kotlin/stability-info.json",
+            "stability/$variantNameLowerCase/stability-info.json",
           ),
         )
         stabilityReferenceFiles.from(extension.stabilityValidation.outputDir)
@@ -284,7 +286,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       // Per-compilation output directory to avoid shared output conflicts (Issue #153)
       val compileTaskName = kotlinCompilation.compileTaskProvider.name
       val stabilityDir = project.layout.buildDirectory
-        .dir("stability/$compileTaskName").get().asFile
+        .dir(getKotlinTaskStabilityFolderName(compileTaskName)).get().asFile
       stabilityDir.mkdirs()
       val dependenciesFile = java.io.File(stabilityDir, "project-dependencies.txt")
       dependenciesFile.writeText(projectDependencies.joinToString("\n"))
@@ -517,4 +519,24 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
    */
   private fun getLintProject(project: Project): Project? =
     project.rootProject.findProject(":stability-lint")
+}
+
+private fun getKotlinTaskStabilityFolderName(taskName: String): String {
+  // Clean up the task name a bit to make folder name a bit clearer
+  // compileKotlin => (blank)
+  // compileDebugKotlin => debug
+  // compileDebugAndroidTestKotlin => debugAndroidTest
+  // compileDebugUnitTestKotlinAndroid => debugUnitTestAndroid
+  // compileJvmCommonKotlinMetadata => jvmCommonMetadata
+
+  val subfolder = taskName
+    .removePrefix("compile")
+    .replace("Kotlin", "")
+    .replaceFirstChar { it.lowercase() }
+
+  return if (subfolder.isBlank()) {
+    "stability"
+  } else {
+    "stability/$subfolder"
+  }
 }
