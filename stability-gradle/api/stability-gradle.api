@@ -51,6 +51,7 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityDumpTask : 
 
 public abstract class com/skydoves/compose/stability/gradle/StabilityValidationConfig {
 	public fun <init> (Lorg/gradle/api/file/ProjectLayout;Lorg/gradle/api/model/ObjectFactory;)V
+	public final fun getAllowIncrementalDisabling ()Lorg/gradle/api/provider/Property;
 	public final fun getAllowMissingBaseline ()Lorg/gradle/api/provider/Property;
 	public final fun getEnabled ()Lorg/gradle/api/provider/Property;
 	public final fun getFailOnStabilityChange ()Lorg/gradle/api/provider/Property;
