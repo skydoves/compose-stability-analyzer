@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.5] - 2026-05-16
+
+### Added
+- **`allowIncrementalDisabling` configuration switch** (Issue #156, #158)
+  - New `stabilityValidation.allowIncrementalDisabling` property (default: `true`) to control whether the plugin may disable Kotlin's incremental compilation when stability validation tasks are in the build graph
+  - Set to `false` to opt out and keep incremental compilation enabled even when running `stabilityDump`/`stabilityCheck`
+
+### Changed
+- **Bumped Kotlin to 2.3.21** along with related toolchain upgrades:
+  - Compose BOM `2026.04.01`, Android Gradle Plugin `8.13.2`, Lint API `32.1.1`
+  - Dokka `2.2.0`, kotlinx.serialization `1.11.0`, Spotless `7.0.2`, Nexus publish plugin `0.36.0`, androidx Activity `1.13.0`, runtime annotation `1.11.0`
+- **Per-compilation stability output directory** (#154) — each `KotlinCompile`-dependent task now writes to a dedicated `build/stability/<name>/` directory to prevent cross-variant clobbering. Consumers (Stability Explorer, `stabilityDump`/`stabilityCheck`) read from both the new and legacy layouts for backward compatibility.
+
+### Fixed
+- **Incremental compilation now disabled when stability tasks run** (Issue #156, #157) — Kotlin's incremental compiler could skip recompiling files when dependency changes were binary-compatible, even though stability could still change (e.g. `val` → `var`). The plugin now disables incremental compilation while `stabilityDump`/`stabilityCheck` are in the task graph so stability results stay accurate (can be opted out via `allowIncrementalDisabling`).
+
 ## [0.7.4] - 2026-04-25
 
 ### Added

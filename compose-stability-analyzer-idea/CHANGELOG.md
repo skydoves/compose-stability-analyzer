@@ -2,6 +2,11 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.7.5] - 2026-05-16
+
+### Changed
+- **Stability Explorer layout compatibility** (#154) — `ComposableStabilityCollector` now resolves `stability-info.json` from both the new per-compilation `build/stability/<name>/` layout and the legacy `build/` layout, so the explorer keeps working across plugin versions.
+
 ## [0.7.4] - 2026-04-25
 
 ### Added
