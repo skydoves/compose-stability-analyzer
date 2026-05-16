@@ -127,6 +127,9 @@ composeStabilityAnalyzer {
         // Allow checks without a baseline file (default: false)
         allowMissingBaseline.set(false)
 
+        // Allow disabling Kotlin incremental compilation when stability tasks run (default: true)
+        allowIncrementalDisabling.set(true)
+
         // Add stability configuration file
         // Matches compose's identical property
         // (see https://developer.android.com/develop/ui/compose/performance/stability/fix#configuration-file)
@@ -161,6 +164,20 @@ When enabled, the check only flags stability regressions, specifically changes w
 composeStabilityAnalyzer {
     stabilityValidation {
         ignoreNonRegressiveChanges.set(true)
+    }
+}
+```
+
+### `allowIncrementalDisabling`
+
+Kotlin's incremental compiler may skip recompiling files when dependency changes are binary-compatible, even though stability can still change (for example, switching a property from `val` to `var` makes a type `UNSTABLE`). To keep stability results accurate, the plugin disables incremental compilation whenever `stabilityDump` or `stabilityCheck` is in the task graph.
+
+This is enabled by default (`true`). Set it to `false` to opt out and keep incremental compilation on even when stability tasks run, at the cost of potentially stale stability results.
+
+```kotlin
+composeStabilityAnalyzer {
+    stabilityValidation {
+        allowIncrementalDisabling.set(false)
     }
 }
 ```

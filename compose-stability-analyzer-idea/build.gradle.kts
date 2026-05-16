@@ -26,7 +26,7 @@ kotlin {
 }
 
 group = "com.github.skydoves"
-version = "0.7.4"
+version = "0.7.5"
 
 repositories {
   mavenLocal()
