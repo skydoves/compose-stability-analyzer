@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-05-29
+
+### Added
+- **Stability Reality Check (IDE plugin)** — reconciles the compiler's *static* stability prediction with *live* runtime recomposition data and grades each parameter as **confirmed / false alarm / silent waste / justified**. It surfaces the strong-skipping gap: a parameter flagged "unstable" that actually skips fine at runtime (false alarm) versus one that recomposes on a fresh-but-`equals`-equal instance every frame (silent waste). Grades appear in editor inlays, hover tooltips (predicted vs. actual), and a new **Reality** tool-window tab with a wasted-recomposition tally.
+- **Recomposition Blame (IDE plugin + runtime)** — traces a recomposition back to its cause in two ways:
+  - **State write-site** (runtime, Android/JVM): with `@TraceRecomposition(traceStates = true)`, a Compose Snapshot write observer records where each internal state was mutated, e.g. `[state] counter: Int changed (0 → 1) ← onClick (Screen.kt:42)`.
+  - **Parameter provenance** (IDE): right-click a `@Composable` → **Blame this Recomposition** to walk the reverse call graph and see where each argument's value originates, in a new **Blame** tool-window tab.
+- **`ParameterChange.referenceChanged`** (runtime API) — distinguishes an `equals`-equal value delivered as a new instance (a strong-skipping `===` miss) from a genuine value change; this powers the Reality Check.
+
+### Changed
+- `stability-runtime` now declares a `compileOnly` dependency on the Compose runtime for its Android/JVM source sets (used only by the state-write observer); all other Kotlin Multiplatform targets remain Compose-free via no-op `actual`s.
+- Kotlin remains **2.3.21**.
+
 ## [0.7.5] - 2026-05-16
 
 ### Added

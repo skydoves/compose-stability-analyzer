@@ -26,7 +26,7 @@ kotlin {
 }
 
 group = "com.github.skydoves"
-version = "0.7.5"
+version = "0.8.0"
 
 repositories {
   mavenLocal()
@@ -38,7 +38,7 @@ repositories {
 }
 
 dependencies {
-  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.7.0")
+  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.8.0")
 
   intellijPlatform {
     intellijIdeaCommunity("2025.2")
@@ -74,6 +74,11 @@ intellijPlatform {
             </ul>
         """.trimIndent()
     changeNotes = """
+            <b>0.8.0</b>
+            <ul>
+                <li><b>New: Stability Reality Check</b> - Reconciles the compiler's static stability prediction with live runtime recomposition data and grades each parameter as confirmed / false alarm / silent waste / justified. Shown in editor inlays, hover tooltips (predicted vs. actual), and a new Reality tool-window tab with a wasted-recomposition tally.</li>
+                <li><b>New: Recomposition Blame</b> - Right-click any @Composable and choose "Blame this Recomposition" to trace upstream callers and where each argument originates (new Blame tool-window tab). Internal-state write-sites appear inline as &larr; method (File.kt:line).</li>
+            </ul>
             <b>0.7.0</b>
             <ul>
                 <li><b>New: Recomposition Cascade Visualizer</b> - Right-click any @Composable function to trace downstream composables affected by recomposition. Shows a tree view with stability status, summary statistics, cycle detection, and source navigation.</li>
