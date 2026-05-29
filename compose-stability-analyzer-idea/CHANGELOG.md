@@ -2,6 +2,12 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.8.0] - 2026-05-29
+
+### Added
+- **Stability Reality Check** — grades each composable parameter by reconciling the static stability prediction with live recomposition data (confirmed / false alarm / silent waste / justified). Appears in editor inlays, hover tooltips (predicted vs. actual), and a new **Reality** tool-window tab with a wasted-recomposition tally.
+- **Recomposition Blame** — right-click a `@Composable` → **Blame this Recomposition** to trace upstream: which composables call it and where each argument originates (new **Blame** tool-window tab). Internal-state write-sites captured at runtime appear inline as `← method (File.kt:line)`.
+
 ## [0.7.5] - 2026-05-16
 
 ### Changed
