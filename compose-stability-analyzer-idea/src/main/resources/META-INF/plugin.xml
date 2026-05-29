@@ -129,6 +129,14 @@
         </action>
 
         <action
+                id="com.skydoves.compose.stability.idea.blame.AnalyzeBlameAction"
+                class="com.skydoves.compose.stability.idea.blame.AnalyzeBlameAction"
+                text="Blame this Recomposition"
+                description="Trace upstream which composables call this one and where its inputs come from">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+
+        <action
                 id="com.skydoves.compose.stability.idea.heatmap.ToggleHeatmapAction"
                 class="com.skydoves.compose.stability.idea.heatmap.ToggleHeatmapAction"
                 text="Toggle Recomposition Heatmap"

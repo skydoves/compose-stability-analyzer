@@ -209,6 +209,11 @@ internal class AdbLogcatService(
           totalDurationMs = event.durationMs,
           lastParameterChanges = paramChanges,
           lastStateChanges = stateChanges,
+          refChangedParameters = event.parameterEntries
+            .filter { it.status == ParameterStatus.REF_CHANGED }
+            .associate { it.name to 1 },
+          observationCounts = event.parameterEntries
+            .associate { it.name to 1 },
         )
       } else {
         val mergedChanged =
@@ -219,6 +224,22 @@ internal class AdbLogcatService(
             mergedChanged[it.name] =
               (mergedChanged[it.name] ?: 0) + 1
           }
+
+        val mergedRefChanged =
+          existing.refChangedParameters.toMutableMap()
+        event.parameterEntries
+          .filter { it.status == ParameterStatus.REF_CHANGED }
+          .forEach {
+            mergedRefChanged[it.name] =
+              (mergedRefChanged[it.name] ?: 0) + 1
+          }
+
+        val mergedObservations =
+          existing.observationCounts.toMutableMap()
+        event.parameterEntries.forEach {
+          mergedObservations[it.name] =
+            (mergedObservations[it.name] ?: 0) + 1
+        }
 
         val recentCapped =
           (existing.recentEvents + event).takeLast(maxRecent)
@@ -240,6 +261,8 @@ internal class AdbLogcatService(
             existing.totalDurationMs + event.durationMs,
           lastParameterChanges = paramChanges,
           lastStateChanges = stateChanges,
+          refChangedParameters = mergedRefChanged,
+          observationCounts = mergedObservations,
         )
       }
     }

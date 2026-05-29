@@ -60,6 +60,15 @@ public actual class DefaultRecompositionLogger : RecompositionLogger {
           val newStr = safeToString(change.newValue)
           "changed ($oldStr → $newStr)"
         }
+        // Equals-equal but a new instance: emit the old → new arrow on the existing
+        // stable/unstable token (no new token) so the IDE can detect a reference-only
+        // change while staying backward/forward compatible with older parsers.
+        change.referenceChanged -> {
+          val oldStr = safeToString(change.oldValue)
+          val newStr = safeToString(change.newValue)
+          val token = if (change.stable) "stable" else "unstable"
+          "$token ($oldStr → $newStr)"
+        }
         change.stable -> "stable (${safeToString(change.newValue)})"
         else -> "unstable (${safeToString(change.newValue)})"
       }
@@ -69,7 +78,8 @@ public actual class DefaultRecompositionLogger : RecompositionLogger {
     event.stateChanges.filter { it.changed }.forEach { change ->
       val oldStr = safeToString(change.oldValue)
       val newStr = safeToString(change.newValue)
-      lines.add("[state] ${change.name}: ${change.type} changed ($oldStr → $newStr)")
+      val site = change.writeSite?.let { " ← $it" } ?: ""
+      lines.add("[state] ${change.name}: ${change.type} changed ($oldStr → $newStr)$site")
     }
 
     if (event.unstableParameters.isNotEmpty()) {

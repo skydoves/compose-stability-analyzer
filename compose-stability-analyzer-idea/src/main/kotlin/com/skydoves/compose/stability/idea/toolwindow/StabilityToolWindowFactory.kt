@@ -19,8 +19,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
+import com.skydoves.compose.stability.idea.blame.BlamePanel
 import com.skydoves.compose.stability.idea.cascade.CascadePanel
 import com.skydoves.compose.stability.idea.heatmap.HeatmapPanel
+import com.skydoves.compose.stability.idea.reality.RealityPanel
 
 /**
  * Factory for creating the Compose Stability Analyzer tool window.
@@ -60,6 +62,28 @@ public class StabilityToolWindowFactory : ToolWindowFactory {
       false,
     )
     toolWindow.contentManager.addContent(heatmapContent)
+
+    // Tab 4: Stability Reality Check (predicted vs actual)
+    val realityPanel = RealityPanel(project)
+    val realityComponent = realityPanel.getContent()
+    realityComponent.putClientProperty(RealityPanel::class.java, realityPanel)
+    val realityContent = contentFactory.createContent(
+      realityComponent,
+      "Reality",
+      false,
+    )
+    toolWindow.contentManager.addContent(realityContent)
+
+    // Tab 5: Recomposition Blame (upstream cause tracing)
+    val blamePanel = BlamePanel(project)
+    val blameComponent = blamePanel.getContent()
+    blameComponent.putClientProperty(BlamePanel::class.java, blamePanel)
+    val blameContent = contentFactory.createContent(
+      blameComponent,
+      "Blame",
+      false,
+    )
+    toolWindow.contentManager.addContent(blameContent)
   }
 
   public override fun shouldBeAvailable(project: Project): Boolean = true

@@ -18,6 +18,8 @@ nav:
     - 'Stability Explorer': ide-plugin/stability-explorer.md
     - 'Recomposition Cascade': ide-plugin/recomposition-cascade.md
     - 'Recomposition Heatmap': ide-plugin/recomposition-heatmap.md
+    - 'Stability Reality Check': ide-plugin/reality-check.md
+    - 'Recomposition Blame': ide-plugin/recomposition-blame.md
     - 'Configuration': ide-plugin/configuration.md
   - 'Gradle Plugin':
     - 'Getting Started': gradle-plugin/getting-started.md

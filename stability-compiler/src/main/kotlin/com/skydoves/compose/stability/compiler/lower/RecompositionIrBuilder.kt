@@ -568,11 +568,12 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
   }
 
   /**
-   * Creates IR call to `tracker.trackState(name, type, value)`.
+   * Creates IR call to `tracker.trackState(name, type, value, stateObject)`.
    *
-   * For delegated state variables (var x by ...), reads the variable directly (already unwrapped).
-   * For non-delegated state variables (val s = mutableStateOf()),
-   * reads s.value via property getter.
+   * arg3 (value): for delegated state (var x by ...) the unwrapped value via the property getter;
+   * for non-delegated state the variable directly.
+   * arg4 (stateObject): the state delegate object itself, so the runtime can correlate it with the
+   * Snapshot write observer that recorded the write-site (Recomposition Blame).
    */
   private fun createTrackStateCall(
     builder: IrBuilderWithScope,
@@ -595,6 +596,10 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
       // Fallback: read the variable directly
       call.arguments[3] = builder.irGet(stateData.variable)
     }
+
+    // arguments[4] = the state delegate object itself (the StateObject). Its identity lets the
+    // runtime correlate this state with the Snapshot write observer that recorded the write-site.
+    call.arguments[4] = builder.irGet(stateData.variable)
 
     return call
   }

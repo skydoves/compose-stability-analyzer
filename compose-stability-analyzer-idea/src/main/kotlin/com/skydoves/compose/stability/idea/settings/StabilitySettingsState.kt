@@ -162,6 +162,17 @@ public class StabilitySettingsState : PersistentStateComponent<StabilitySettings
    */
   public var heatmapMaxRecentEvents: Int = 50
 
+  /**
+   * Enable the Stability Reality Check feature: joins the static stability verdict with live
+   * recomposition data and grades each parameter (confirmed / false alarm / silent waste).
+   */
+  public var isRealityCheckEnabled: Boolean = true
+
+  /**
+   * Show Reality Check grades in hover documentation for composable functions.
+   */
+  public var showRealityCheckInTooltips: Boolean = true
+
   public override fun getState(): StabilitySettingsState = this
 
   public override fun loadState(state: StabilitySettingsState) {
