@@ -120,17 +120,21 @@ internal class LogcatParser(
 
     val paramMatch = PARAM_REGEX.find(line)
     if (paramMatch != null) {
+      val detail = paramMatch.groupValues[4]
+      // A `stable`/`unstable` token carrying an `old → new` arrow is the reference-only
+      // change signal: the value stayed equals-equal, but the instance changed.
+      val refChanged = detail.contains(" → ")
       val status = when (paramMatch.groupValues[3]) {
         "changed" -> ParameterStatus.CHANGED
-        "stable" -> ParameterStatus.STABLE
-        else -> ParameterStatus.UNSTABLE
+        "stable" -> if (refChanged) ParameterStatus.REF_CHANGED else ParameterStatus.STABLE
+        else -> if (refChanged) ParameterStatus.REF_CHANGED else ParameterStatus.UNSTABLE
       }
       currentParams.add(
         ParsedParameterEntry(
           name = paramMatch.groupValues[1],
           type = paramMatch.groupValues[2],
           status = status,
-          detail = paramMatch.groupValues[4],
+          detail = detail,
         ),
       )
     }

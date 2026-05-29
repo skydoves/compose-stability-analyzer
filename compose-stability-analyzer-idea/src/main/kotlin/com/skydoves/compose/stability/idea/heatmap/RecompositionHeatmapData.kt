@@ -46,6 +46,14 @@ internal enum class ParameterStatus {
   CHANGED,
   STABLE,
   UNSTABLE,
+
+  /**
+   * Structurally equal to the previous value but a new instance — the runtime logged a
+   * `stable`/`unstable` token carrying an `old → new` arrow. Under strong skipping an unstable
+   * param compared by identity (`===`) recomposes here even though `equals` matched, which the
+   * Reality Check surfaces as silent waste.
+   */
+  REF_CHANGED,
 }
 
 /**
@@ -63,6 +71,10 @@ internal data class ComposableHeatmapData(
   val totalDurationMs: Double = 0.0,
   val lastParameterChanges: List<String> = emptyList(),
   val lastStateChanges: List<String> = emptyList(),
+  /** Per-parameter count of equals-equal-but-new-instance observations (REF_CHANGED). */
+  val refChangedParameters: Map<String, Int> = emptyMap(),
+  /** Per-parameter count of total appearances across recompositions (lifetime, uncapped). */
+  val observationCounts: Map<String, Int> = emptyMap(),
 )
 
 /**

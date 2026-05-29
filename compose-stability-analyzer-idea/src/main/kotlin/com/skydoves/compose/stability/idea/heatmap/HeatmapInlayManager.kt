@@ -33,9 +33,14 @@ import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ui.JBUI
+import com.skydoves.compose.stability.idea.StabilityAnalyzer
 import com.skydoves.compose.stability.idea.isComposable
 import com.skydoves.compose.stability.idea.isPreview
+import com.skydoves.compose.stability.idea.reality.ComposableReality
+import com.skydoves.compose.stability.idea.reality.RealityClassifier
+import com.skydoves.compose.stability.idea.reality.RealityGrade
 import com.skydoves.compose.stability.idea.settings.StabilitySettingsState
+import com.skydoves.compose.stability.runtime.ComposableStabilityInfo
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import java.awt.Color
@@ -72,7 +77,29 @@ internal class HeatmapInlayManager(
   private data class InlayEntry(
     val inlay: Inlay<*>,
     val displayText: String,
+    val color: Color,
   )
+
+  /** A composable's anchor in the editor plus its (cached) static stability verdict. */
+  private data class ComposableAnchor(
+    val name: String,
+    val offset: Int,
+    val verdict: ComposableStabilityInfo?,
+  )
+
+  /** Fully-resolved inlay content for one composable (display text already folds in the grade). */
+  private data class DesiredInlay(
+    val offset: Int,
+    val displayText: String,
+    val color: Color,
+  )
+
+  /**
+   * Cache of static stability verdicts keyed by composable fqName, invalidated by the file's
+   * modification stamp, so [StabilityAnalyzer.analyze] (K2 resolve — not cheap) does not run on
+   * the 1s refresh for every composable in every open editor.
+   */
+  private val verdictCache = ConcurrentHashMap<String, Pair<Long, ComposableStabilityInfo>>()
 
   @Volatile
   private var refreshTask: ScheduledFuture<*>? = null
@@ -242,7 +269,8 @@ internal class HeatmapInlayManager(
   }
 
   private fun refreshEditor(editor: Editor) {
-    val composables = runReadAction {
+    val realityEnabled = settings.isRealityCheckEnabled
+    val anchors = runReadAction {
       val psiFile = PsiDocumentManager.getInstance(project)
         .getPsiFile(editor.document) as? KtFile ?: return@runReadAction null
       PsiTreeUtil.findChildrenOfType(psiFile, KtNamedFunction::class.java)
@@ -250,18 +278,25 @@ internal class HeatmapInlayManager(
         .mapNotNull { fn ->
           val name = fn.name ?: return@mapNotNull null
           val anchor = fn.nameIdentifier ?: fn.funKeyword ?: return@mapNotNull null
-          name to anchor.textRange.startOffset
+          val verdict = if (realityEnabled) cachedVerdict(fn) else null
+          ComposableAnchor(name, anchor.textRange.startOffset, verdict)
         }
     } ?: return
 
     val editorKey = System.identityHashCode(editor)
     val entries = editorState.getOrPut(editorKey) { mutableMapOf() }
 
-    // Figure out what should be shown
-    val desired = mutableMapOf<String, Pair<Int, String>>() // name → (offset, displayText)
-    for ((name, offset) in composables) {
-      val data = service.getHeatmapData(name) ?: continue
-      desired[name] = offset to buildDisplayText(data)
+    // Figure out what should be shown. The reality grade is folded into displayText so the
+    // cache-diff below invalidates the inlay on a grade-only change, not just a count change.
+    val desired = mutableMapOf<String, DesiredInlay>()
+    for (anchor in anchors) {
+      val data = service.getHeatmapData(anchor.name) ?: continue
+      val reality = anchor.verdict?.let { RealityClassifier.classify(it, data) }
+      desired[anchor.name] = DesiredInlay(
+        offset = anchor.offset,
+        displayText = buildDisplayText(data, reality),
+        color = severityColor(data, reality),
+      )
     }
 
     // Remove inlays for composables no longer needed
@@ -271,12 +306,13 @@ internal class HeatmapInlayManager(
     }
 
     // Update or create inlays
-    for ((name, pair) in desired) {
-      val (offset, newText) = pair
+    for ((name, d) in desired) {
       val existing = entries[name]
 
-      if (existing != null && existing.inlay.isValid && existing.displayText == newText) {
-        // Nothing changed — don't touch the inlay at all
+      if (existing != null && existing.inlay.isValid &&
+        existing.displayText == d.displayText && existing.color == d.color
+      ) {
+        // Nothing changed (neither text nor color) — don't touch the inlay at all
         continue
       }
 
@@ -284,22 +320,44 @@ internal class HeatmapInlayManager(
       existing?.inlay?.let { if (it.isValid) it.dispose() }
 
       val data = service.getHeatmapData(name) ?: continue
-      val color = severityColor(data.totalRecompositionCount)
       val tooltip = buildTooltipHtml(data)
       val renderer =
-        HeatmapBlockRenderer(newText, color, editor, tooltip)
+        HeatmapBlockRenderer(d.displayText, d.color, editor, tooltip)
       val inlay = editor.inlayModel.addBlockElement(
-        offset,
+        d.offset,
         true, // relatesToPrecedingText
         true, // showAbove
         0, // priority
         renderer,
       )
       if (inlay != null) {
-        entries[name] = InlayEntry(inlay, newText)
+        entries[name] = InlayEntry(inlay, d.displayText, d.color)
       } else {
         entries.remove(name)
       }
+    }
+  }
+
+  /**
+   * Returns the static stability verdict for [function], cached by fqName and invalidated by the
+   * file's modification stamp. MUST be called inside a read action (it resolves PSI).
+   */
+  private fun cachedVerdict(function: KtNamedFunction): ComposableStabilityInfo? {
+    return try {
+      val key = function.fqName?.asString() ?: function.name ?: return null
+      val stamp = function.containingFile?.modificationStamp ?: return null
+      val cached = verdictCache[key]
+      if (cached != null && cached.first == stamp) {
+        cached.second
+      } else {
+        val info = StabilityAnalyzer.analyze(function)
+        // Backstop against unbounded growth over a long session (fqName keys accumulate).
+        if (verdictCache.size > VERDICT_CACHE_LIMIT) verdictCache.clear()
+        verdictCache[key] = stamp to info
+        info
+      }
+    } catch (_: Exception) {
+      null
     }
   }
 
@@ -314,22 +372,41 @@ internal class HeatmapInlayManager(
 
   // ── Display text / color helpers ────────────────────────────────────────
 
-  private fun buildDisplayText(data: ComposableHeatmapData): String {
+  private fun buildDisplayText(data: ComposableHeatmapData, reality: ComposableReality?): String {
     return buildString {
       val count = data.totalRecompositionCount
       append("$count recomposition")
       if (count != 1) append("s")
-      if (data.changedParameters.isNotEmpty()) {
-        val topChanged = data.changedParameters.entries
-          .sortedByDescending { it.value }
-          .take(3)
-          .joinToString(", ") { it.key }
-        append("  |  changed: $topChanged")
+
+      val silent = reality?.parameters
+        ?.filter { it.grade == RealityGrade.SILENT_WASTE }
+        ?.map { it.name }
+        .orEmpty()
+      val falseAlarm = reality?.parameters
+        ?.filter { it.grade == RealityGrade.FALSE_ALARM }
+        ?.map { it.name }
+        .orEmpty()
+
+      when {
+        silent.isNotEmpty() ->
+          append("  |  (!) silent waste: ${silent.joinToString(", ")}")
+        falseAlarm.isNotEmpty() ->
+          append("  |  false alarm: ${falseAlarm.joinToString(", ")}")
+        data.changedParameters.isNotEmpty() -> {
+          val topChanged = data.changedParameters.entries
+            .sortedByDescending { it.value }
+            .take(3)
+            .joinToString(", ") { it.key }
+          append("  |  changed: $topChanged")
+        }
       }
     }
   }
 
-  private fun severityColor(count: Int): Color {
+  private fun severityColor(data: ComposableHeatmapData, reality: ComposableReality?): Color {
+    // Silent waste is the actionable problem — surface it in red regardless of the raw count.
+    if (reality != null && reality.hasSilentWaste) return Color(0xE8, 0x68, 0x4A)
+    val count = data.totalRecompositionCount
     return when {
       count < settings.heatmapGreenThreshold -> Color(0x5F, 0xB8, 0x65)
       count < settings.heatmapRedThreshold -> Color(0xF0, 0xC6, 0x74)
@@ -476,6 +553,7 @@ internal class HeatmapInlayManager(
 
   companion object {
     private const val REFRESH_INTERVAL_MS = 1000L
+    private const val VERDICT_CACHE_LIMIT = 1000
     fun getInstance(project: Project): HeatmapInlayManager =
       project.getService(HeatmapInlayManager::class.java)
   }

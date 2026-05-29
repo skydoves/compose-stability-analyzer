@@ -71,6 +71,12 @@ internal object StabilityConstants {
     const val UNSTABLE_HTML = "#E8684A"
     const val RUNTIME_HTML = "#F0C674"
     const val GRAY_HTML = "#808080"
+
+    // Reality Check grade colors (reuse the stable / runtime / unstable palette)
+    const val CONFIRMED_HTML = "#5FB865"
+    const val FALSE_ALARM_HTML = "#F0C674"
+    const val SILENT_WASTE_HTML = "#E8684A"
+    const val JUSTIFIED_HTML = "#808080"
   }
 
   // Common string constants
@@ -126,6 +132,13 @@ internal object StabilityConstants {
     const val STABLE = "stable"
     const val UNSTABLE = "unstable"
     const val RUNTIME = "runtime"
+
+    // Reality Check grade labels
+    const val CONFIRMED = "confirmed"
+    const val FALSE_ALARM = "false alarm"
+    const val SILENT_WASTE = "silent waste"
+    const val JUSTIFIED = "justified"
+    const val OBSERVING = "observing…"
   }
 
   // Display group names

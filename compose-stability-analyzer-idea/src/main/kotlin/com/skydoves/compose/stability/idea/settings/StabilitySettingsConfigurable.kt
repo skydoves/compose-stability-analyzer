@@ -255,6 +255,24 @@ public class StabilitySettingsConfigurable(
             )
         }
       }
+
+      group("Stability Reality Check") {
+        row {
+          checkBox("Enable Reality Check")
+            .bindSelected(settings::isRealityCheckEnabled)
+            .comment(
+              "Reconcile compile-time stability predictions with live runtime data, grading " +
+                "each parameter as confirmed / false alarm / silent waste " +
+                "(requires the recomposition heatmap listener)",
+            )
+        }
+
+        row {
+          checkBox("Show grades in hover documentation")
+            .bindSelected(settings::showRealityCheckInTooltips)
+            .comment("Add a predicted-vs-actual grade column to composable hover tooltips")
+        }
+      }
     }
   }
 

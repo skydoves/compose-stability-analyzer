@@ -206,6 +206,77 @@ class RecompositionTrackerTest {
 
     val secondEvent = testLogger.events[1]
     assertTrue(secondEvent.parameterChanges[0].changed)
+    // Distinct instances that are also structurally unequal => not a reference-only change.
+    assertFalse(secondEvent.parameterChanges[0].referenceChanged)
+  }
+
+  @Test
+  fun testRecompositionTracker_referenceChangeWithEqualContent() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    // Two structurally-equal but distinct instances (data class overrides equals).
+    val first = EqualBox(1)
+    val second = EqualBox(1)
+
+    tracker.trackParameter("box", "EqualBox", first, isStable = false)
+    tracker.logIfThresholdMet()
+
+    tracker.trackParameter("box", "EqualBox", second, isStable = false)
+    tracker.logIfThresholdMet()
+
+    assertEquals(2, testLogger.events.size)
+    val param = testLogger.events[1].parameterChanges[0]
+    // equals-equal => not "changed", but a new instance => referenceChanged (silent-waste signal).
+    assertFalse(param.changed)
+    assertTrue(param.referenceChanged)
+  }
+
+  @Test
+  fun testRecompositionTracker_sameInstance_noReferenceChange() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    val box = EqualBox(7)
+    tracker.trackParameter("box", "EqualBox", box, isStable = false)
+    tracker.logIfThresholdMet()
+
+    // Same instance again: neither changed nor referenceChanged.
+    tracker.trackParameter("box", "EqualBox", box, isStable = false)
+    tracker.logIfThresholdMet()
+
+    assertEquals(2, testLogger.events.size)
+    val param = testLogger.events[1].parameterChanges[0]
+    assertFalse(param.changed)
+    assertFalse(param.referenceChanged)
+  }
+
+  @Test
+  fun testRecompositionTracker_firstRecomposition_noReferenceChange() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    // First recomposition has no previous value, so referenceChanged must be false.
+    tracker.trackParameter("box", "EqualBox", EqualBox(1), isStable = false)
+    tracker.logIfThresholdMet()
+
+    val param = testLogger.events[0].parameterChanges[0]
+    assertFalse(param.changed)
+    assertFalse(param.referenceChanged)
+  }
+
+  @Test
+  fun testRecompositionTracker_stableParamNeverReferenceChanged() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    // Boxed Int outside the small-integer cache: equal value, potentially distinct instances.
+    // A STABLE param must never be flagged referenceChanged (it is compared by equals under
+    // strong skipping), otherwise autoboxing would produce spurious "silent waste".
+    tracker.trackParameter("count", "Int", 1000, isStable = true)
+    tracker.logIfThresholdMet()
+    tracker.trackParameter("count", "Int", 1000, isStable = true)
+    tracker.logIfThresholdMet()
+
+    val param = testLogger.events[1].parameterChanges[0]
+    assertFalse(param.changed)
+    assertFalse(param.referenceChanged)
   }
 
   @Test
@@ -410,6 +481,11 @@ class RecompositionTrackerTest {
     assertTrue(testLogger.events[0].durationNanos > 0)
     assertEquals(0L, testLogger.events[1].durationNanos)
   }
+
+  /**
+   * Structurally-comparable value type for reference-vs-equals tests.
+   */
+  private data class EqualBox(val value: Int)
 
   /**
    * Test logger that captures events for verification.

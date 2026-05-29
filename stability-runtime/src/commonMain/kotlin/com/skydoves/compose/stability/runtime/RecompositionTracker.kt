@@ -71,6 +71,12 @@ public class RecompositionTracker(
     val hasPrevious = name in previousParameters
     val previousValue = previousParameters[name]
     val changed = hasPrevious && previousValue != value
+    // Identity comparison mirrors strong skipping's `===` check, which only applies to UNSTABLE
+    // params (stable params are compared by equals(), so their identity is irrelevant). Gating on
+    // !isStable also avoids autoboxing false positives for stable primitives like Int/String,
+    // where a boxed value outside the small-integer cache is a new instance despite being equal.
+    // Guarded by hasPrevious + !changed so the first recomposition and genuine changes never report it.
+    val referenceChanged = !isStable && hasPrevious && !changed && previousValue !== value
 
     currentParameters[name] = TrackedParameter(
       name = name,
@@ -79,6 +85,7 @@ public class RecompositionTracker(
       newValue = value,
       changed = changed,
       stable = isStable,
+      referenceChanged = referenceChanged,
     )
   }
 
@@ -92,7 +99,12 @@ public class RecompositionTracker(
    * @param type State value type as string
    * @param value Current state value
    */
-  public fun trackState(name: String, type: String, value: Any?) {
+  public fun trackState(name: String, type: String, value: Any?, stateObject: Any? = null) {
+    if (stateObject != null) {
+      // Activates the Snapshot write observer's stack capture (kept off until a traceStates
+      // consumer actually exists, to avoid overhead for the common traceStates=false case).
+      ComposeStabilityAnalyzer.markStateTracingActive()
+    }
     val hasPrevious = name in previousStateValues
     val previousValue = previousStateValues[name]
     val changed = hasPrevious && previousValue != value
@@ -103,6 +115,7 @@ public class RecompositionTracker(
       oldValue = previousValue,
       newValue = value,
       changed = changed,
+      stateObject = stateObject,
     )
   }
 
@@ -133,6 +146,7 @@ public class RecompositionTracker(
           newValue = tracked.newValue,
           changed = tracked.changed,
           stable = tracked.stable,
+          referenceChanged = tracked.referenceChanged,
         )
       }
 
@@ -147,6 +161,9 @@ public class RecompositionTracker(
           oldValue = tracked.oldValue,
           newValue = tracked.newValue,
           changed = tracked.changed,
+          // Only attribute a write-site to states that actually changed this cycle, so a stale
+          // site from a prior cycle is never shown.
+          writeSite = if (tracked.changed) writeSiteFor(tracked.stateObject) else null,
         )
       }
 
@@ -186,6 +203,7 @@ public class RecompositionTracker(
     val newValue: Any?,
     val changed: Boolean,
     val stable: Boolean,
+    val referenceChanged: Boolean,
   )
 
   private data class TrackedState(
@@ -194,6 +212,7 @@ public class RecompositionTracker(
     val oldValue: Any?,
     val newValue: Any?,
     val changed: Boolean,
+    val stateObject: Any?,
   )
 }
 

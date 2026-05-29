@@ -246,11 +246,13 @@ internal class HeatmapPanel(private val project: Project) {
             ParameterStatus.CHANGED -> Color(settings.unstableHintColorRGB)
             ParameterStatus.STABLE -> Color(settings.stableHintColorRGB)
             ParameterStatus.UNSTABLE -> Color(settings.runtimeHintColorRGB)
+            ParameterStatus.REF_CHANGED -> Color(settings.runtimeHintColorRGB)
           }
           val statusText = when (param.status) {
             ParameterStatus.CHANGED -> "changed"
             ParameterStatus.STABLE -> "stable"
             ParameterStatus.UNSTABLE -> "unstable"
+            ParameterStatus.REF_CHANGED -> "ref-changed"
           }
 
           icon = AllIcons.Nodes.Parameter

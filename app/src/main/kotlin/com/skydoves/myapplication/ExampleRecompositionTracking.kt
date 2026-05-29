@@ -54,6 +54,12 @@ fun RecompositionTrackingExample() {
   var unstableUser by remember { mutableStateOf(UnstableUser("Jane", 25)) }
 
   Column(modifier = Modifier.padding(16.dp)) {
+    // Stability Reality Check demo — tap "Increment Counter" 3+ times, then hover the cards
+    // (or open the "Reality" tool-window tab) to see 🔴 silent waste / 🟡 false alarm grades.
+    RealityCheckExample(tick = counter)
+
+    Spacer(modifier = Modifier.height(16.dp))
+
     // Example 1: Basic tracking with default settings
     TrackedCounterDisplay(counter) {}
 
@@ -233,6 +239,48 @@ fun RecompositionDemo() {
       Text("This will trigger recomposition")
     }
   }
+}
+
+/**
+ * Example 7: Stability Reality Check demo — predicted vs. actual.
+ *
+ * Tap "Increment Counter" 3+ times (to pass the observation threshold), then look at the IDE
+ * plugin's inlays / hover on the two cards below (or the "Reality" tool-window tab):
+ *
+ *  - [RealitySilentWasteCard] → 🔴 SILENT WASTE: an unstable param is fed a NEW but equals-equal
+ *    instance on every recomposition. Strong skipping compares unstable params by identity (===),
+ *    so it recomposes even though a stable type would have skipped — the real, hidden cost.
+ *  - [RealityFalseAlarmCard]  → 🟡 FALSE ALARM: the SAME unstable instance is reused; only `tick`
+ *    changes, so `user` never actually triggers recomposition — the "unstable" prediction is a
+ *    false alarm you can ignore.
+ *
+ * (A stable param simply skips and isn't re-tracked — that's the whole point of being stable — so
+ * 🟢 CONFIRMED doesn't need a live demo.)
+ */
+@Composable
+fun RealityCheckExample(tick: Int) {
+  Column(modifier = Modifier.padding(16.dp)) {
+    Text("Reality Check demo")
+
+    // 🔴 SILENT WASTE: a fresh, equals-equal instance on every recomposition (=== fails).
+    RealitySilentWasteCard(user = UnstableUser("Same", 1))
+
+    // 🟡 FALSE ALARM: the same unstable instance is reused; only `tick` drives recomposition.
+    val reused = remember { UnstableUser("Reused", 2) }
+    RealityFalseAlarmCard(user = reused, tick = tick)
+  }
+}
+
+@TraceRecomposition(tag = "reality-silent-waste")
+@Composable
+fun RealitySilentWasteCard(user: UnstableUser) {
+  Text("Silent waste: ${user.name}", modifier = Modifier.padding(8.dp))
+}
+
+@TraceRecomposition(tag = "reality-false-alarm")
+@Composable
+fun RealityFalseAlarmCard(user: UnstableUser, tick: Int) {
+  Text("False alarm: ${user.name} (tick=$tick)", modifier = Modifier.padding(8.dp))
 }
 
 /**

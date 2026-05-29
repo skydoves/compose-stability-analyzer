@@ -70,6 +70,18 @@ kotlin {
     commonTest.dependencies {
       implementation(kotlin("test"))
     }
+
+    // Compose Snapshot API for state-write-site capture (Recomposition Blame). compileOnly: the
+    // consuming app already provides compose-runtime at runtime, so no transitive dependency is
+    // added; other KMP targets stay Compose-free via no-op actuals. Uses the (versioned) Compose
+    // Multiplatform runtime to avoid a BOM platform() dependency; the Snapshot API lives in the
+    // same `androidx.compose.runtime` package either way.
+    androidMain.dependencies {
+      compileOnly(libs.jetbrains.compose.runtime)
+    }
+    jvmMain.dependencies {
+      compileOnly(libs.jetbrains.compose.runtime)
+    }
   }
 
   explicitApi()

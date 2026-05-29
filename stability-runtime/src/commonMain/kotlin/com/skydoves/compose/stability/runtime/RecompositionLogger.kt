@@ -75,8 +75,12 @@ public data class RecompositionEvent(
  * @property type Parameter type as string
  * @property oldValue Previous value (null on first recomposition)
  * @property newValue Current value
- * @property changed Whether the value changed from previous recomposition
+ * @property changed Whether the value changed from previous recomposition (structural `equals`)
  * @property stable Whether this parameter type is considered stable by Compose
+ * @property referenceChanged Whether the instance identity changed (`!==`) while staying
+ *   structurally equal (`oldValue == newValue`). Under strong skipping, unstable params are
+ *   compared by identity, so a fresh equals-equal instance still triggers a recomposition that
+ *   a stable type would have skipped. The IDE "Reality Check" uses this to flag silent waste.
  */
 public data class ParameterChange(
   val name: String,
@@ -85,6 +89,7 @@ public data class ParameterChange(
   val newValue: Any?,
   val changed: Boolean,
   val stable: Boolean,
+  val referenceChanged: Boolean = false,
 )
 
 /**
@@ -95,6 +100,9 @@ public data class ParameterChange(
  * @property oldValue Previous value (null on first recomposition)
  * @property newValue Current value
  * @property changed Whether the value changed from previous recomposition
+ * @property writeSite Best-effort source location that wrote this state this cycle (e.g.
+ *   "onClick (Screen.kt:42)"), captured by a Snapshot write observer on Android/JVM; null when
+ *   unavailable (other platforms, no Compose runtime, or the state did not change).
  */
 public data class StateChange(
   val name: String,
@@ -102,6 +110,7 @@ public data class StateChange(
   val oldValue: Any?,
   val newValue: Any?,
   val changed: Boolean,
+  val writeSite: String? = null,
 )
 
 /**
@@ -147,6 +156,9 @@ public object ComposeStabilityAnalyzer {
   @Volatile
   private var enabled: Boolean = true
 
+  @Volatile
+  private var stateTracingActive: Boolean = false
+
   /**
    * Sets a custom logger implementation.
    *
@@ -183,6 +195,11 @@ public object ComposeStabilityAnalyzer {
    */
   public fun setEnabled(enabled: Boolean) {
     this.enabled = enabled
+    if (enabled) {
+      // Install the Snapshot write observer for state-write-site blame (Android/JVM only;
+      // no-op elsewhere). Idempotent — safe to call on every setEnabled(true).
+      installStateWriteTracker()
+    }
   }
 
   /**
@@ -193,6 +210,19 @@ public object ComposeStabilityAnalyzer {
    * @return True if logging is enabled, false otherwise.
    */
   public fun isEnabled(): Boolean = enabled
+
+  /**
+   * Whether any traced composable has reported internal state, so capturing state-write sites is
+   * worthwhile. Lets the Snapshot write observer stay cheap (no stack capture) until the first
+   * `@TraceRecomposition(traceStates = true)` composable actually runs.
+   */
+  internal fun isStateTracingActive(): Boolean = stateTracingActive
+
+  internal fun markStateTracingActive() {
+    if (!stateTracingActive) {
+      stateTracingActive = true
+    }
+  }
 
   /**
    * Internal method called by generated code to log events.

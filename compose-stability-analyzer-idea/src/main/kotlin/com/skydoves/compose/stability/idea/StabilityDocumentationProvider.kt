@@ -24,6 +24,11 @@ import com.intellij.lang.documentation.DocumentationMarkup.SECTIONS_END
 import com.intellij.lang.documentation.DocumentationMarkup.SECTIONS_START
 import com.intellij.psi.PsiElement
 import com.skydoves.compose.stability.idea.settings.StabilitySettingsState
+import com.skydoves.compose.stability.idea.heatmap.AdbLogcatService
+import com.skydoves.compose.stability.idea.reality.ComposableReality
+import com.skydoves.compose.stability.idea.reality.RealityClassifier
+import com.skydoves.compose.stability.idea.reality.RealityGrade
+import com.skydoves.compose.stability.runtime.ComposableStabilityInfo
 import com.skydoves.compose.stability.runtime.ParameterStability
 import org.jetbrains.kotlin.idea.caches.resolve.resolveMainReference
 import org.jetbrains.kotlin.psi.KtClass
@@ -52,6 +57,7 @@ public class StabilityDocumentationProvider : AbstractDocumentationProvider() {
     }
 
     val analysis = StabilityAnalyzer.analyze(function)
+    val reality = buildReality(function, analysis)
     return buildString {
       append(DEFINITION_START)
       append("<b>${function.name}</b> - Compose Stability Analysis")
@@ -105,6 +111,21 @@ public class StabilityDocumentationProvider : AbstractDocumentationProvider() {
         append("</p>")
       }
 
+      // Live Reality Check headline (only when runtime data has been observed)
+      if (reality != null && !reality.isObserving) {
+        append("<p>")
+        append("<span style='color: #808080;'>📡 <b>Live:</b> ")
+        append("${reality.totalObservedRecompositions} recomposition")
+        if (reality.totalObservedRecompositions != 1) append("s")
+        if (reality.wastedRecompositions > 0) {
+          append(
+            " &mdash; <span style='color: ${StabilityConstants.Colors.SILENT_WASTE_HTML};'>" +
+              "${reality.wastedRecompositions} wasted (recent)</span>",
+          )
+        }
+        append("</span></p>")
+      }
+
       // Parameter details
       if (analysis.parameters.isNotEmpty()) {
         append("<br/>")
@@ -130,7 +151,11 @@ public class StabilityDocumentationProvider : AbstractDocumentationProvider() {
           append("</td>")
 
           append("<td style='padding: 4px 0 4px 8px; color: #808080;'>")
-          append("<i>${param.stability.name.lowercase().replaceFirstChar { it.uppercase() }}</i>")
+          append("<i>predicted: ${param.stability.name.lowercase()}</i>")
+          val grade = reality?.gradeFor(param.name)
+          if (grade != null && grade != RealityGrade.OBSERVING) {
+            append(gradeBadgeHtml(grade))
+          }
           append("</td>")
           append("</tr>")
 
@@ -287,6 +312,37 @@ public class StabilityDocumentationProvider : AbstractDocumentationProvider() {
 
       append(CONTENT_END)
     }
+  }
+
+  /**
+   * Builds the live reconciliation (Reality Check) for a composable, or null when the feature is
+   * disabled or no runtime data has been observed yet. Reads the thread-safe live data map.
+   */
+  private fun buildReality(
+    function: KtNamedFunction,
+    analysis: ComposableStabilityInfo,
+  ): ComposableReality? {
+    if (!settings.isRealityCheckEnabled || !settings.showRealityCheckInTooltips) return null
+    val name = function.name ?: return null
+    val live = AdbLogcatService.getInstance(function.project).getHeatmapData(name) ?: return null
+    return RealityClassifier.classify(analysis, live)
+  }
+
+  /** Renders a small "actual: …" badge describing the runtime grade for a parameter. */
+  private fun gradeBadgeHtml(grade: RealityGrade): String {
+    val (color, label) = when (grade) {
+      RealityGrade.CONFIRMED ->
+        StabilityConstants.Colors.CONFIRMED_HTML to "✓ confirmed stable at runtime"
+      RealityGrade.FALSE_ALARM ->
+        StabilityConstants.Colors.FALSE_ALARM_HTML to "false alarm — instance stays referentially stable"
+      RealityGrade.SILENT_WASTE ->
+        StabilityConstants.Colors.SILENT_WASTE_HTML to "silent waste — recomposes, could skip"
+      RealityGrade.JUSTIFIED ->
+        StabilityConstants.Colors.JUSTIFIED_HTML to "justified — value genuinely changes"
+      RealityGrade.OBSERVING ->
+        StabilityConstants.Colors.GRAY_HTML to "observing…"
+    }
+    return "<br/><span style='color: $color;'>● actual: $label</span>"
   }
 
   public override fun getQuickNavigateInfo(
