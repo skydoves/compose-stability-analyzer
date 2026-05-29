@@ -41,7 +41,7 @@ The sponsors listed below made it possible for this project to be released as op
 
 The Compose Stability Analyzer IntelliJ Plugin brings **visual stability analysis** directly into your IDE (Android Studio), helping you identify and fix performance issues while you code. Instead of waiting for runtime or build-time reports, you get instant feedback right in Android Studio or IntelliJ IDEA.
 
-This plugin provides real-time visual feedback about your composables' stability through six main features:
+This plugin provides real-time visual feedback about your composables' stability through eight main features:
 
 - **1. Gutter Icons**: Colored dots in the editor margin showing if a composable is skippable.
 - **2. Hover Tooltips**: Detailed stability information when you hover over composable functions. It also provides the reasons: why it's stable or unstable.
@@ -49,6 +49,8 @@ This plugin provides real-time visual feedback about your composables' stability
 - **4. Code Inspections**: Quick fixes and warnings for unstable composables.
 - **5. Recomposition Cascade**: Visualize downstream composables affected by recomposition from any `@Composable` function.
 - **6. Live Recomposition Heatmap**: Real-time recomposition counts from a connected device overlaid directly in the editor.
+- **7. Stability Reality Check**: Grades the compiler's *static* stability prediction against *live* runtime data, separating harmless false alarms from real "silent waste".
+- **8. Recomposition Blame**: Traces a recomposition back to its cause — the exact state write-site (`← onClick (Screen.kt:42)`) and where a parameter's value originated.
 
 > **Note**: You don’t need to make every composable function skippable or all parameters stable, these are not direct indicators of performance optimization. The goal of this plugin isn’t to encourage over-focusing on stability, but rather to help you explore how Compose’s stability mechanisms work and use them as tools for examining and debugging composables that may have performance issues. For more information, check out [Compose Stability Analyzer: Real-Time Stability Insights for Jetpack Compose](https://medium.com/proandroiddev/compose-stability-analyzer-real-time-stability-insights-for-jetpack-compose-1399924a0a64).
 
@@ -151,6 +153,53 @@ The Live Recomposition Heatmap bridges **runtime behavior** with your IDE. It re
 **Click-to-inspect:** Click on any recomposition count in the editor to open the **Heatmap** tab in the tool window, showing detailed recomposition event logs with parameter change history for that composable.
 
 > **Note**: The heatmap requires a connected device running your app with `@TraceRecomposition` composables. Severity thresholds are configurable in **Settings > Tools > Compose Stability Analyzer**.
+
+### Stability Reality Check
+
+The Stability Reality Check answers a question the compiler can't: **does the stability prediction actually hold up at runtime?** Since Compose's *strong skipping* compares unstable parameters by instance identity (`===`), a parameter the compiler flags "unstable" often skips perfectly fine in practice — while another quietly recomposes on every frame. This feature joins the **static prediction** with **live recomposition data** and grades each parameter:
+
+![reality-check](art/reality-check.gif)
+
+- 🟢 **Confirmed**: the prediction held — stable and not wastefully recomposing.
+- 🟡 **False alarm**: predicted unstable, but the instance stays referentially stable at runtime, so Compose skips it fine. You can safely ignore the warning.
+- 🔴 **Silent waste**: the value is `equals`-equal but arrives as a **new instance every recomposition**, so strong skipping's `===` check fails and it recomposes when it could have skipped. This is the real, hidden cost worth fixing (hoist the value into `remember`, or make the type stable).
+
+Grades appear in the **editor inlay** above each composable, in the **hover tooltip** (a "predicted vs. actual" column), and in the **Reality** tool-window tab as a module-wide scorecard with a "wasted recompositions" tally.
+
+**How to use:**
+
+1. Add `@TraceRecomposition` to the composables you want to grade, and enable `ComposeStabilityAnalyzer.setEnabled(BuildConfig.DEBUG)`.
+2. Start the recomposition heatmap (Reality Check shares the same live data) and interact with your app.
+3. Hover a composable or open the **Reality** tab — grades appear after a few observed recompositions.
+
+> **Note**: Grading relies on *observed* recompositions, so a parameter is graded only once its composable actually recomposes a few times. A stable parameter that simply skips is confirmed as expected and needs no attention.
+
+### Recomposition Blame
+
+The Recomposition Blame traces a recomposition back to **its cause**, in two complementary ways.
+
+**1. State write-site (runtime).** For `@TraceRecomposition(traceStates = true)`, a Compose Snapshot write observer records *where* each internal state was mutated and shows it inline in the log:
+
+```
+[state] counter: Int changed (0 → 1) ← onClick (MainActivity.kt:97)
+```
+
+The `← method (File.kt:line)` tells you exactly which code wrote the state that triggered the recomposition — no more guessing.
+
+**2. Parameter provenance (static).** Right-click any `@Composable` and choose **"Blame this Recomposition"**:
+
+![blame-menu](art/blame-context-menu.png)
+
+A **Blame** tool-window tab opens showing the *reverse* of the cascade — which composables call this one, and where each argument's value originates (a `val`/`var` property, a parameter, a function call, …):
+
+![blame-window](art/blame-window.png)
+
+**How to use:**
+
+- **Write-sites**: add `@TraceRecomposition(traceStates = true)`, run the app, and read the `← …` suffix on `[state]` lines in Logcat (or in the heatmap tooltip).
+- **Provenance**: right-click a composable in the editor → **Blame this Recomposition** → inspect the upstream tree (works statically, no device needed).
+
+> **Note**: Write-site capture works for delegated scalar state (`var x by remember { mutableStateOf(...) }`) on Android/JVM. Parameter provenance is a best-effort static estimate; dynamic origins are shown as "expression".
 
 ### Plugin Customization
 

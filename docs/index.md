@@ -16,6 +16,8 @@ The Compose Stability Analyzer equips you with visual and analytical tools acros
 
 Beyond visual feedback, the plugin includes **Code Inspections** that actively suggest improvements with quick fixes, and a **Stability Explorer** that gives you a project-wide tree view of all composables organized by module, package, and file. For runtime analysis, the **`@TraceRecomposition` annotation** lets you trace exactly which parameters change during recomposition, and the **`stabilityDump`/`stabilityCheck` Gradle tasks** bring CI-ready stability validation to prevent regressions from reaching production.
 
+Two features close the loop between prediction and reality: the **Stability Reality Check** grades the compiler's static stability prediction against live runtime data — separating harmless false alarms from real "silent waste" — and **Recomposition Blame** traces a recomposition back to the exact state write-site and parameter origin that caused it.
+
 ## Two Components
 
 Compose Stability Analyzer consists of two independent, complementary components. The **IDE Plugin** provides visual stability indicators (gutter icons, tooltips, inline hints, inspections, and the Stability Explorer) directly in Android Studio. You install it from the JetBrains Marketplace and it works immediately with no build configuration changes.
