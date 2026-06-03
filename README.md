@@ -62,9 +62,7 @@ Open **Android Studio** > **Settings** (or **Preferences**) > **Plugins** > Mark
 
 ![preview](art/preview3.png)
 
-If you see gutter icons and tooltips, you're all set! 🎉
-
-> **Note**: For now, the plugin is under review on the JetBrains Plugin Marketplace. Once the review is complete, you’ll be able to download it directly from your IDE’s marketplace.
+If you see gutter icons and tooltips, you're all set! 🎉 You can also install this plugin directly on your IDE on [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/28767-compose-stability-analyzer/).
 
 ### Stability Mark for Composable Functions
 
