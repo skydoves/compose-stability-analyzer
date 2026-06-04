@@ -202,9 +202,10 @@ class ReceiverStabilityInfoTest {
 
   @Test
   fun testParameterStability_values() {
-    assertEquals(3, ParameterStability.entries.size)
+    assertEquals(4, ParameterStability.entries.size)
     assertEquals(ParameterStability.STABLE, ParameterStability.valueOf("STABLE"))
     assertEquals(ParameterStability.UNSTABLE, ParameterStability.valueOf("UNSTABLE"))
     assertEquals(ParameterStability.RUNTIME, ParameterStability.valueOf("RUNTIME"))
+    assertEquals(ParameterStability.UNKNOWN, ParameterStability.valueOf("UNKNOWN"))
   }
 }

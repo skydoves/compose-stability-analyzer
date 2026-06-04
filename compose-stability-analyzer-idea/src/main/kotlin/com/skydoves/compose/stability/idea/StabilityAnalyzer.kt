@@ -619,11 +619,24 @@ internal object StabilityAnalyzer {
               }
             }
 
-            // 6. If it's an interface, return RUNTIME (cannot determine)
+            // 6. Interfaces - concrete implementation unknown (Compose 2.4.0: Unknown)
             if (resolved.isInterface()) {
               return StabilityResult(
-                ParameterStability.RUNTIME,
+                ParameterStability.UNKNOWN,
                 "Interface type - actual implementation could be mutable",
+              )
+            }
+
+            // 6b. Non-final (abstract/open) classes - concrete subtype unknown
+            // (Compose 2.4.0: Unknown). @Stable/@Immutable classes are handled above;
+            // sealed classes use the `sealed` (not `abstract`/`open`) modifier, so they fall
+            // through to property analysis.
+            if (resolved.hasModifier(org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD) ||
+              resolved.hasModifier(org.jetbrains.kotlin.lexer.KtTokens.OPEN_KEYWORD)
+            ) {
+              return StabilityResult(
+                ParameterStability.UNKNOWN,
+                "Non-final class - actual implementation could be mutable",
               )
             }
 

@@ -72,6 +72,7 @@ public final class com/skydoves/compose/stability/runtime/ParameterChange {
 public final class com/skydoves/compose/stability/runtime/ParameterStability : java/lang/Enum {
 	public static final field RUNTIME Lcom/skydoves/compose/stability/runtime/ParameterStability;
 	public static final field STABLE Lcom/skydoves/compose/stability/runtime/ParameterStability;
+	public static final field UNKNOWN Lcom/skydoves/compose/stability/runtime/ParameterStability;
 	public static final field UNSTABLE Lcom/skydoves/compose/stability/runtime/ParameterStability;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/skydoves/compose/stability/runtime/ParameterStability;

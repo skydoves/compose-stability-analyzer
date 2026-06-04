@@ -93,7 +93,7 @@ internal sealed class KtStability {
     return when (this) {
       is Certain -> if (stable) ParameterStability.STABLE else ParameterStability.UNSTABLE
       is Runtime -> ParameterStability.RUNTIME
-      is Unknown -> ParameterStability.RUNTIME
+      is Unknown -> ParameterStability.UNKNOWN
       is Parameter -> ParameterStability.RUNTIME
       is Combined -> {
         val stabilities = elements.map { it.toParameterStability() }

@@ -69,8 +69,7 @@ internal object StabilityAnalyzerK2 {
   /**
    * Performs K2-based analysis within a KaSession context.
    */
-  context(KaSession)
-  private fun analyzeWithK2Session(function: KtNamedFunction): ComposableStabilityInfo {
+  private fun KaSession.analyzeWithK2Session(function: KtNamedFunction): ComposableStabilityInfo {
     // Get function symbol
     val functionSymbol = function.symbol
 
@@ -103,7 +102,7 @@ internal object StabilityAnalyzerK2 {
     // Analyze value parameters
     val parameters = functionSymbol.valueParameters.map { param ->
       val paramType = param.returnType
-      val stability = inferencer.ktStabilityOf(paramType)
+      val stability = with(inferencer) { ktStabilityOf(paramType) }
 
       ParameterStabilityInfo(
         name = param.name.asString(),
@@ -150,8 +149,7 @@ internal object StabilityAnalyzerK2 {
   /**
    * Analyzes all receivers (extension, dispatch, context) of a function.
    */
-  context(KaSession)
-  private fun analyzeReceivers(
+  private fun KaSession.analyzeReceivers(
     functionSymbol: KaFunctionSymbol,
     inferencer: KtStabilityInferencer,
   ): List<ReceiverStabilityInfo> {
@@ -161,7 +159,7 @@ internal object StabilityAnalyzerK2 {
     @Suppress("EXPERIMENTAL_API_USAGE")
     functionSymbol.receiverParameter?.let { receiver ->
       val receiverType = receiver.returnType
-      val stability = inferencer.ktStabilityOf(receiverType)
+      val stability = with(inferencer) { ktStabilityOf(receiverType) }
 
       receivers.add(
         ReceiverStabilityInfo(
@@ -177,7 +175,7 @@ internal object StabilityAnalyzerK2 {
     @Suppress("EXPERIMENTAL_API_USAGE", "DEPRECATION")
     val dispatchReceiverType = functionSymbol.dispatchReceiverType
     if (dispatchReceiverType != null) {
-      val stability = inferencer.ktStabilityOf(dispatchReceiverType)
+      val stability = with(inferencer) { ktStabilityOf(dispatchReceiverType) }
 
       receivers.add(
         ReceiverStabilityInfo(
@@ -193,7 +191,7 @@ internal object StabilityAnalyzerK2 {
     @Suppress("EXPERIMENTAL_API_USAGE")
     functionSymbol.contextReceivers.forEach { contextReceiver ->
       val contextType = contextReceiver.type
-      val stability = inferencer.ktStabilityOf(contextType)
+      val stability = with(inferencer) { ktStabilityOf(contextType) }
 
       receivers.add(
         ReceiverStabilityInfo(

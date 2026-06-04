@@ -1,7 +1,6 @@
 [versions]
-compiler = "1.5.15"
 junit = "4.13.2"
-kotlin = "2.3.21"
+kotlin = "2.4.0"
 dokka = "2.2.0"
 jvmTarget = "17"
 kotlinxCollectionsImmutable = "0.4.0"
@@ -13,13 +12,12 @@ androidGradlePlugin = "9.1.1"
 androidxActivity = "1.13.0"
 androidxComposeBom = "2026.05.01"
 jetbrains-compose = "1.11.0"
-compose-stability-analyzer = "0.7.5"
+compose-stability-analyzer = "0.8.0"
 runtimeAnnotation = "1.11.2"
 spotless = "7.0.2"
 shadow = "9.0.0-beta12"
 
 [libraries]
-androidx-compose-compiler = { module = "androidx.compose.compiler:compiler", version.ref = "compiler" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivity" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "androidxComposeBom" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }

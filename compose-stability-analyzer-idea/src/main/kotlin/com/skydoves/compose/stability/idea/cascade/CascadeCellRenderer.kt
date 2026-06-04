@@ -85,7 +85,9 @@ internal class CascadeCellRenderer : ColoredTreeCellRenderer() {
     val info = data.node.stabilityInfo
     val isSkippable = info.isSkippable
     val hasUnstable = info.parameters.any { it.stability == ParameterStability.UNSTABLE }
-    val hasRuntime = info.parameters.any { it.stability == ParameterStability.RUNTIME }
+    val hasRuntime = info.parameters.any {
+      it.stability == ParameterStability.RUNTIME || it.stability == ParameterStability.UNKNOWN
+    }
     val isRuntimeOnly = !isSkippable && !hasUnstable && hasRuntime
 
     icon = AllIcons.Nodes.Function
@@ -101,7 +103,9 @@ internal class CascadeCellRenderer : ColoredTreeCellRenderer() {
 
     // Show non-stable parameter count
     val unstableCount = info.parameters.count { it.stability == ParameterStability.UNSTABLE }
-    val runtimeCount = info.parameters.count { it.stability == ParameterStability.RUNTIME }
+    val runtimeCount = info.parameters.count {
+      it.stability == ParameterStability.RUNTIME || it.stability == ParameterStability.UNKNOWN
+    }
     if (unstableCount > 0) {
       append(
         " ($unstableCount unstable)",

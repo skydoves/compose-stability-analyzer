@@ -139,7 +139,7 @@ public class StabilityInlayHintsProvider :
           ParameterStability.UNSTABLE ->
             StabilityConstants.Labels.UNSTABLE to Color(globalSettings.unstableHintColorRGB)
 
-          ParameterStability.RUNTIME ->
+          ParameterStability.RUNTIME, ParameterStability.UNKNOWN ->
             StabilityConstants.Labels.RUNTIME to Color(globalSettings.runtimeHintColorRGB)
         }
 

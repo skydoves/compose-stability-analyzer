@@ -45,9 +45,10 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     private const val COMPILER_ARTIFACT_ID = "compose-stability-compiler"
     private const val RUNTIME_ARTIFACT_ID = "compose-stability-runtime"
 
-    // This version should match the version in gradle.properties
-    // Update this when bumping the library version
-    private const val VERSION = "0.7.5"
+    // This version should match the version in gradle.properties (VERSION_NAME).
+    // Update this when bumping the library version — it pins the compiler/runtime
+    // artifacts the Gradle plugin pulls onto the Kotlin compile classpath.
+    private const val VERSION = "0.9.0"
 
     // Compiler option keys
     private const val OPTION_ENABLED = "enabled"
@@ -263,12 +264,6 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
   override fun getCompilerPluginId(): String = COMPILER_PLUGIN_ID
 
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
-    groupId = GROUP_ID,
-    artifactId = COMPILER_ARTIFACT_ID,
-    version = VERSION,
-  )
-
-  override fun getPluginArtifactForNative(): SubpluginArtifact = SubpluginArtifact(
     groupId = GROUP_ID,
     artifactId = COMPILER_ARTIFACT_ID,
     version = VERSION,

@@ -96,7 +96,7 @@ public class ComposableStabilityCollector(private val project: Project) {
                 name = paramJson.get("name").asString,
                 type = paramJson.get("type").asString,
                 isStable = stability == "STABLE",
-                isRuntime = stability == "RUNTIME",
+                isRuntime = stability == "RUNTIME" || stability == "UNKNOWN",
               )
             }
 

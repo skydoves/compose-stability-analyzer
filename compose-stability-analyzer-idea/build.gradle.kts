@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 plugins {
-  // Pinned to Kotlin 2.3.0 — the K2 Analysis API from IntelliJ 2025.2 uses context receivers,
-  // which are removed in Kotlin 2.3.20. This module is built separately from the main project.
-  kotlin("jvm") version "2.3.0"
+  // Built with Kotlin 2.4.0 to match the main project. Context receivers (removed in 2.3.20)
+  // were migrated to context parameters. This module is built separately from the main project.
+  kotlin("jvm") version "2.4.0"
   id("org.jetbrains.intellij.platform") version "2.10.1"
   id("com.diffplug.spotless") version "6.21.0"
 }
@@ -26,7 +26,7 @@ kotlin {
 }
 
 group = "com.github.skydoves"
-version = "0.8.0"
+version = "0.9.0"
 
 repositories {
   mavenLocal()
@@ -38,7 +38,7 @@ repositories {
 }
 
 dependencies {
-  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.8.0")
+  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.9.0")
 
   intellijPlatform {
     intellijIdeaCommunity("2025.2")
@@ -74,6 +74,11 @@ intellijPlatform {
             </ul>
         """.trimIndent()
     changeNotes = """
+            <b>0.9.0</b>
+            <ul>
+                <li><b>Updated to Kotlin 2.4.0.</b></li>
+                <li><b>New UNKNOWN stability</b> - interfaces and non-final (open/abstract) classes, including <code>Any?</code>, now report as Unknown instead of Runtime/Unstable, matching the Compose 2.4.0 compiler. Shown in gutter icons, tooltips, inline hints, and the Reality Check (skippability is unchanged).</li>
+            </ul>
             <b>0.8.0</b>
             <ul>
                 <li><b>New: Stability Reality Check</b> - Reconciles the compiler's static stability prediction with live runtime recomposition data and grades each parameter as confirmed / false alarm / silent waste / justified. Shown in editor inlays, hover tooltips (predicted vs. actual), and a new Reality tool-window tab with a wasted-recomposition tally.</li>
@@ -220,7 +225,6 @@ tasks {
       jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
       freeCompilerArgs.addAll(
         listOf(
-          "-Xcontext-receivers",
           "-opt-in=org.jetbrains.kotlin.analysis.api.KaExperimentalApi",
           "-opt-in=org.jetbrains.kotlin.analysis.api.KaImplementationDetail",
         ),
