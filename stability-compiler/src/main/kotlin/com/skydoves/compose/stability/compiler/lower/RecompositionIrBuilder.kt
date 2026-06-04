@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irString
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrLocalDelegatedProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -77,10 +78,14 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
    * Initialize and cache symbols for runtime classes.
    * This should be called before any IR generation.
    */
-  public fun initializeSymbols(): Boolean {
+  public fun initializeSymbols(fromFile: IrFile): Boolean {
     try {
+      // Resolve runtime symbols visible from the file being compiled.
+      // Replaces the deprecated global IrPluginContext.reference* methods (Kotlin 2.4.0).
+      val finder = context.finderForSource(fromFile)
+
       // Find RecompositionTracker class
-      trackerClassSymbol = context.referenceClass(
+      trackerClassSymbol = finder.findClass(
         ClassId.topLevel(recompositionTrackerFqName),
       )
 
@@ -89,7 +94,7 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
       }
 
       // Find rememberRecompositionTracker function
-      val rememberTrackerFunctions = context.referenceFunctions(
+      val rememberTrackerFunctions = finder.findFunctions(
         CallableId(
           FqName("com.skydoves.compose.stability.runtime"),
           Name.identifier("rememberRecompositionTracker"),
@@ -133,7 +138,7 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
 
       // Resolve System.nanoTime() for JVM platforms
       try {
-        val systemClass = context.referenceClass(
+        val systemClass = finder.findClass(
           ClassId.topLevel(FqName("java.lang.System")),
         )
         systemNanoTimeFunctionSymbol =

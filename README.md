@@ -262,7 +262,7 @@ This is incredibly useful for:
 First, add the plugin to the `[plugins]` section of your `libs.versions.toml` file:
 
 ```toml
-stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.8.0" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.9.0" }
 ```
 
 Then, apply it to your root `build.gradle.kts` with `apply false`:
@@ -284,6 +284,7 @@ It’s **strongly recommended to use the exact same Kotlin version** as this lib
 
 | Stability Analyzer | Kotlin |
 |--------------------|-------------|
+| 0.9.0              | 2.4.0 |
 | 0.8.0              | 2.3.21 |
 | 0.7.5              | 2.3.21 |
 | 0.7.4              | 2.3.20 |
@@ -722,7 +723,23 @@ public fun com.example.UnstableCard(user: com.example.MutableUser): kotlin.Unit
   restartable: true
   params:
     - user: UNSTABLE (has mutable properties)
+
+@Composable
+public fun com.example.DetailScreen(repository: com.example.UserRepository): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - repository: UNKNOWN (interface or non-final class; concrete implementation unknown)
 ```
+
+Each parameter is reported with one of four stability values, matching the Compose compiler:
+
+| Value | Meaning |
+|-------|---------|
+| `STABLE` | Known stable at compile time (skippable). |
+| `UNSTABLE` | Known unstable (e.g. has mutable `var` properties). |
+| `RUNTIME` | Stability depends on a runtime value (e.g. generic type parameters, standard collections). |
+| `UNKNOWN` | Cannot be determined statically because the concrete type is unknown — an **interface** or a **non-final (open/abstract) class**. Mirrors Compose 2.4.0, which infers `Unknown` for these by default. Like `RUNTIME`/`UNSTABLE`, a parameter with this value does not make a composable statically skippable. In `stabilityCheck`, a `STABLE → UNKNOWN` transition is reported as a regression. |
 
 This file is your **stability contract**. It says "these are all my composables, and this is how stable they should be."
 

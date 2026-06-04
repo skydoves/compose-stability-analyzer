@@ -15,6 +15,7 @@
  */
 package com.skydoves.compose.stability.compiler.tests
 
+import org.jetbrains.kotlin.platform.wasm.WasmTarget
 import org.jetbrains.kotlin.test.services.KotlinStandardLibrariesPathProvider
 import java.io.File
 
@@ -76,6 +77,10 @@ object ClasspathBasedStandardLibrariesPathProvider : KotlinStandardLibrariesPath
   override fun defaultJsStdlib(): File = getFile("kotlin-stdlib-js")
 
   override fun kotlinTestJsKLib(): File = getFile("kotlin-test-js")
+
+  override fun fullWasmStdlib(target: WasmTarget): File = TODO("Not needed for JVM-only tests")
+
+  override fun kotlinTestWasmKLib(target: WasmTarget): File = TODO("Not needed for JVM-only tests")
 
   override fun scriptingPluginFilesForTests(): Collection<File> {
     TODO("Not needed for JVM-only tests")

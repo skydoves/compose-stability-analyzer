@@ -380,6 +380,6 @@ internal data class StabilityEntry(
 internal data class ParameterInfo(
   val name: String,
   val type: String,
-  val stability: String, // STABLE, UNSTABLE, RUNTIME
+  val stability: String, // STABLE, UNSTABLE, RUNTIME, UNKNOWN
   val reason: String? = null,
 )

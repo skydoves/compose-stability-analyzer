@@ -111,6 +111,11 @@ tasks.withType<Test> {
   systemProperty("idea.ignore.disabled.plugins", "true")
   systemProperty("idea.home.path", rootDir.absolutePath)
 
+  // Regenerate golden FIR/IR dump files: ./gradlew :compiler-tests:test -Pupdate.test.data
+  if (project.hasProperty("update.test.data")) {
+    systemProperty("kotlin.test.update.test.data", "true")
+  }
+
   // Larger memory for tests
   minHeapSize = "512m"
   maxHeapSize = "2g"

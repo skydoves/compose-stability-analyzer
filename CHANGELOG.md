@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-06-04
+
+### Added
+- **`ParameterStability.UNKNOWN`** — a fourth stability value for types whose stability cannot be determined statically (interfaces and non-final classes). Mirrors the Compose 2.4.0 compiler's `Stability.Unknown`.
+
+### Changed
+- **Bumped Kotlin to 2.4.0** (from 2.3.21). The compiler plugin, runtime, Gradle plugin, Lint rules, and IntelliJ plugin all build against Kotlin 2.4.0.
+  - K2 FIR extension registration migrated off the removed IntelliJ `ProjectExtensionDescriptor` mechanism (`KT-83341`); the deprecated `IrPluginContext.referenceClass`/`referenceFunctions` were replaced with the `finderForSource` API.
+- **New `UNKNOWN` stability rule** — **interfaces** and **non-final (`open`/`abstract`) classes** now report `UNKNOWN` instead of `RUNTIME`/`UNSTABLE`, matching the Compose 2.4.0 compiler. This includes any `kotlin.Any?` parameter (since `Any` is `open`). Skippability is unchanged (these types were already non-skippable), but the rule **will produce diffs in committed `.stability` baselines** — run `./gradlew stabilityDump` to refresh them. A `STABLE → UNKNOWN` transition is reported as a regression by `stabilityCheck`.
+
 ## [0.8.0] - 2026-05-29
 
 ### Added

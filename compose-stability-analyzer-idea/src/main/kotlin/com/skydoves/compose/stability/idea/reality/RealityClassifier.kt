@@ -158,8 +158,9 @@ internal object RealityClassifier {
         else -> RealityGrade.FALSE_ALARM
       }
 
-      // RUNTIME had no firm prediction, so there is no "false alarm" to call — grade on behavior.
-      ParameterStability.RUNTIME -> when {
+      // RUNTIME/UNKNOWN had no firm prediction, so there is no "false alarm" to call —
+      // grade on behavior. (UNKNOWN: interfaces / non-final classes, per Compose 2.4.0.)
+      ParameterStability.RUNTIME, ParameterStability.UNKNOWN -> when {
         equalsChanged > 0 -> RealityGrade.JUSTIFIED
         refChanged > 0 -> RealityGrade.SILENT_WASTE
         else -> RealityGrade.CONFIRMED

@@ -2,6 +2,12 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.9.0] - 2026-06-04
+
+### Changed
+- **Updated to Kotlin 2.4.0.**
+- **New `UNKNOWN` stability** — **interfaces** and **non-final (`open`/`abstract`) classes** (including `Any?`) now show as **Unknown** instead of Runtime/Unstable, matching the Compose 2.4.0 compiler. Surfaced in gutter icons, hover tooltips, inline hints, and the Reality Check. Skippability is unchanged.
+
 ## [0.8.0] - 2026-05-29
 
 ### Added

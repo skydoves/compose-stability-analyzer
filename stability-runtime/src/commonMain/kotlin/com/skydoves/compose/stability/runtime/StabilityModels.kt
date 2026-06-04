@@ -33,6 +33,16 @@ public enum class ParameterStability {
    * The stability can only be determined at runtime.
    */
   RUNTIME,
+
+  /**
+   * The stability cannot be determined statically because the concrete type is
+   * unknown — e.g. an interface or a non-final (open/abstract) class whose actual
+   * implementation could be anything. Mirrors Compose 2.4.0's `Stability.Unknown`,
+   * which the compiler now infers for interfaces and non-final classes by default.
+   * Treated as not statically stable (a composable with an UNKNOWN parameter is not
+   * skippable unless strong skipping applies).
+   */
+  UNKNOWN,
 }
 
 /**

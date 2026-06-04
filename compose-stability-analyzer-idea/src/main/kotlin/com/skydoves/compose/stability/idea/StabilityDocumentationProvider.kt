@@ -143,7 +143,7 @@ public class StabilityDocumentationProvider : AbstractDocumentationProvider() {
             ParameterStability.UNSTABLE ->
               "<span style='color: ${StabilityConstants.Colors.UNSTABLE_HTML};'>❌</span>"
 
-            ParameterStability.RUNTIME ->
+            ParameterStability.RUNTIME, ParameterStability.UNKNOWN ->
               "<span style='color: ${StabilityConstants.Colors.RUNTIME_HTML};'>⚠️</span>"
           }
           append(icon)
@@ -198,7 +198,7 @@ public class StabilityDocumentationProvider : AbstractDocumentationProvider() {
             ParameterStability.UNSTABLE ->
               "<span style='color: ${StabilityConstants.Colors.UNSTABLE_HTML};'>❌</span>"
 
-            ParameterStability.RUNTIME ->
+            ParameterStability.RUNTIME, ParameterStability.UNKNOWN ->
               "<span style='color: ${StabilityConstants.Colors.RUNTIME_HTML};'>⚠️</span>"
           }
           append(icon)

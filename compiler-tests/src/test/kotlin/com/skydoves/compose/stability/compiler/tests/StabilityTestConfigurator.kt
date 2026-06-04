@@ -20,8 +20,9 @@ import com.skydoves.compose.stability.compiler.StabilityAnalyzerIrGenerationExte
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
+import org.jetbrains.kotlin.compiler.plugin.registerExtension
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
+import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.EnvironmentConfigurator
 import org.jetbrains.kotlin.test.services.TestServices
@@ -40,8 +41,9 @@ class StabilityTestConfigurator(testServices: TestServices) :
     module: TestModule,
     configuration: CompilerConfiguration,
   ) {
-    // Register FIR extensions for frontend analysis (K2)
-    FirExtensionRegistrarAdapter.registerExtension(
+    // Register FIR extensions for frontend analysis (K2). Matches the production registrar's
+    // Kotlin 2.4.0 registration (KT-83341): register via FirExtensionRegistrar, not the adapter.
+    FirExtensionRegistrar.registerExtension(
       StabilityAnalyzerFirExtensionRegistrar(),
     )
 

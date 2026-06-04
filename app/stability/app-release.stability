@@ -78,7 +78,7 @@ public fun com.skydoves.myapplication.Icon(title: kotlin.String, painter: androi
   restartable: true
   params:
     - title: STABLE (String is immutable)
-    - painter: RUNTIME (requires runtime check)
+    - painter: UNKNOWN (interface or non-final class; concrete implementation unknown)
     - users: RUNTIME (requires runtime check)
     - normalSealedClass: STABLE (class with no mutable properties)
     - stableSealedClass: STABLE (class with no mutable properties)
@@ -125,6 +125,28 @@ public fun com.skydoves.myapplication.MyComposable(uiResult: com.skydoves.myappl
     - uiResult: RUNTIME (requires runtime check)
     - uiResult2: RUNTIME (requires runtime check)
     - uiResult4: RUNTIME (requires runtime check)
+
+@Composable
+public fun com.skydoves.myapplication.RealityCheckExample(tick: kotlin.Int): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - tick: STABLE (primitive type)
+
+@Composable
+public fun com.skydoves.myapplication.RealityFalseAlarmCard(user: com.skydoves.myapplication.models.UnstableUser, tick: kotlin.Int): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - user: UNSTABLE (has mutable properties or unstable members)
+    - tick: STABLE (primitive type)
+
+@Composable
+public fun com.skydoves.myapplication.RealitySilentWasteCard(user: com.skydoves.myapplication.models.UnstableUser): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - user: UNSTABLE (has mutable properties or unstable members)
 
 @Composable
 public fun com.skydoves.myapplication.RecompositionDemo(): kotlin.Unit
@@ -188,7 +210,7 @@ public fun com.skydoves.myapplication.Test4(count: androidx.lifecycle.ViewModel)
   skippable: false
   restartable: true
   params:
-    - count: RUNTIME (requires runtime check)
+    - count: UNKNOWN (interface or non-final class; concrete implementation unknown)
 
 @Composable
 public fun com.skydoves.myapplication.Test6(count: kotlin.collections.Set<kotlin.String>): kotlin.Unit

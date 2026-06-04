@@ -109,7 +109,9 @@ public class StabilityLineMarkerProvider : LineMarkerProvider {
     }
 
     val hasUnstable = allParams.any { it.stability == ParameterStability.UNSTABLE }
-    val hasRuntime = allParams.any { it.stability == ParameterStability.RUNTIME }
+    val hasRuntime = allParams.any {
+      it.stability == ParameterStability.RUNTIME || it.stability == ParameterStability.UNKNOWN
+    }
     val allStable = allParams.all { it.stability == ParameterStability.STABLE }
 
     val color = when {
@@ -134,7 +136,9 @@ public class StabilityLineMarkerProvider : LineMarkerProvider {
     return buildString {
       val stableCount = analysis.parameters.count { it.stability == ParameterStability.STABLE }
       val unstableCount = analysis.parameters.count { it.stability == ParameterStability.UNSTABLE }
-      val runtimeCount = analysis.parameters.count { it.stability == ParameterStability.RUNTIME }
+      val runtimeCount = analysis.parameters.count {
+        it.stability == ParameterStability.RUNTIME || it.stability == ParameterStability.UNKNOWN
+      }
       val totalCount = analysis.parameters.size
 
       // Check if all non-stable parameters are runtime
@@ -186,7 +190,10 @@ public class StabilityLineMarkerProvider : LineMarkerProvider {
         append("Runtime: ")
         append(
           analysis.parameters
-            .filter { it.stability == ParameterStability.RUNTIME }
+            .filter {
+              it.stability == ParameterStability.RUNTIME ||
+                it.stability == ParameterStability.UNKNOWN
+            }
             .joinToString(", ") { it.name },
         )
       }
@@ -210,7 +217,7 @@ public class StabilityLineMarkerProvider : LineMarkerProvider {
         it.stability == ParameterStability.UNSTABLE
       }
       val runtimeReceiverCount = analysis.receivers.count {
-        it.stability == ParameterStability.RUNTIME
+        it.stability == ParameterStability.RUNTIME || it.stability == ParameterStability.UNKNOWN
       }
       val totalReceiverCount = analysis.receivers.size
 

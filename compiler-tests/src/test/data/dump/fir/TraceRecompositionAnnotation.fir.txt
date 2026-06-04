@@ -17,6 +17,6 @@ FILE: TraceRecompositionAnnotation.kt
         public final fun copy(name: R|kotlin/String| = this@R|/User|.R|/User.name|, age: R|kotlin/Int| = this@R|/User|.R|/User.age|): R|User|
 
     }
-    @R|com/skydoves/compose/stability/runtime/TraceRecomposition|(tag = String(profile), threshold = Int(3)) public final fun UserProfile(user: R|User|): R|kotlin/Unit| {
+    @R|com/skydoves/compose/stability/runtime/TraceRecomposition|(tag = String(profile) [evaluated = String(profile)], threshold = Int(3) [evaluated = Int(3)]) public final fun UserProfile(user: R|User|): R|kotlin/Unit| {
         R|kotlin/io/println|(<strcat>(String(User: ), R|<local>/user|.R|/User.name|, String(, Age: ), R|<local>/user|.R|/User.age|))
     }

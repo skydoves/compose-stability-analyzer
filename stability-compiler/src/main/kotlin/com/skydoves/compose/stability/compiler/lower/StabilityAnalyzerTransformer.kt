@@ -166,7 +166,7 @@ public class StabilityAnalyzerTransformer(
 
       // Initialize IR builder symbols once
       if (!irBuilderInitialized) {
-        irBuilderInitialized = irBuilder.initializeSymbols()
+        irBuilderInitialized = irBuilder.initializeSymbols(currentFile)
         if (!irBuilderInitialized) {
           return super.visitFunctionNew(declaration)
         }
@@ -563,12 +563,12 @@ public class StabilityAnalyzerTransformer(
       // If properties have mixed stability, fall through to interface check
     }
 
-    // 15. Interfaces - cannot determine (RUNTIME)
+    // 15. Interfaces - concrete implementation unknown (Compose 2.4.0: Unknown)
     if (clazz.isInterfaceIr()) {
-      return ParameterStability.RUNTIME
+      return ParameterStability.UNKNOWN
     }
 
-    // 16. Abstract classes - cannot determine (RUNTIME)
+    // 16. Abstract classes - concrete implementation unknown (Compose 2.4.0: Unknown)
     //     EXCEPT: sealed classes with @Stable/@Immutable annotations
     //     Issue #31: @Immutable sealed classes should be trusted as stable
     if (clazz.modality == org.jetbrains.kotlin.descriptors.Modality.ABSTRACT) {
@@ -583,11 +583,20 @@ public class StabilityAnalyzerTransformer(
       val hasStabilityAnnotation = clazz.hasAnnotation(stableFqName) ||
         clazz.hasAnnotation(immutableFqName)
 
-      // Only mark as RUNTIME if it's NOT a sealed class AND doesn't have stability annotation
+      // Only mark as UNKNOWN if it's NOT a sealed class AND doesn't have stability annotation
       if (!isSealed && !hasStabilityAnnotation) {
-        return ParameterStability.RUNTIME
+        return ParameterStability.UNKNOWN
       }
       // Sealed classes and annotated abstract classes continue to property analysis
+    }
+
+    // 16b. Non-final (open) classes - concrete subtype unknown (Compose 2.4.0: Unknown)
+    //      EXCEPT: classes explicitly trusted via @Stable/@Immutable.
+    if (clazz.modality == org.jetbrains.kotlin.descriptors.Modality.OPEN &&
+      !clazz.hasAnnotation(stableFqName) &&
+      !clazz.hasAnnotation(immutableFqName)
+    ) {
+      return ParameterStability.UNKNOWN
     }
 
     // 17. Cross-module types require explicit @Stable/@Immutable/@StabilityInferred
@@ -604,6 +613,7 @@ public class StabilityAnalyzerTransformer(
     when (propertyStability) {
       ParameterStability.STABLE -> return ParameterStability.STABLE
       ParameterStability.UNSTABLE -> return ParameterStability.UNSTABLE
+      ParameterStability.UNKNOWN -> return ParameterStability.UNKNOWN
       ParameterStability.RUNTIME -> {
         // 19. Check @StabilityInferred: parameters=0 means stable, else runtime
         val stabilityInferredParams = type.getStabilityInferredParameters()
@@ -944,6 +954,7 @@ public class StabilityAnalyzerTransformer(
     ParameterStability.STABLE -> "STABLE"
     ParameterStability.UNSTABLE -> "UNSTABLE"
     ParameterStability.RUNTIME -> "RUNTIME"
+    ParameterStability.UNKNOWN -> "UNKNOWN"
   }
 
   /**
@@ -967,6 +978,7 @@ public class StabilityAnalyzerTransformer(
       else -> "has mutable properties or unstable members"
     }
     "RUNTIME" -> "requires runtime check"
+    "UNKNOWN" -> "interface or non-final class; concrete implementation unknown"
     else -> null
   }
 

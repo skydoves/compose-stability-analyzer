@@ -18,8 +18,9 @@ package com.skydoves.compose.stability.compiler
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
+import org.jetbrains.kotlin.compiler.plugin.registerExtension
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
+import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 
 @OptIn(ExperimentalCompilerApi::class)
 public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
@@ -45,8 +46,11 @@ public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
       "",
     )
 
-    // Register FIR extensions for frontend analysis (K2)
-    FirExtensionRegistrarAdapter.registerExtension(
+    // Register FIR extensions for frontend analysis (K2).
+    // Kotlin 2.4.0 (KT-83341) moved K2 extension registration off the IntelliJ
+    // ProjectExtensionDescriptor mechanism; use the ExtensionStorage-scoped helpers so the
+    // adapter companion isn't cast to the removed descriptor type at runtime.
+    FirExtensionRegistrar.registerExtension(
       StabilityAnalyzerFirExtensionRegistrar(),
     )
 

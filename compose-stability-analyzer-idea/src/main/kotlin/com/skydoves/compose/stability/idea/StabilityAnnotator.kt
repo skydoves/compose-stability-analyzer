@@ -80,7 +80,7 @@ public class StabilityAnnotator : Annotator {
         }
       }
 
-      ParameterStability.RUNTIME -> {
+      ParameterStability.RUNTIME, ParameterStability.UNKNOWN -> {
         element.nameIdentifier?.let { nameElement ->
           holder.newAnnotation(
             HighlightSeverity.WEAK_WARNING,

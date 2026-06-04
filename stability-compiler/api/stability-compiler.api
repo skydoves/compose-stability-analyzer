@@ -155,7 +155,7 @@ public final class com/skydoves/compose/stability/compiler/StabilityReport$Compa
 
 public final class com/skydoves/compose/stability/compiler/lower/RecompositionIrBuilder {
 	public fun <init> (Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;)V
-	public final fun initializeSymbols ()Z
+	public final fun initializeSymbols (Lorg/jetbrains/kotlin/ir/declarations/IrFile;)Z
 	public final fun injectTrackingCode (Lorg/jetbrains/kotlin/ir/declarations/IrFunction;Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;)Z
 	public static synthetic fun injectTrackingCode$default (Lcom/skydoves/compose/stability/compiler/lower/RecompositionIrBuilder;Lorg/jetbrains/kotlin/ir/declarations/IrFunction;Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Ljava/util/List;ILjava/lang/Object;)Z
 }

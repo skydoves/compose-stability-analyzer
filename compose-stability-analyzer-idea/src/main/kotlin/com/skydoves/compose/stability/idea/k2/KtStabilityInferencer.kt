@@ -75,8 +75,7 @@ internal class KtStabilityInferencer(
    * Analyzes a Kotlin type to determine its stability.
    * Main entry point for K2-based stability analysis.
    */
-  context(KaSession)
-  internal fun ktStabilityOf(type: KaType): KtStability {
+  internal fun KaSession.ktStabilityOf(type: KaType): KtStability {
     val originalTypeString = try {
       type.render(position = org.jetbrains.kotlin.types.Variance.INVARIANT)
     } catch (e: StackOverflowError) {
@@ -105,8 +104,7 @@ internal class KtStabilityInferencer(
   /**
    * Internal implementation separated for proper cleanup.
    */
-  context(KaSession)
-  private fun ktStabilityOfInternal(type: KaType, originalTypeString: String): KtStability {
+  private fun KaSession.ktStabilityOfInternal(type: KaType, originalTypeString: String): KtStability {
     // 0. Expand typealiases first - resolve typealias to actual type
     // Use fullyExpandedType to get the actual underlying type
     val expandedType = type.fullyExpandedType
@@ -223,8 +221,12 @@ internal class KtStabilityInferencer(
       )
     }
 
-    // If class stability is runtime but all type args are stable, still runtime
-    if (classStability is KtStability.Runtime) {
+    // If the class itself is not definitively stable (Runtime / Unknown / type Parameter /
+    // Combined), stable type arguments must NOT promote it to stable. Keep the class's own
+    // stability — e.g. a generic interface `Repo<String>` stays UNKNOWN even though String is
+    // stable. (Pre-2.4.0 this only guarded Runtime; interfaces were Runtime, so it worked. Now
+    // interfaces are Unknown, so the guard must cover every non-Certain case.)
+    if (classStability !is KtStability.Certain) {
       return classStability
     }
 
@@ -245,8 +247,7 @@ internal class KtStabilityInferencer(
    * Analyzes type arguments of a generic type.
    * Returns empty list if type has no type arguments.
    */
-  context(KaSession)
-  private fun analyzeTypeArguments(type: KaType): List<KtStability> {
+  private fun KaSession.analyzeTypeArguments(type: KaType): List<KtStability> {
     return try {
       // Use reflection to access typeArguments as it may differ between K2 versions
       val typeArgsMethod = type::class.members.find { it.name == "typeArguments" }
@@ -276,8 +277,7 @@ internal class KtStabilityInferencer(
    * @param declaration the class symbol to analyze
    * @param currentlyAnalyzing set of symbols being analyzed (prevents infinite recursion)
    */
-  context(KaSession)
-  private fun analyzeClassSymbol(
+  private fun KaSession.analyzeClassSymbol(
     declaration: KaClassLikeSymbol,
     currentlyAnalyzing: Set<KaClassLikeSymbol>,
   ): KtStability {
@@ -330,7 +330,7 @@ internal class KtStabilityInferencer(
     }
 
     // 7. Check for @Stable or @Immutable annotations
-    if (classSymbol.hasStableAnnotation()) {
+    if (hasStableAnnotation(classSymbol)) {
       return KtStability.Certain(
         stable = true,
         reason = StabilityConstants.Messages.STABLE_ANNOTATION,
@@ -407,7 +407,7 @@ internal class KtStabilityInferencer(
     }
 
     // 15. Value classes (inline classes) - stability depends on underlying type
-    if (classSymbol.isInlineClass()) {
+    if (isInlineClass(classSymbol)) {
       return analyzeValueClass(classSymbol, currentlyAnalyzing)
     }
 
@@ -447,43 +447,50 @@ internal class KtStabilityInferencer(
       }
     }
 
-    // 18. Interfaces - cannot determine (RUNTIME)
+    // 18. Interfaces - concrete implementation unknown (Compose 2.4.0: Unknown)
     if (classSymbol.classKind == KaClassKind.INTERFACE) {
-      return KtStability.Runtime(
-        className = fqName ?: simpleName,
-        reason = "Interface type - actual implementation could be mutable",
-      )
+      return KtStability.Unknown(fqName ?: simpleName)
     }
 
-    // 19. Abstract classes - cannot determine (RUNTIME)
+    // 19. Abstract classes - concrete implementation unknown (Compose 2.4.0: Unknown)
     // EXCEPT: Sealed classes with @Stable/@Immutable should be analyzed like regular classes
     // Issue #31: Sealed classes with @Immutable/@Stable should propagate stability to subclasses
     if (classSymbol.modality == KaSymbolModality.ABSTRACT) {
       // Check if this abstract class has @Stable or @Immutable annotation
-      // If it does, it should be analyzed (not immediately returned as RUNTIME)
+      // If it does, it should be analyzed (not immediately returned as Unknown)
       val hasStabilityAnnotation = classSymbol.annotations.any { annotation ->
         val annotationFqName = annotation.classId?.asSingleFqName()?.asString()
         annotationFqName == "androidx.compose.runtime.Stable" ||
           annotationFqName == "androidx.compose.runtime.Immutable"
       }
 
-      // Only return RUNTIME if it doesn't have stability annotations
+      // Only return Unknown if it doesn't have stability annotations
       if (!hasStabilityAnnotation) {
-        return KtStability.Runtime(
-          className = fqName ?: simpleName,
-          reason = "Abstract class - actual implementation could be mutable",
-        )
+        return KtStability.Unknown(fqName ?: simpleName)
       }
       // Abstract classes with @Stable/@Immutable continue to property analysis
+    }
+
+    // 19a. Non-final (open) classes - concrete subtype unknown (Compose 2.4.0: Unknown)
+    //      EXCEPT: classes explicitly trusted via @Stable/@Immutable.
+    if (classSymbol.modality == KaSymbolModality.OPEN) {
+      val hasStabilityAnnotation = classSymbol.annotations.any { annotation ->
+        val annotationFqName = annotation.classId?.asSingleFqName()?.asString()
+        annotationFqName == "androidx.compose.runtime.Stable" ||
+          annotationFqName == "androidx.compose.runtime.Immutable"
+      }
+      if (!hasStabilityAnnotation) {
+        return KtStability.Unknown(fqName ?: simpleName)
+      }
     }
 
     // 19b. Cross-module types without @Stable/@Immutable/@StabilityInferred are UNSTABLE
     // Classes from other modules must be explicitly annotated to be considered stable
     // This prevents assuming stability for classes where we can't see the implementation
     // IMPORTANT: This check comes AFTER all built-in stable types (primitives, String, etc.)
-    if (classSymbol.isFromDifferentModule()) {
+    if (isFromDifferentModule(classSymbol)) {
       // Check if it has @StabilityInferred annotation
-      val stabilityInferredParams = classSymbol.getStabilityInferredParameters()
+      val stabilityInferredParams = getStabilityInferredParameters(classSymbol)
       if (stabilityInferredParams == null) {
         // No @Stable, @Immutable, or @StabilityInferred annotation
         return KtStability.Certain(
@@ -507,7 +514,7 @@ internal class KtStabilityInferencer(
       propertyStability is KtStability.Certain -> propertyStability
       else -> {
         // 20. Check @StabilityInferred: parameters=0 means stable, else runtime
-        val stabilityInferredParams = classSymbol.getStabilityInferredParameters()
+        val stabilityInferredParams = getStabilityInferredParameters(classSymbol)
         when {
           stabilityInferredParams != null -> {
             if (stabilityInferredParams == 0) {
@@ -532,8 +539,7 @@ internal class KtStabilityInferencer(
   /**
    * Analyzes all properties of a class to determine overall stability.
    */
-  context(KaSession)
-  private fun analyzeClassProperties(
+  private fun KaSession.analyzeClassProperties(
     classSymbol: KaClassSymbol,
     currentlyAnalyzing: Set<KaClassLikeSymbol>,
   ): KtStability {
@@ -647,8 +653,7 @@ internal class KtStabilityInferencer(
    * Analyzes superclass stability.
    * Returns the stability of the superclass, or null if no superclass or superclass is stable.
    */
-  context(KaSession)
-  private fun analyzeSuperclassStability(
+  private fun KaSession.analyzeSuperclassStability(
     classSymbol: KaClassSymbol,
     currentlyAnalyzing: Set<KaClassLikeSymbol>,
   ): KtStability? {
@@ -698,8 +703,7 @@ internal class KtStabilityInferencer(
    * Analyzes a value class to determine its stability.
    * Value classes inherit the stability of their underlying type.
    */
-  context(KaSession)
-  private fun analyzeValueClass(
+  private fun KaSession.analyzeValueClass(
     classSymbol: KaClassSymbol,
     currentlyAnalyzing: Set<KaClassLikeSymbol>,
   ): KtStability {
@@ -737,9 +741,8 @@ internal class KtStabilityInferencer(
   /**
    * Check if a class has @Stable or @Immutable annotation.
    */
-  context(KaSession)
-  private fun KaClassSymbol.hasStableAnnotation(): Boolean {
-    return annotations.any { annotation ->
+  private fun KaSession.hasStableAnnotation(symbol: KaClassSymbol): Boolean {
+    return symbol.annotations.any { annotation ->
       val fqName = annotation.classId?.asSingleFqName()?.asString()
       fqName == StabilityConstants.Annotations.STABLE_FQ ||
         fqName == StabilityConstants.Annotations.IMMUTABLE_FQ ||
@@ -760,10 +763,9 @@ internal class KtStabilityInferencer(
    * This is crucial for cross-module stability: classes from other modules should be
    * UNSTABLE unless annotated with @Stable/@Immutable or @StabilityInferred(parameters=0).
    */
-  context(KaSession)
-  private fun KaClassSymbol.getStabilityInferredParameters(): Int? {
+  private fun KaSession.getStabilityInferredParameters(symbol: KaClassSymbol): Int? {
     val stabilityInferredFqName = "androidx.compose.runtime.internal.StabilityInferred"
-    val annotation = annotations.firstOrNull { annotation ->
+    val annotation = symbol.annotations.firstOrNull { annotation ->
       annotation.classId?.asSingleFqName()?.asString() == stabilityInferredFqName
     } ?: return null
 
@@ -822,10 +824,9 @@ internal class KtStabilityInferencer(
   /**
    * Check if a class is a value class (inline class).
    */
-  context(KaSession)
-  private fun KaClassSymbol.isInlineClass(): Boolean {
+  private fun KaSession.isInlineClass(symbol: KaClassSymbol): Boolean {
     // Check for @JvmInline annotation (modern value classes)
-    return annotations.any { annotation ->
+    return symbol.annotations.any { annotation ->
       annotation.classId?.asSingleFqName()?.asString() == "kotlin.jvm.JvmInline"
     }
   }
@@ -834,11 +835,10 @@ internal class KtStabilityInferencer(
    * Checks if a class is from a different module or external library.
    * Detects: (1) External JARs/AARs via origins, (2) Other modules via module comparison.
    */
-  context(KaSession)
-  private fun KaClassSymbol.isFromDifferentModule(): Boolean {
+  private fun KaSession.isFromDifferentModule(symbol: KaClassSymbol): Boolean {
     return try {
       // Check 1: External library classes (compiled JARs/AARs)
-      val origin = origin
+      val origin = symbol.origin
       val originName = origin.toString()
       val isFromLibrary = originName.contains("LIBRARY") && !originName.contains("SOURCE")
 
@@ -847,7 +847,7 @@ internal class KtStabilityInferencer(
       }
 
       // Check 2: Classes from other project modules
-      val classFile = psi?.containingFile?.virtualFile
+      val classFile = symbol.psi?.containingFile?.virtualFile
       if (classFile != null && project != null && usageSiteModule != null) {
         val classModule = ProjectFileIndex.getInstance(project).getModuleForFile(
           classFile,
