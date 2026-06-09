@@ -29,7 +29,7 @@ The sponsors listed below made it possible for this project to be released as op
 
 **[Vision Agents (GitHub)](https://github.com/GetStream/Vision-Agents/?utm_source=github&utm_medium=devrel&utm_campaign=jaewoong-github)** is an open-source Video AI framework for building real-time voice and video applications. The framework is edge/transport agnostic, meaning developers can also bring any edge layer they like.
 
-<a href="https://coderabbit.link/Jaewoong" target="_blank"> <img width="300" alt="coderabbit" src="art/logo-coderabbit.png" /></a>
+<a href="https://coderabbit.link/Jaewoong" target="_blank"> <img width="300" alt="coderabbit" src="art/logo-coderabbit.svg" /></a>
 
 **[CodeRabbit](https://coderabbit.link/Jaewoong)** is an AI-powered code review platform that integrates directly into pull-request workflows and IDEs, examining code changes in context and suggesting improvements.
 
