@@ -19,7 +19,6 @@ import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Compa
 import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.MULTIPLATFORM_PLUGIN_ID
 import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.RUNTIME_ARTIFACT_ID
 import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.VERSION
-import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.getLintProject
 import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.getRuntimeProject
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
@@ -34,7 +33,9 @@ internal abstract class StabilityTaskRegistrar {
   /**
    * Registers stability tasks for the [target] project.
    */
-  abstract fun register(target: Project, extension: StabilityAnalyzerExtension)
+  abstract fun registerStabilityTasks(target: Project, extension: StabilityAnalyzerExtension)
+
+  protected abstract fun registerLintingTask(target: Project)
 
   /**
    * Add runtime dependency to the project.
@@ -43,7 +44,6 @@ internal abstract class StabilityTaskRegistrar {
    */
   protected fun addRuntimeDependency(project: Project) {
     val runtimeProject = getRuntimeProject(project)
-    val lintProject = getLintProject(project)
 
     val runtimeDependency = runtimeProject
       ?: "$GROUP_ID:$RUNTIME_ARTIFACT_ID:$VERSION"
@@ -59,12 +59,9 @@ internal abstract class StabilityTaskRegistrar {
     } else {
       // For JVM/Android projects, add to implementation configuration
       project.dependencies.add("implementation", runtimeDependency)
-
-      // Lint is only supported for Android projects
-      if (lintProject != null) {
-        project.dependencies.add("lintChecks", lintProject)
-      }
     }
+
+    registerLintingTask(project)
   }
 
   /**

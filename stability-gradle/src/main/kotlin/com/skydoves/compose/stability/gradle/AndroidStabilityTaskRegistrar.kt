@@ -16,6 +16,7 @@
 package com.skydoves.compose.stability.gradle
 
 import com.android.build.api.variant.AndroidComponentsExtension
+import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.getLintProject
 import org.gradle.api.Project
 
 /**
@@ -23,7 +24,7 @@ import org.gradle.api.Project
  */
 internal class AndroidStabilityTaskRegistrar : StabilityTaskRegistrar() {
 
-  override fun register(target: Project, extension: StabilityAnalyzerExtension) {
+  override fun registerStabilityTasks(target: Project, extension: StabilityAnalyzerExtension) {
     val androidComponents =
       target.extensions.getByType(AndroidComponentsExtension::class.java)
 
@@ -109,6 +110,12 @@ internal class AndroidStabilityTaskRegistrar : StabilityTaskRegistrar() {
 
     target.afterEvaluate {
       addRuntimeDependency(target)
+    }
+  }
+
+  override fun registerLintingTask(target: Project) {
+    getLintProject(target) ?.let { lintProject ->
+      target.dependencies.add("lintChecks", lintProject)
     }
   }
 }

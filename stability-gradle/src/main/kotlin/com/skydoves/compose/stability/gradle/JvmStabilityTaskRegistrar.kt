@@ -22,7 +22,7 @@ import org.gradle.api.Project
  */
 internal class JvmStabilityTaskRegistrar : StabilityTaskRegistrar() {
 
-  override fun register(target: Project, extension: StabilityAnalyzerExtension) {
+  override fun registerStabilityTasks(target: Project, extension: StabilityAnalyzerExtension) {
     // Register stability dump task
     val stabilityDumpTask = target.tasks.register(
       "stabilityDump",
@@ -74,5 +74,9 @@ internal class JvmStabilityTaskRegistrar : StabilityTaskRegistrar() {
       configureTaskDependencies(target, extension, null, stabilityDumpTask, stabilityCheckTask)
       addRuntimeDependency(target)
     }
+  }
+
+  override fun registerLintingTask(target: Project) {
+    // No linting tasks exist for JVM/KMP projects.
   }
 }

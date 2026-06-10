@@ -82,7 +82,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       } else {
         JvmStabilityTaskRegistrar()
       }
-    registrar.register(target, extension)
+    registrar.registerStabilityTasks(target, extension)
 
     // Per-task output directory to avoid shared output conflicts with other plugins (Issue #153)
     target.tasks.withType(KotlinCompile::class.java).configureEach {
