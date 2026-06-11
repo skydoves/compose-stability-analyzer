@@ -188,7 +188,10 @@ internal class FqNameMatcher(val pattern: String) {
   fun matches(name: String?): Boolean {
     if (pattern == STABILITY_WILDCARD_MULTI) return true
 
-    val nameStr = name?.removeGenerics() ?: return false
+    val nameStr = name
+      ?.removeGenerics()
+      ?.removeSuffix("?") // Support for nullable types
+      ?: return false
     if (key.length > nameStr.length) return false
 
     val suffix = nameStr.substring(key.length)
