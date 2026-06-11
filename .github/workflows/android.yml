@@ -18,6 +18,12 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: 21
+      # The sample app's build script uses Gradle-plugin DSL from this branch (e.g. traceAll),
+      # so the locally-built plugin must shadow the older published release in Maven Local
+      # before any task that configures :app. Configuration-on-demand keeps :app itself from
+      # being configured during this targeted publish.
+      - name: Publish Gradle plugin to Maven Local
+        run: ./gradlew :stability-gradle:publishToMavenLocal -x test -PRELEASE_SIGNING_ENABLED=false
       - name: spotless
         run: ./gradlew spotlessCheck
 
@@ -32,6 +38,9 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: 21
+      # See the Spotless job for why the plugin is published to Maven Local first.
+      - name: Publish Gradle plugin to Maven Local
+        run: ./gradlew :stability-gradle:publishToMavenLocal -x test -PRELEASE_SIGNING_ENABLED=false
       - name: API check
         run: ./gradlew apiCheck
 
@@ -59,6 +68,10 @@ jobs:
 
       - name: Make Gradle executable
         run: chmod +x ./gradlew
+
+      # See the Spotless job for why the plugin is published to Maven Local first.
+      - name: Publish Gradle plugin to Maven Local
+        run: ./gradlew :stability-gradle:publishToMavenLocal -x test -PRELEASE_SIGNING_ENABLED=false
 
       - name: Build with Gradle
         run: |
