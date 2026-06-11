@@ -18,8 +18,7 @@
 package com.skydoves.compose.stability.idea
 
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.PsiManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.skydoves.compose.stability.idea.k2.StabilityAnalyzerK2
@@ -34,6 +33,7 @@ import org.jetbrains.annotations.TestOnly
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
+import org.jetbrains.kotlin.idea.stubindex.KotlinTypeAliasShortNameIndex
 import org.jetbrains.kotlin.idea.caches.resolve.resolveMainReference
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.psi.KtClass
@@ -776,42 +776,19 @@ internal object StabilityAnalyzer {
     aliasName: String,
     fqNameHint: String?,
   ): KtTypeAlias? {
-    val psiManager = PsiManager.getInstance(project)
-    val packageHint = fqNameHint?.substringBeforeLast('.', "")
-
-    var found: KtTypeAlias? = null
-
-    // Use content roots to avoid relying on stub indexes (stable in tests + dumb mode).
-    val roots = ProjectRootManager.getInstance(project).contentRoots
-
-    roots.forEach { root ->
-      VfsUtilCore.iterateChildrenRecursively(
-        root,
-        { vf -> vf.isDirectory || vf.extension == "kt" },
-      ) { vf ->
-        if (vf.isDirectory) return@iterateChildrenRecursively true
-
-        val psi = psiManager.findFile(vf) as? KtFile ?: return@iterateChildrenRecursively true
-        if (packageHint?.isNotEmpty() == true && psi.packageFqName.asString() != packageHint) {
-          return@iterateChildrenRecursively true
-        }
-
-        val alias = PsiTreeUtil.findChildrenOfType(psi, KtTypeAlias::class.java)
-          .firstOrNull { it.name == aliasName }
-          ?: return@iterateChildrenRecursively true
-
-        if (fqNameHint == null || alias.fqName?.asString() == fqNameHint) {
-          found = alias
-          return@iterateChildrenRecursively false // stop traversal
-        }
-
-        true
+    // Stub-index lookup only — never iterate/parse project files here (froze the IDE on
+    // large projects, Issue #168). Returns null in dumb mode; the verdict degrades to
+    // RUNTIME until indexes are ready.
+    return runCatching {
+      val scope = GlobalSearchScope.projectScope(project)
+      val candidates = KotlinTypeAliasShortNameIndex.get(aliasName, project, scope)
+      if (fqNameHint != null) {
+        candidates.firstOrNull { it.fqName?.asString() == fqNameHint }
+          ?: candidates.firstOrNull()
+      } else {
+        candidates.firstOrNull()
       }
-
-      if (found != null) return found
-    }
-
-    return found
+    }.getOrNull()
   }
 
   /**
