@@ -184,6 +184,15 @@ internal class DoctorPanel(private val project: Project) : Disposable {
   // ── Rendering ─────────────────────────────────────────────────────────────
 
   private fun displayReport(report: DoctorAnalyzer.DoctorReport) {
+    // Auto-refresh re-renders this tree every few seconds during a heatmap session, so the
+    // user's expansion/selection state must survive the reload — capture it (keyed by stable
+    // node identity, NOT row index, since re-ranking shuffles rows) and restore afterwards.
+    val expandedKeys = collectExpandedKeys()
+    val selectedKey = (tree.lastSelectedPathComponent as? DefaultMutableTreeNode)
+      ?.let { nodeKey(it) }
+    val isFirstRender = rootNode.childCount == 0 ||
+      (rootNode.firstChild as? DefaultMutableTreeNode)?.userObject is DoctorNodeData.EmptyMessage
+
     rootNode.removeAllChildren()
 
     if (report.prescriptions.isEmpty()) {
@@ -227,11 +236,64 @@ internal class DoctorPanel(private val project: Project) : Disposable {
     }
 
     treeModel.reload()
-    // Expand only the top rows so the list stays scannable.
-    var row = 0
-    while (row < tree.rowCount && row < 12) {
-      tree.expandRow(row)
-      row++
+
+    if (isFirstRender) {
+      // First real render: expand only the top rows so the list stays scannable.
+      var row = 0
+      while (row < tree.rowCount && row < 12) {
+        tree.expandRow(row)
+        row++
+      }
+    } else {
+      // Subsequent renders (manual or auto-refresh): restore exactly what the user had open —
+      // including a fully collapsed tree if that is what they chose.
+      restoreExpandedKeys(expandedKeys)
+      selectedKey?.let { restoreSelection(it) }
+    }
+  }
+
+  /**
+   * Stable identity for a tree node across re-renders. Prescription rows are keyed by their
+   * signature key (survives re-ranking), causes by signature key + parameter name.
+   */
+  private fun nodeKey(node: DefaultMutableTreeNode): String? = when (val data = node.userObject) {
+    is DoctorNodeData.Summary -> "summary"
+    is DoctorNodeData.PrescriptionRow -> "rx:${data.prescription.signatureKey}"
+    is DoctorNodeData.CauseRow -> {
+      val parentKey = ((node.parent as? DefaultMutableTreeNode)?.userObject
+        as? DoctorNodeData.PrescriptionRow)?.prescription?.signatureKey
+      parentKey?.let { "cause:$it:${data.cause.paramName}" }
+    }
+    else -> null
+  }
+
+  private fun collectExpandedKeys(): Set<String> {
+    val expanded = tree.getExpandedDescendants(javax.swing.tree.TreePath(rootNode))
+      ?: return emptySet()
+    return expanded.toList()
+      .mapNotNull { (it.lastPathComponent as? DefaultMutableTreeNode)?.let(::nodeKey) }
+      .toSet()
+  }
+
+  private fun restoreExpandedKeys(keys: Set<String>) {
+    if (keys.isEmpty()) return
+    val nodes = rootNode.depthFirstEnumeration()
+    while (nodes.hasMoreElements()) {
+      val node = nodes.nextElement() as DefaultMutableTreeNode
+      if (node.childCount > 0 && nodeKey(node) in keys) {
+        tree.expandPath(javax.swing.tree.TreePath(node.path))
+      }
+    }
+  }
+
+  private fun restoreSelection(key: String) {
+    val nodes = rootNode.depthFirstEnumeration()
+    while (nodes.hasMoreElements()) {
+      val node = nodes.nextElement() as DefaultMutableTreeNode
+      if (nodeKey(node) == key) {
+        tree.selectionPath = javax.swing.tree.TreePath(node.path)
+        return
+      }
     }
   }
 
