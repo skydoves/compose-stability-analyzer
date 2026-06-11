@@ -76,9 +76,17 @@ internal class HeatmapPanel(private val project: Project) {
    * Called when the user clicks on a heatmap inlay in the editor.
    */
   public fun showComposableData(composableName: String) {
-    currentComposableName = composableName
+    showComposableData(fqName = null, composableName = composableName)
+  }
+
+  /**
+   * Displays recomposition data, preferring an exact fqName match so same-named composables
+   * across packages resolve to the right entry on runtimes that report qualified names.
+   */
+  public fun showComposableData(fqName: String?, composableName: String) {
+    currentComposableName = fqName ?: composableName
     val service = AdbLogcatService.getInstance(project)
-    val data = service.getHeatmapData(composableName)
+    val data = service.getHeatmapData(fqName, composableName)
     if (data != null) {
       displayData(data)
     } else {

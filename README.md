@@ -41,7 +41,7 @@ The sponsors listed below made it possible for this project to be released as op
 
 The Compose Stability Analyzer IntelliJ Plugin brings **visual stability analysis** directly into your IDE (Android Studio), helping you identify and fix performance issues while you code. Instead of waiting for runtime or build-time reports, you get instant feedback right in Android Studio or IntelliJ IDEA.
 
-This plugin provides real-time visual feedback about your composables' stability through eight main features:
+This plugin provides real-time visual feedback about your composables' stability through nine main features:
 
 - **1. Gutter Icons**: Colored dots in the editor margin showing if a composable is skippable.
 - **2. Hover Tooltips**: Detailed stability information when you hover over composable functions. It also provides the reasons: why it's stable or unstable.
@@ -51,6 +51,7 @@ This plugin provides real-time visual feedback about your composables' stability
 - **6. Live Recomposition Heatmap**: Real-time recomposition counts from a connected device overlaid directly in the editor.
 - **7. Stability Reality Check**: Grades the compiler's *static* stability prediction against *live* runtime data, separating harmless false alarms from real "silent waste".
 - **8. Recomposition Blame**: Traces a recomposition back to its cause — the exact state write-site (`← onClick (Screen.kt:42)`) and where a parameter's value originated.
+- **9. Stability Doctor**: A ranked, quantified "what to fix first" list that combines all of the above — static verdicts, blast radius, and measured runtime waste — into prioritized prescriptions with one-click fixes.
 
 > **Note**: You don’t need to make every composable function skippable or all parameters stable, these are not direct indicators of performance optimization. The goal of this plugin isn’t to encourage over-focusing on stability, but rather to help you explore how Compose’s stability mechanisms work and use them as tools for examining and debugging composables that may have performance issues. For more information, check out [Compose Stability Analyzer: Real-Time Stability Insights for Jetpack Compose](https://medium.com/proandroiddev/compose-stability-analyzer-real-time-stability-insights-for-jetpack-compose-1399924a0a64).
 
@@ -199,6 +200,31 @@ A **Blame** tool-window tab opens showing the *reverse* of the cascade — which
 
 > **Note**: Write-site capture works for delegated scalar state (`var x by remember { mutableStateOf(...) }`) on Android/JVM. Parameter provenance is a best-effort static estimate; dynamic origins are shown as "expression".
 
+### Stability Doctor
+
+The Stability Doctor answers the question every other feature leads up to: **"what should I fix first, and what will I gain?"** It scans your project, scores every composable by combining the static stability verdict, the downstream cascade blast radius, and — when a heatmap session is running — the *measured* runtime waste from the Reality Check, then presents a ranked list of prescriptions with one-click fixes.
+
+![doctor](art/doctor.png)
+
+Each prescription shows:
+
+- A **score badge**: `ESTIMATED` (static analysis only) or `MEASURED` (backed by live device data — measured waste always outranks speculation).
+- A **problem summary**: e.g. `2 unstable params · ≈218ms observed waste (12 wasted recompositions) · 12 downstream affected`.
+- **Causes**: each problematic parameter with its static reason, Reality-Check grade, and where the value comes from (via Blame).
+- **Fixes** you can apply by double-clicking:
+  - Change `var` → `val` on the parameter's class (aborts automatically if any write usage exists).
+  - Annotate the class with `@Immutable` / `@Stable`.
+  - Add the type to your stability configuration file (for library types).
+  - Wrap the call-site argument in `remember(keys) { ... }` for *silent waste* parameters — offered only when a conservative set of safety rules proves the transformation safe, and always behind a preview/confirmation dialog.
+
+**How to use:**
+
+1. Open **View → Tool Windows → Compose Stability Analyzer → Doctor** tab (or **Code menu → Run Stability Doctor**) and hit refresh — works immediately with `ESTIMATED` scores, no device needed.
+2. For measured scores, enable [trace-all](#trace-all-module-wide-recomposition-tracing) (or annotate composables with `@TraceRecomposition`), start the recomposition heatmap, and interact with your app — rows upgrade to `MEASURED` and re-rank automatically while the session runs.
+3. Double-click a row to jump to the composable; double-click a fix to apply it.
+
+> **Note**: Doctor thresholds (minimum score, cascade candidates, auto-refresh interval) are configurable in **Settings → Tools → Compose Stability Analyzer → Stability Doctor**.
+
 ### Plugin Customization
 
 You can change the colors used for stability indicators to match your IDE theme, enabling Strong Skipping mode for analyzing, visual indicators (showing gutter icons, warnings, inline hints), change parameter hint colors, enabling analysis in test source sets, set a stability configuration file, add ignored type patterns to exclude from the stability analysis.
@@ -288,6 +314,34 @@ It’s **strongly recommended to use the exact same Kotlin version** as this lib
 | 0.7.4              | 2.3.20 |
 | 0.6.5~0.7.0        | 2.3.0 |
 | 0.4.0~0.6.4        | 2.2.21 |
+
+### Trace-All: Module-Wide Recomposition Tracing
+
+Instead of annotating composables one by one, you can opt into **trace-all** mode, which auto-instruments every restartable composable in the module — as if each one carried `@TraceRecomposition`. This gives the IDE plugin's Live Heatmap, Reality Check, and Stability Doctor *module-wide* runtime data out of the box:
+
+```kotlin
+composeStabilityAnalyzer {
+  traceAll {
+    enabled.set(true)            // default: false (opt-in)
+    threshold.set(2)             // default: 2 — skips the initial-composition burst
+    variants.set(listOf("debug")) // default: ["debug"] — never applies to release or tests
+  }
+}
+```
+
+How it behaves:
+
+- **Debug-oriented by default**: only compilations whose variant name ends with one of the `variants` tokens are instrumented (`debug` matches `debug`, `stagingDebug`, ...). Test compilations are never instrumented. For KMP/JVM targets without variants, the runtime `ComposeStabilityAnalyzer.setEnabled(...)` gate is the safety net.
+- **Explicit annotations win**: a composable with `@TraceRecomposition` keeps its own tag/threshold.
+- **Quiet by default**: auto-traced composables only start logging from their 2nd recomposition (`threshold = 2`), so the initial composition of a screen produces no logcat flood. Raise the threshold if very active composables (e.g. animations) get noisy.
+- **Skips what shouldn't be traced**: previews, `@IgnoreStabilityReport`, inline/readonly/non-restartable composables, and property getters are excluded automatically.
+- **Cheap when disabled**: with `ComposeStabilityAnalyzer.setEnabled(false)`, the residual cost per composition is a map lookup plus early-returned calls.
+
+Logs from trace-all carry two extra header tokens — the fully qualified name and an auto marker — so the IDE can attribute events precisely even when composables share a simple name:
+
+```
+D/Recomposition: [Recomposition #2] UserProfile (1.20ms) (fq: com.example.profile.UserProfile) (auto)
+```
 
 ### TraceRecomposition Annotation
 

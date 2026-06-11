@@ -22,6 +22,12 @@ jobs:
       - name: Grant Permission to Execute Gradle
         run: chmod +x gradlew
 
+      # The sample app's build script uses Gradle-plugin DSL that is only published to Maven
+      # Central as part of THIS release, so the locally-built plugin must shadow the previous
+      # release in Maven Local before any task that configures :app.
+      - name: Publish Gradle plugin to Maven Local
+        run: ./gradlew :stability-gradle:publishToMavenLocal -x test -PRELEASE_SIGNING_ENABLED=false
+
       - name: Release build
         run: ./gradlew assemble -x :app:assemble --scan
 

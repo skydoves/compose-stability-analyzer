@@ -27,6 +27,10 @@ internal data class ParsedRecompositionEvent(
   val timestampMs: Long,
   val durationMs: Double = 0.0,
   val stateEntries: List<String> = emptyList(),
+  /** Fully qualified composable name from the `(fq: ...)` header token; empty on old runtimes. */
+  val fqName: String = "",
+  /** True when the event came from a trace-all auto-instrumented composable (`(auto)` token). */
+  val isAutoTraced: Boolean = false,
 )
 
 /**
@@ -75,6 +79,10 @@ internal data class ComposableHeatmapData(
   val refChangedParameters: Map<String, Int> = emptyMap(),
   /** Per-parameter count of total appearances across recompositions (lifetime, uncapped). */
   val observationCounts: Map<String, Int> = emptyMap(),
+  /** Fully qualified composable name when known (runtime >= 1.0); empty on old runtimes. */
+  val fqName: String = "",
+  /** True when any received event for this composable was trace-all auto-instrumented. */
+  val isAutoTraced: Boolean = false,
 )
 
 /**

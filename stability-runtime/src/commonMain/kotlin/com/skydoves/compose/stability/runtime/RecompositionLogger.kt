@@ -57,6 +57,10 @@ public interface RecompositionLogger {
  * @property unstableParameters List of parameter names that are unstable
  * @property stateChanges List of internal state variable changes (empty when traceStates is false)
  * @property durationNanos Duration of the recomposition in nanoseconds (0 if not measured)
+ * @property fqName Fully qualified name of the composable (e.g., "com.example.UserProfile");
+ *   empty when produced by code generated before fqName support was added
+ * @property isAutoTraced True when this composable was instrumented by the trace-all compiler
+ *   mode rather than an explicit @TraceRecomposition annotation
  */
 public data class RecompositionEvent(
   val composableName: String,
@@ -66,6 +70,8 @@ public data class RecompositionEvent(
   val unstableParameters: List<String>,
   val stateChanges: List<StateChange> = emptyList(),
   val durationNanos: Long = 0L,
+  val fqName: String = "",
+  val isAutoTraced: Boolean = false,
 )
 
 /**

@@ -43,7 +43,12 @@ internal class AdbLogcatService(
   private val log = Logger.getInstance(AdbLogcatService::class.java)
   private val settings get() = StabilitySettingsState.getInstance()
 
+  // Keyed by fqName when the runtime reports one (>= 1.0), by simple name otherwise.
   private val dataMap = ConcurrentHashMap<String, ComposableHeatmapData>()
+
+  // Secondary index: simple composable name -> dataMap keys, for callers that only know
+  // the simple name and for old-runtime events that never carry an fqName.
+  private val simpleNameIndex = ConcurrentHashMap<String, MutableSet<String>>()
   private val running = AtomicBoolean(false)
 
   private val parserLock = Any()
@@ -110,14 +115,45 @@ internal class AdbLogcatService(
 
   /** Clear all aggregated data. Inlays will update on next refresh cycle. */
   fun clearData() {
-    dataMap.clear()
+    // onEventParsed runs under parserLock (invoked from feedLine); synchronizing here keeps
+    // the two maps from being cleared mid-update, which would leave the index pointing at
+    // keys that no longer exist in dataMap.
+    synchronized(parserLock) {
+      dataMap.clear()
+      simpleNameIndex.clear()
+    }
   }
 
-  /** Get heatmap data for a composable by its simple name. */
-  fun getHeatmapData(name: String): ComposableHeatmapData? = dataMap[name]
+  /**
+   * Get heatmap data for a composable by name. Tries an exact key match first (fqName or
+   * simple name, depending on what the runtime reported), then falls back to a simple-name
+   * lookup — but only when it is unambiguous (exactly one composable with that simple name).
+   */
+  fun getHeatmapData(name: String): ComposableHeatmapData? {
+    dataMap[name]?.let { return it }
+    val keys = simpleNameIndex[name] ?: return null
+    return keys.singleOrNull()?.let { dataMap[it] }
+  }
 
-  /** Get all tracked composable names. */
+  /**
+   * Get heatmap data preferring an exact fqName match, falling back to the simple name.
+   * Use this when the caller knows the PSI function's fully qualified name.
+   */
+  fun getHeatmapData(fqName: String?, simpleName: String): ComposableHeatmapData? {
+    if (!fqName.isNullOrEmpty()) {
+      dataMap[fqName]?.let { return it }
+    }
+    return getHeatmapData(simpleName)
+  }
+
+  /** Get all tracked composable keys (fqNames when known, simple names otherwise). */
   fun getAllComposableNames(): Set<String> = dataMap.keys.toSet()
+
+  /**
+   * Number of distinct data keys observed under this simple composable name. > 1 means a
+   * simple-name lookup would be ambiguous (same-named composables in different packages).
+   */
+  fun countKeysForSimpleName(simpleName: String): Int = simpleNameIndex[simpleName]?.size ?: 0
 
   /** Flush any pending event from the parser (thread-safe). */
   fun flushParser() {
@@ -193,7 +229,12 @@ internal class AdbLogcatService(
     val paramChanges = buildParameterChangeLines(event)
     val stateChanges = event.stateEntries.map { "[state] $it" }
 
-    dataMap.compute(event.composableName) { _, existing ->
+    val key = event.fqName.ifEmpty { event.composableName }
+    simpleNameIndex
+      .computeIfAbsent(event.composableName) { ConcurrentHashMap.newKeySet() }
+      .add(key)
+
+    dataMap.compute(key) { _, existing ->
       if (existing == null) {
         ComposableHeatmapData(
           composableName = event.composableName,
@@ -214,6 +255,8 @@ internal class AdbLogcatService(
             .associate { it.name to 1 },
           observationCounts = event.parameterEntries
             .associate { it.name to 1 },
+          fqName = event.fqName,
+          isAutoTraced = event.isAutoTraced,
         )
       } else {
         val mergedChanged =
@@ -263,6 +306,8 @@ internal class AdbLogcatService(
           lastStateChanges = stateChanges,
           refChangedParameters = mergedRefChanged,
           observationCounts = mergedObservations,
+          fqName = existing.fqName.ifEmpty { event.fqName },
+          isAutoTraced = existing.isAutoTraced || event.isAutoTraced,
         )
       }
     }

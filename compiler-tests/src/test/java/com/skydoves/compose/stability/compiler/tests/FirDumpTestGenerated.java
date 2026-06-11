@@ -4,7 +4,6 @@ package com.skydoves.compose.stability.compiler.tests;
 
 import com.intellij.testFramework.TestDataPath;
 import org.jetbrains.kotlin.test.util.KtTestUtil;
-import org.jetbrains.kotlin.test.TargetBackend;
 import org.jetbrains.kotlin.test.TestMetadata;
 import org.junit.jupiter.api.Test;
 
@@ -16,26 +15,30 @@ import java.util.regex.Pattern;
 @TestMetadata("compiler-tests/src/test/data/dump/fir")
 @TestDataPath("$PROJECT_ROOT")
 public class FirDumpTestGenerated extends AbstractFirDumpTest {
+  private void run(String fileName) {
+    runTest("compiler-tests/src/test/data/dump/fir/" + fileName);
+  }
+
   @Test
   public void testAllFilesPresentInFir() {
-    KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler-tests/src/test/data/dump/fir"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+    KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler-tests/src/test/data/dump/fir"), Pattern.compile("^(.+)\\.kt$"), null, true);
   }
 
   @Test
   @TestMetadata("MutableDataClass.kt")
   public void testMutableDataClass() {
-    runTest("compiler-tests/src/test/data/dump/fir/MutableDataClass.kt");
+    run("MutableDataClass.kt");
   }
 
   @Test
   @TestMetadata("SimpleDataClass.kt")
   public void testSimpleDataClass() {
-    runTest("compiler-tests/src/test/data/dump/fir/SimpleDataClass.kt");
+    run("SimpleDataClass.kt");
   }
 
   @Test
   @TestMetadata("TraceRecompositionAnnotation.kt")
   public void testTraceRecompositionAnnotation() {
-    runTest("compiler-tests/src/test/data/dump/fir/TraceRecompositionAnnotation.kt");
+    run("TraceRecompositionAnnotation.kt");
   }
 }

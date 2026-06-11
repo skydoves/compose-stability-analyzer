@@ -30,7 +30,9 @@ package com.skydoves.compose.stability.runtime
  *     createRecompositionTracker(
  *       composableName = "UserProfile",
  *       tag = "profile",
- *       threshold = 3
+ *       threshold = 3,
+ *       fqName = "com.example.UserProfile",
+ *       isAutoTraced = false
  *     )
  *   }
  *   _tracker.trackParameter("user", "User", user, isStable = false)
@@ -44,11 +46,15 @@ package com.skydoves.compose.stability.runtime
  * @property composableName The name of the composable function being tracked
  * @property tag Custom tag from @TraceRecomposition annotation
  * @property threshold Only log after this many recompositions
+ * @property fqName Fully qualified name of the composable (empty when unavailable)
+ * @property isAutoTraced True when instrumented by the trace-all compiler mode
  */
 public class RecompositionTracker(
   private val composableName: String,
   private val tag: String = "",
   private val threshold: Int = 1,
+  private val fqName: String = "",
+  private val isAutoTraced: Boolean = false,
 ) {
   private var recompositionCount = 0
   private var lastDurationNanos: Long = 0L
@@ -68,6 +74,8 @@ public class RecompositionTracker(
    * @param isStable Whether this parameter type is stable according to Compose
    */
   public fun trackParameter(name: String, type: String, value: Any?, isStable: Boolean) {
+    // Trace-all instruments every composable, so the disabled path must allocate nothing.
+    if (!ComposeStabilityAnalyzer.isEnabled()) return
     val hasPrevious = name in previousParameters
     val previousValue = previousParameters[name]
     val changed = hasPrevious && previousValue != value
@@ -100,6 +108,7 @@ public class RecompositionTracker(
    * @param value Current state value
    */
   public fun trackState(name: String, type: String, value: Any?, stateObject: Any? = null) {
+    if (!ComposeStabilityAnalyzer.isEnabled()) return
     if (stateObject != null) {
       // Activates the Snapshot write observer's stack capture (kept off until a traceStates
       // consumer actually exists, to avoid overhead for the common traceStates=false case).
@@ -126,6 +135,7 @@ public class RecompositionTracker(
    * @param startTimeNanos The System.nanoTime() value captured at composable entry
    */
   public fun recordDuration(startTimeNanos: Long) {
+    if (!ComposeStabilityAnalyzer.isEnabled()) return
     lastDurationNanos = currentNanoTime() - startTimeNanos
   }
 
@@ -136,6 +146,15 @@ public class RecompositionTracker(
    */
   public fun logIfThresholdMet() {
     recompositionCount++
+
+    // Check before building any ParameterChange/RecompositionEvent objects: with trace-all,
+    // this runs for every composable on every recomposition even when logging is off.
+    if (!ComposeStabilityAnalyzer.isEnabled()) {
+      lastDurationNanos = 0L
+      currentParameters.clear()
+      currentStates.clear()
+      return
+    }
 
     if (recompositionCount >= threshold) {
       val parameterChanges = currentParameters.values.map { tracked ->
@@ -175,6 +194,8 @@ public class RecompositionTracker(
         unstableParameters = unstableParameters,
         stateChanges = stateChanges,
         durationNanos = lastDurationNanos,
+        fqName = fqName,
+        isAutoTraced = isAutoTraced,
       )
 
       ComposeStabilityAnalyzer.logEvent(event)
@@ -224,10 +245,14 @@ public class RecompositionTracker(
  * @param composableName The name of the composable function being tracked
  * @param tag Custom tag from @TraceRecomposition annotation
  * @param threshold Only log after this many recompositions
+ * @param fqName Fully qualified name of the composable (empty when unavailable)
+ * @param isAutoTraced True when instrumented by the trace-all compiler mode
  * @return A new RecompositionTracker instance
  */
 public fun createRecompositionTracker(
   composableName: String,
   tag: String = "",
   threshold: Int = 1,
-): RecompositionTracker = RecompositionTracker(composableName, tag, threshold)
+  fqName: String = "",
+  isAutoTraced: Boolean = false,
+): RecompositionTracker = RecompositionTracker(composableName, tag, threshold, fqName, isAutoTraced)

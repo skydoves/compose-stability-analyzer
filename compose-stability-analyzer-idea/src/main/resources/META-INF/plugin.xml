@@ -108,6 +108,10 @@
 
         <postStartupActivity
                 implementation="com.skydoves.compose.stability.idea.heatmap.HeatmapProjectActivity"/>
+
+        <!-- Stability Doctor -->
+        <projectService
+                serviceImplementation="com.skydoves.compose.stability.idea.doctor.DoctorCacheService"/>
     </extensions>
 
     <actions>
@@ -150,6 +154,14 @@
                 class="com.skydoves.compose.stability.idea.heatmap.ClearHeatmapDataAction"
                 text="Clear Recomposition Data"
                 description="Clear all accumulated recomposition heatmap data">
+            <add-to-group group-id="CodeMenu" anchor="last"/>
+        </action>
+
+        <action
+                id="com.skydoves.compose.stability.idea.doctor.RunDoctorAction"
+                class="com.skydoves.compose.stability.idea.doctor.RunDoctorAction"
+                text="Run Stability Doctor"
+                description="Scan the project and produce a ranked, actionable stability fix list">
             <add-to-group group-id="CodeMenu" anchor="last"/>
         </action>
 

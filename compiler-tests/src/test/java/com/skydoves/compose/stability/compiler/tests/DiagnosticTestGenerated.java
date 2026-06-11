@@ -4,7 +4,6 @@ package com.skydoves.compose.stability.compiler.tests;
 
 import com.intellij.testFramework.TestDataPath;
 import org.jetbrains.kotlin.test.util.KtTestUtil;
-import org.jetbrains.kotlin.test.TargetBackend;
 import org.jetbrains.kotlin.test.TestMetadata;
 import org.junit.jupiter.api.Test;
 
@@ -16,20 +15,24 @@ import java.util.regex.Pattern;
 @TestMetadata("compiler-tests/src/test/data/diagnostic")
 @TestDataPath("$PROJECT_ROOT")
 public class DiagnosticTestGenerated extends AbstractDiagnosticTest {
+  private void run(String fileName) {
+    runTest("compiler-tests/src/test/data/diagnostic/" + fileName);
+  }
+
   @Test
   public void testAllFilesPresentInDiagnostic() {
-    KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler-tests/src/test/data/diagnostic"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+    KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler-tests/src/test/data/diagnostic"), Pattern.compile("^(.+)\\.kt$"), null, true);
   }
 
   @Test
   @TestMetadata("StableParameter.kt")
   public void testStableParameter() {
-    runTest("compiler-tests/src/test/data/diagnostic/StableParameter.kt");
+    run("StableParameter.kt");
   }
 
   @Test
   @TestMetadata("UnstableParameter.kt")
   public void testUnstableParameter() {
-    runTest("compiler-tests/src/test/data/diagnostic/UnstableParameter.kt");
+    run("UnstableParameter.kt");
   }
 }

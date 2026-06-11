@@ -62,7 +62,7 @@ fun SimpleCard(text: String) {
 @TraceRecomposition(tag = "user-card", threshold = 1)
 @Composable
 fun UserCard(user: User) {
-  val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "UserCard", tag = "user-card", threshold = 1)
+  val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "UserCard", tag = "user-card", threshold = 1, fqName = "UserCard", isAutoTraced = false)
   _tracker.trackParameter(name = "user", type = "<root>.User", value = user, isStable = true)
   val _startTime: Long = nanoTime()
   try // COMPOSITE {

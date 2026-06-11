@@ -2,7 +2,9 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityAnalyzerExt
 	public fun <init> (Lorg/gradle/api/file/ProjectLayout;Lorg/gradle/api/model/ObjectFactory;Lorg/gradle/api/provider/ProviderFactory;)V
 	public final fun getEnabled ()Lorg/gradle/api/provider/Property;
 	public final fun getStabilityValidation ()Lcom/skydoves/compose/stability/gradle/StabilityValidationConfig;
+	public final fun getTraceAll ()Lcom/skydoves/compose/stability/gradle/TraceAllConfig;
 	public final fun stabilityValidation (Lorg/gradle/api/Action;)V
+	public final fun traceAll (Lorg/gradle/api/Action;)V
 }
 
 public final class com/skydoves/compose/stability/gradle/StabilityAnalyzerGradlePlugin : org/jetbrains/kotlin/gradle/plugin/KotlinCompilerPluginSupportPlugin {
@@ -63,5 +65,12 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityValidationC
 	public final fun getQuietCheck ()Lorg/gradle/api/provider/Property;
 	public final fun getStabilityConfigurationFiles ()Lorg/gradle/api/provider/ListProperty;
 	public final fun getUnstableOnly ()Lorg/gradle/api/provider/Property;
+}
+
+public abstract class com/skydoves/compose/stability/gradle/TraceAllConfig {
+	public fun <init> (Lorg/gradle/api/model/ObjectFactory;)V
+	public final fun getEnabled ()Lorg/gradle/api/provider/Property;
+	public final fun getThreshold ()Lorg/gradle/api/provider/Property;
+	public final fun getVariants ()Lorg/gradle/api/provider/ListProperty;
 }
 

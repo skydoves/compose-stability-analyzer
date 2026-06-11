@@ -43,11 +43,15 @@ public actual class DefaultRecompositionLogger : RecompositionLogger {
     } else {
       ""
     }
+    // Trailing tokens only: older parsers match the header groups in strict order and simply
+    // ignore anything after the duration, so (fq:) and (auto) must never appear earlier.
+    val fqSuffix = if (event.fqName.isNotEmpty()) " (fq: ${event.fqName})" else ""
+    val autoSuffix = if (event.isAutoTraced) " (auto)" else ""
 
     Log.d(
       tag,
       "[Recomposition #${event.recompositionCount}] " +
-        "${event.composableName}$tagSuffix$durationStr",
+        "${event.composableName}$tagSuffix$durationStr$fqSuffix$autoSuffix",
     )
 
     // Collect all tree lines, then apply └─ to the last one

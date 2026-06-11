@@ -482,6 +482,93 @@ class RecompositionTrackerTest {
     assertEquals(0L, testLogger.events[1].durationNanos)
   }
 
+  @Test
+  fun testRecompositionTracker_fqNameAndAutoTraced_threadedIntoEvent() {
+    val tracker = RecompositionTracker(
+      composableName = "UserProfile",
+      tag = "",
+      threshold = 1,
+      fqName = "com.example.profile.UserProfile",
+      isAutoTraced = true,
+    )
+
+    tracker.trackParameter("user", "User", "user1", isStable = true)
+    tracker.logIfThresholdMet()
+
+    assertEquals(1, testLogger.events.size)
+    val event = testLogger.events[0]
+    assertEquals("com.example.profile.UserProfile", event.fqName)
+    assertTrue(event.isAutoTraced)
+  }
+
+  @Test
+  fun testRecompositionTracker_legacyConstructor_emptyFqName() {
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+
+    tracker.trackParameter("x", "Int", 1, isStable = true)
+    tracker.logIfThresholdMet()
+
+    val event = testLogger.events[0]
+    assertEquals("", event.fqName)
+    assertFalse(event.isAutoTraced)
+  }
+
+  @Test
+  fun testCreateRecompositionTracker_fqNameOverload() {
+    val tracker = createRecompositionTracker(
+      composableName = "TestComposable",
+      tag = "t",
+      threshold = 1,
+      fqName = "com.example.TestComposable",
+      isAutoTraced = true,
+    )
+
+    tracker.trackParameter("x", "Int", 1, isStable = true)
+    tracker.logIfThresholdMet()
+
+    assertEquals("com.example.TestComposable", testLogger.events[0].fqName)
+    assertTrue(testLogger.events[0].isAutoTraced)
+  }
+
+  @Test
+  fun testRecompositionTracker_disabled_skipsTrackingButKeepsCount() {
+    ComposeStabilityAnalyzer.setEnabled(false)
+
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+    tracker.trackParameter("count", "Int", 0, isStable = true)
+    tracker.logIfThresholdMet()
+    tracker.trackParameter("count", "Int", 1, isStable = true)
+    tracker.logIfThresholdMet()
+    assertEquals(0, testLogger.events.size)
+
+    // Re-enable: recompositionCount kept counting while disabled, and tracking resumes
+    // with first-recomposition semantics (no stale previous values were recorded).
+    ComposeStabilityAnalyzer.setEnabled(true)
+    tracker.trackParameter("count", "Int", 2, isStable = true)
+    tracker.logIfThresholdMet()
+
+    assertEquals(1, testLogger.events.size)
+    val event = testLogger.events[0]
+    assertEquals(3, event.recompositionCount)
+    assertFalse(event.parameterChanges[0].changed)
+    assertNull(event.parameterChanges[0].oldValue)
+  }
+
+  @Test
+  fun testRecompositionTracker_disabled_recordDurationIgnored() {
+    ComposeStabilityAnalyzer.setEnabled(false)
+    val tracker = RecompositionTracker("TestComposable", "", 1)
+    tracker.recordDuration(currentNanoTime() - 5_000_000L)
+
+    ComposeStabilityAnalyzer.setEnabled(true)
+    tracker.trackParameter("x", "Int", 1, isStable = true)
+    tracker.logIfThresholdMet()
+
+    assertEquals(1, testLogger.events.size)
+    // The duration recorded while disabled must not leak into the first enabled event.
+    assertEquals(0L, testLogger.events[0].durationNanos)
+  }
+
   /**
    * Structurally-comparable value type for reference-vs-equals tests.
    */
