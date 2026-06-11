@@ -279,6 +279,55 @@ class GetCustomStableTypesAsRegexTest {
   }
 
   @Test
+  fun `Match nullable type`() {
+    // Nullability does not affect stability, so a non-nullable pattern should match the
+    // nullable type name (rendered with a trailing `?`) just like the non-nullable one.
+    val patterns = """
+      mypackage.ClassA
+    """.trimIndent()
+
+    val classes = listOf(
+      "mypackage.ClassA",
+      "mypackage.ClassA?",
+      "mypackage.ClassB?",
+      "otherpackage.ClassA?",
+    )
+
+    val result = getMatches(patterns, classes)
+
+    assertEquals(
+      listOf(
+        "mypackage.ClassA",
+        "mypackage.ClassA?",
+      ),
+      result,
+    )
+  }
+
+  @Test
+  fun `Match nullable type with wildcard`() {
+    val patterns = """
+      mypackage.Class*
+    """.trimIndent()
+
+    val classes = listOf(
+      "mypackage.ClassA?",
+      "mypackage.ClassB?",
+      "otherpackage.ClassA?",
+    )
+
+    val result = getMatches(patterns, classes)
+
+    assertEquals(
+      listOf(
+        "mypackage.ClassA?",
+        "mypackage.ClassB?",
+      ),
+      result,
+    )
+  }
+
+  @Test
   fun `Allow dollar numbers and underscores`() {
     val patterns = """
       my_package.Class1.SubclassB
@@ -356,6 +405,34 @@ class GetCustomStableTypesAsRegexTest {
         "GenericClass1",
         "GenericClass1<Class1>",
         "GenericClass1<Class2>",
+      ),
+      result,
+    )
+  }
+
+  @Test
+  fun `Match nullable generic type`() {
+    // A trailing `?` on a generic type sits after the `>`, so it is stripped together with
+    // the generic arguments. A generic pattern should therefore match the nullable generic
+    // type name, the non-nullable one, and a nullable type argument alike.
+    val patterns = """
+      GenericClass1<_>
+    """.trimIndent()
+
+    val classes = listOf(
+      "GenericClass1<Class1>",
+      "GenericClass1<Class1>?",
+      "GenericClass1<Class1?>",
+      "GenericClass2<Class1>?",
+    )
+
+    val result = getMatches(patterns, classes)
+
+    assertEquals(
+      listOf(
+        "GenericClass1<Class1>",
+        "GenericClass1<Class1>?",
+        "GenericClass1<Class1?>",
       ),
       result,
     )
