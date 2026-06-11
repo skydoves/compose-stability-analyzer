@@ -26,7 +26,7 @@ kotlin {
 }
 
 group = "com.github.skydoves"
-version = "0.9.0"
+version = "0.10.0"
 
 repositories {
   mavenLocal()
@@ -38,7 +38,7 @@ repositories {
 }
 
 dependencies {
-  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.9.0")
+  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.10.0")
 
   intellijPlatform {
     intellijIdeaCommunity("2025.2")
@@ -74,6 +74,12 @@ intellijPlatform {
             </ul>
         """.trimIndent()
     changeNotes = """
+            <b>0.10.0</b>
+            <ul>
+                <li><b>New: Stability Doctor</b> - A ranked, quantified "what to fix first" list combining the static stability verdict, cascade blast radius, and measured runtime waste into prioritized prescriptions with one-click fixes (var &rarr; val, @Immutable/@Stable, stability-config entry, and guarded remember(...) hoisting for silent-waste parameters). Works without a device (ESTIMATED scores) and upgrades to MEASURED during a heatmap session. New Doctor tool-window tab and Code &rarr; Run Stability Doctor action.</li>
+                <li><b>Trace-All support</b> - With the Gradle plugin's new traceAll mode (0.10.0), the Heatmap, Reality Check, and Doctor receive module-wide runtime data without manual @TraceRecomposition annotations; runtime data is matched by fully qualified name, so same-named composables across packages resolve precisely.</li>
+                <li><b>Fixed: Android Studio freeze when starting the heatmap on large projects</b> - lookups now use stub indexes and the inlay refresh runs its analysis on a background thread.</li>
+            </ul>
             <b>0.9.0</b>
             <ul>
                 <li><b>Updated to Kotlin 2.4.0.</b></li>

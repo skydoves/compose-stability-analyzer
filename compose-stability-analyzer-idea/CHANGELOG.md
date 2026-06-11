@@ -2,6 +2,15 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.10.0] - 2026-06-11
+
+### Added
+- **Stability Doctor** — a ranked, quantified fix list combining the static stability verdict, cascade blast radius, and measured runtime waste into prioritized prescriptions with one-click fixes (`var` → `val`, `@Immutable`/`@Stable`, stability-config entry, and guarded `remember(...)` hoisting for silent-waste parameters). Scores are **ESTIMATED** without a device and upgrade to **MEASURED** during a heatmap session. New **Doctor** tool-window tab, **Code → Run Stability Doctor** action, and a **Stability Doctor** settings group.
+- **Precise runtime-data matching** — heatmap/Reality/Doctor data is keyed by fully qualified name when the runtime reports it (`(fq:)` log token, runtime ≥ 0.10.0), so same-named composables across packages no longer share inlays; older runtimes keep working via simple-name fallback.
+
+### Fixed
+- **Android Studio freeze when starting the heatmap on large projects** (#168) — typealias and source-location lookups now use stub indexes instead of iterating/parsing every project file, and the heatmap inlay refresh runs its analysis on a background thread (the EDT only applies inlay mutations). Refresh ticks are skipped while a previous cycle is still running and during indexing.
+
 ## [0.9.0] - 2026-06-04
 
 ### Changed
