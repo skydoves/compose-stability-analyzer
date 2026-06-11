@@ -4,7 +4,6 @@ package com.skydoves.compose.stability.compiler.tests;
 
 import com.intellij.testFramework.TestDataPath;
 import org.jetbrains.kotlin.test.util.KtTestUtil;
-import org.jetbrains.kotlin.test.TargetBackend;
 import org.jetbrains.kotlin.test.TestMetadata;
 import org.junit.jupiter.api.Test;
 
@@ -16,32 +15,42 @@ import java.util.regex.Pattern;
 @TestMetadata("compiler-tests/src/test/data/dump/ir")
 @TestDataPath("$PROJECT_ROOT")
 public class IrDumpTestGenerated extends AbstractIrDumpTest {
+  private void run(String fileName) {
+    runTest("compiler-tests/src/test/data/dump/ir/" + fileName);
+  }
+
   @Test
   public void testAllFilesPresentInIr() {
-    KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler-tests/src/test/data/dump/ir"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+    KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler-tests/src/test/data/dump/ir"), Pattern.compile("^(.+)\\.kt$"), null, true);
   }
 
   @Test
   @TestMetadata("ComposableWithTraceRecomposition.kt")
   public void testComposableWithTraceRecomposition() {
-    runTest("compiler-tests/src/test/data/dump/ir/ComposableWithTraceRecomposition.kt");
+    run("ComposableWithTraceRecomposition.kt");
   }
 
   @Test
   @TestMetadata("MutableDataClass.kt")
   public void testMutableDataClass() {
-    runTest("compiler-tests/src/test/data/dump/ir/MutableDataClass.kt");
+    run("MutableDataClass.kt");
   }
 
   @Test
   @TestMetadata("SimpleDataClass.kt")
   public void testSimpleDataClass() {
-    runTest("compiler-tests/src/test/data/dump/ir/SimpleDataClass.kt");
+    run("SimpleDataClass.kt");
+  }
+
+  @Test
+  @TestMetadata("TraceAllInjection.kt")
+  public void testTraceAllInjection() {
+    run("TraceAllInjection.kt");
   }
 
   @Test
   @TestMetadata("TraceRecompositionInjection.kt")
   public void testTraceRecompositionInjection() {
-    runTest("compiler-tests/src/test/data/dump/ir/TraceRecompositionInjection.kt");
+    run("TraceRecompositionInjection.kt");
   }
 }

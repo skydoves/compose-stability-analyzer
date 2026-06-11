@@ -78,11 +78,13 @@ internal class HeatmapInlayManager(
     val inlay: Inlay<*>,
     val displayText: String,
     val color: Color,
+    val fqName: String? = null,
   )
 
   /** A composable's anchor in the editor plus its (cached) static stability verdict. */
   private data class ComposableAnchor(
     val name: String,
+    val fqName: String?,
     val offset: Int,
     val verdict: ComposableStabilityInfo?,
   )
@@ -92,6 +94,7 @@ internal class HeatmapInlayManager(
     val offset: Int,
     val displayText: String,
     val color: Color,
+    val fqName: String? = null,
   )
 
   /**
@@ -125,7 +128,7 @@ internal class HeatmapInlayManager(
         if (!entry.inlay.isValid) continue
         val bounds = entry.inlay.bounds ?: continue
         if (bounds.contains(point)) {
-          openHeatmapPanel(name)
+          openHeatmapPanel(entry.fqName, name)
           return
         }
       }
@@ -163,7 +166,7 @@ internal class HeatmapInlayManager(
           activeTooltipInlay = entry.inlay
           // Get LIVE data (not cached renderer html)
           val data =
-            service.getHeatmapData(name) ?: return
+            service.getHeatmapData(entry.fqName, name) ?: return
           val html = buildTooltipHtml(data)
           if (html.isEmpty()) return
           val balloon = com.intellij.openapi.ui.popup
@@ -279,7 +282,7 @@ internal class HeatmapInlayManager(
           val name = fn.name ?: return@mapNotNull null
           val anchor = fn.nameIdentifier ?: fn.funKeyword ?: return@mapNotNull null
           val verdict = if (realityEnabled) cachedVerdict(fn) else null
-          ComposableAnchor(name, anchor.textRange.startOffset, verdict)
+          ComposableAnchor(name, fn.fqName?.asString(), anchor.textRange.startOffset, verdict)
         }
     } ?: return
 
@@ -290,12 +293,15 @@ internal class HeatmapInlayManager(
     // cache-diff below invalidates the inlay on a grade-only change, not just a count change.
     val desired = mutableMapOf<String, DesiredInlay>()
     for (anchor in anchors) {
-      val data = service.getHeatmapData(anchor.name) ?: continue
+      // fqName-first lookup: same-named composables across packages resolve precisely on
+      // runtimes that report (fq:); simple-name fallback keeps old runtimes working.
+      val data = service.getHeatmapData(anchor.fqName, anchor.name) ?: continue
       val reality = anchor.verdict?.let { RealityClassifier.classify(it, data) }
       desired[anchor.name] = DesiredInlay(
         offset = anchor.offset,
         displayText = buildDisplayText(data, reality),
         color = severityColor(data, reality),
+        fqName = anchor.fqName,
       )
     }
 
@@ -319,7 +325,7 @@ internal class HeatmapInlayManager(
       // Text changed or inlay is new/invalid: dispose old, create new
       existing?.inlay?.let { if (it.isValid) it.dispose() }
 
-      val data = service.getHeatmapData(name) ?: continue
+      val data = service.getHeatmapData(d.fqName, name) ?: continue
       val tooltip = buildTooltipHtml(data)
       val renderer =
         HeatmapBlockRenderer(d.displayText, d.color, editor, tooltip)
@@ -331,7 +337,7 @@ internal class HeatmapInlayManager(
         renderer,
       )
       if (inlay != null) {
-        entries[name] = InlayEntry(inlay, d.displayText, d.color)
+        entries[name] = InlayEntry(inlay, d.displayText, d.color, d.fqName)
       } else {
         entries.remove(name)
       }
@@ -536,7 +542,7 @@ internal class HeatmapInlayManager(
    * Opens the Heatmap tab in the tool window and displays
    * recomposition data for the given composable.
    */
-  private fun openHeatmapPanel(composableName: String) {
+  private fun openHeatmapPanel(fqName: String?, composableName: String) {
     ApplicationManager.getApplication().invokeLater {
       val toolWindow = ToolWindowManager.getInstance(project)
         .getToolWindow("Compose Stability Analyzer") ?: return@invokeLater
@@ -546,7 +552,7 @@ internal class HeatmapInlayManager(
         toolWindow.contentManager.setSelectedContent(heatmapContent)
         val panel = heatmapContent.component
           .getClientProperty(HeatmapPanel::class.java) as? HeatmapPanel ?: return@show
-        panel.showComposableData(composableName)
+        panel.showComposableData(fqName, composableName)
       }
     }
   }

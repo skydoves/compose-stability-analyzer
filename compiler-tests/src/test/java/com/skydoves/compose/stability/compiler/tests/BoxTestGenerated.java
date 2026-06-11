@@ -4,7 +4,6 @@ package com.skydoves.compose.stability.compiler.tests;
 
 import com.intellij.testFramework.TestDataPath;
 import org.jetbrains.kotlin.test.util.KtTestUtil;
-import org.jetbrains.kotlin.test.TargetBackend;
 import org.jetbrains.kotlin.test.TestMetadata;
 import org.junit.jupiter.api.Test;
 
@@ -16,20 +15,30 @@ import java.util.regex.Pattern;
 @TestMetadata("compiler-tests/src/test/data/box")
 @TestDataPath("$PROJECT_ROOT")
 public class BoxTestGenerated extends AbstractBoxTest {
+  private void run(String fileName) {
+    runTest("compiler-tests/src/test/data/box/" + fileName);
+  }
+
   @Test
   public void testAllFilesPresentInBox() {
-    KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler-tests/src/test/data/box"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+    KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler-tests/src/test/data/box"), Pattern.compile("^(.+)\\.kt$"), null, true);
   }
 
   @Test
   @TestMetadata("StableDataClass.kt")
   public void testStableDataClass() {
-    runTest("compiler-tests/src/test/data/box/StableDataClass.kt");
+    run("StableDataClass.kt");
+  }
+
+  @Test
+  @TestMetadata("TraceAllBox.kt")
+  public void testTraceAllBox() {
+    run("TraceAllBox.kt");
   }
 
   @Test
   @TestMetadata("TraceRecomposition.kt")
   public void testTraceRecomposition() {
-    runTest("compiler-tests/src/test/data/box/TraceRecomposition.kt");
+    run("TraceRecomposition.kt");
   }
 }

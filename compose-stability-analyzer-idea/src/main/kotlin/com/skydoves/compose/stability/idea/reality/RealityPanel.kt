@@ -130,8 +130,10 @@ internal class RealityPanel(private val project: Project) {
         .filter { it.isComposable() && !it.isPreview() }
         .mapNotNull { fn ->
           val name = fn.name ?: return@mapNotNull null
-          if (name !in liveNames) return@mapNotNull null
-          val live = service.getHeatmapData(name) ?: return@mapNotNull null
+          val fqName = fn.fqName?.asString()
+          // Live keys are fqNames on runtime >= 1.0 and simple names on older runtimes.
+          if (name !in liveNames && fqName !in liveNames) return@mapNotNull null
+          val live = service.getHeatmapData(fqName, name) ?: return@mapNotNull null
           val info = try {
             StabilityAnalyzer.analyze(fn)
           } catch (_: Exception) {

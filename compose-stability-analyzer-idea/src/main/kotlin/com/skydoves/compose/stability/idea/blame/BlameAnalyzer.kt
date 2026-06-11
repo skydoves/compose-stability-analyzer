@@ -107,8 +107,38 @@ internal object BlameAnalyzer {
     return BlameNode(name, fqName, filePath, line, depth, passed, callSiteFile, callSiteLine, children)
   }
 
+  /**
+   * Blame-lite for the Stability Doctor: resolves the direct (depth-1) composable callers of
+   * [target] and the static origin of each argument they pass, capped at [maxCallers].
+   * MUST be called inside a read action.
+   */
+  internal fun analyzeDirectCallers(
+    target: KtNamedFunction,
+    maxCallers: Int = 5,
+  ): List<DirectCallerOrigins> {
+    val params = target.valueParameters.mapNotNull { it.name }
+    return findCallers(target).take(maxCallers).map { (caller, callExpr) ->
+      DirectCallerOrigins(
+        callerName = caller.name ?: "unknown",
+        callerFqName = caller.fqName?.asString() ?: caller.name ?: "unknown",
+        callSiteFilePath = callExpr.containingFile?.virtualFile?.path,
+        callSiteLine = lineOf(caller, callExpr.textOffset),
+        origins = resolveArguments(callExpr, params),
+      )
+    }
+  }
+
+  /** One direct caller of a composable plus the origins of the arguments it passes. */
+  internal data class DirectCallerOrigins(
+    val callerName: String,
+    val callerFqName: String,
+    val callSiteFilePath: String?,
+    val callSiteLine: Int,
+    val origins: List<ArgumentOrigin>,
+  )
+
   /** Finds composable callers of [function] (deduplicated), with the call site for each. */
-  private fun findCallers(function: KtNamedFunction): List<Pair<KtNamedFunction, KtCallExpression>> {
+  internal fun findCallers(function: KtNamedFunction): List<Pair<KtNamedFunction, KtCallExpression>> {
     val scope = GlobalSearchScope.projectScope(function.project)
     val result = mutableListOf<Pair<KtNamedFunction, KtCallExpression>>()
     val seen = mutableSetOf<String>()

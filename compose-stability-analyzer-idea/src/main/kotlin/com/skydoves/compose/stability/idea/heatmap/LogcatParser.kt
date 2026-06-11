@@ -24,25 +24,28 @@ package com.skydoves.compose.stability.idea.heatmap
  *
  * Expected format:
  * ```
- * [Recomposition #3] UserProfile (tag: user-screen) (2.30ms)
+ * [Recomposition #3] UserProfile (tag: user-screen) (2.30ms) (fq: com.example.UserProfile) (auto)
  *   ├─ [param] user: User changed (User@abc123 → User@def456)
  *   ├─ [param] count: Int stable (42)
  *   ├─ [state] counter: Int changed (5 → 6)
  *   └─ Unstable parameters: [user]
  * ```
  *
- * Also supports the legacy format without `[param]`/`[state]` prefixes
- * and without duration.
+ * The trailing `(fq: ...)` and `(auto)` header tokens are emitted by runtime >= 1.0
+ * (fq = fully qualified name; auto = trace-all instrumented). Also supports the legacy
+ * format without them, without `[param]`/`[state]` prefixes, and without duration.
  */
 internal class LogcatParser(
   private val onEvent: (ParsedRecompositionEvent) -> Unit,
 ) {
 
   private companion object {
-    /** Header: `[Recomposition #N] Name (tag: t) (2.30ms)` */
+    /** Header: `[Recomposition #N] Name (tag: t) (2.30ms) (fq: com.example.Name) (auto)` */
     val HEADER_REGEX =
-      """\[Recomposition #(\d+)] (\S+)(?:\s+\(tag:\s+(.+?)\))?(?:\s+\((\d+\.?\d*)ms\))?"""
-        .toRegex()
+      (
+        """\[Recomposition #(\d+)] (\S+)(?:\s+\(tag:\s+(.+?)\))?(?:\s+\((\d+\.?\d*)ms\))?""" +
+          """(?:\s+\(fq:\s+(\S+)\))?(?:\s+\((auto)\))?"""
+        ).toRegex()
 
     /**
      * Parameter line with optional `[param]` prefix:
@@ -73,6 +76,8 @@ internal class LogcatParser(
   private var currentTag: String = ""
   private var currentCount: Int = 0
   private var currentDurationMs: Double = 0.0
+  private var currentFqName: String = ""
+  private var currentIsAutoTraced: Boolean = false
   private var currentParams: MutableList<ParsedParameterEntry> = mutableListOf()
   private var currentUnstable: MutableList<String> = mutableListOf()
   private var currentStateEntries: MutableList<String> = mutableListOf()
@@ -90,6 +95,8 @@ internal class LogcatParser(
       currentTag = headerMatch.groupValues[3]
       currentDurationMs =
         headerMatch.groupValues[4].toDoubleOrNull() ?: 0.0
+      currentFqName = headerMatch.groupValues[5]
+      currentIsAutoTraced = headerMatch.groupValues[6].isNotEmpty()
       currentParams = mutableListOf()
       currentUnstable = mutableListOf()
       currentStateEntries = mutableListOf()
@@ -159,6 +166,8 @@ internal class LogcatParser(
         timestampMs = System.currentTimeMillis(),
         durationMs = currentDurationMs,
         stateEntries = currentStateEntries.toList(),
+        fqName = currentFqName,
+        isAutoTraced = currentIsAutoTraced,
       ),
     )
     currentName = null

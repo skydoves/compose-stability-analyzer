@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.compiler.plugin.registerExtension
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
+import org.jetbrains.kotlin.test.directives.model.DirectivesContainer
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.EnvironmentConfigurator
 import org.jetbrains.kotlin.test.services.TestServices
@@ -36,6 +37,9 @@ import org.jetbrains.kotlin.test.services.TestServices
 class StabilityTestConfigurator(testServices: TestServices) :
   EnvironmentConfigurator(testServices) {
 
+  override val directiveContainers: List<DirectivesContainer> =
+    listOf(StabilityTestDirectives)
+
   @OptIn(ExperimentalCompilerApi::class)
   override fun CompilerPluginRegistrar.ExtensionStorage.registerCompilerExtensions(
     module: TestModule,
@@ -47,11 +51,14 @@ class StabilityTestConfigurator(testServices: TestServices) :
       StabilityAnalyzerFirExtensionRegistrar(),
     )
 
+    val traceAll = StabilityTestDirectives.ENABLE_TRACE_ALL in module.directives
+
     // Register IR generation extension for backend transformations
     IrGenerationExtension.registerExtension(
       StabilityAnalyzerIrGenerationExtension(
         stabilityOutputDir = "",
         projectDependencies = "",
+        traceAll = traceAll,
       ),
     )
   }

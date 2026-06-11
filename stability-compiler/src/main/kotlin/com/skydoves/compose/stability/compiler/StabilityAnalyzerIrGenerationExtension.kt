@@ -25,6 +25,8 @@ import java.io.File
 public class StabilityAnalyzerIrGenerationExtension(
   private val stabilityOutputDir: String,
   private val projectDependencies: String,
+  private val traceAll: Boolean = false,
+  private val traceAllThreshold: Int = 2,
 ) : IrGenerationExtension {
 
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
@@ -59,6 +61,8 @@ public class StabilityAnalyzerIrGenerationExtension(
       pluginContext = pluginContext,
       stabilityCollector = collector,
       projectDependencies = dependencyModules,
+      traceAll = traceAll,
+      traceAllThreshold = traceAllThreshold,
     )
 
     moduleFragment.transformChildrenVoid(transformer)

@@ -173,6 +173,33 @@ public class StabilitySettingsState : PersistentStateComponent<StabilitySettings
    */
   public var showRealityCheckInTooltips: Boolean = true
 
+  /**
+   * Enable the Stability Doctor: a ranked, quantified fix list combining static analysis,
+   * cascade blast radius, and live runtime data.
+   */
+  public var isDoctorEnabled: Boolean = true
+
+  /**
+   * Maximum number of top-scored composables for which the Doctor computes the (expensive)
+   * downstream cascade blast radius.
+   */
+  public var doctorMaxCascadeCandidates: Int = 15
+
+  /**
+   * Auto-refresh interval (seconds) for the Doctor tab while the heatmap session is running.
+   */
+  public var doctorAutoRefreshSeconds: Int = 10
+
+  /**
+   * Prescriptions scoring below this value are hidden from the Doctor tab.
+   */
+  public var doctorMinScore: Int = 5
+
+  /**
+   * Include composables from test source roots in the Doctor scan.
+   */
+  public var doctorIncludeTestSources: Boolean = false
+
   public override fun getState(): StabilitySettingsState = this
 
   public override fun loadState(state: StabilitySettingsState) {

@@ -31,6 +31,12 @@ public object StabilityAnalyzerConfigurationKeys {
 
   public val KEY_PROJECT_DEPENDENCIES: CompilerConfigurationKey<String> =
     CompilerConfigurationKey<String>("projectDependencies")
+
+  public val KEY_TRACE_ALL: CompilerConfigurationKey<Boolean> =
+    CompilerConfigurationKey<Boolean>("traceAll")
+
+  public val KEY_TRACE_ALL_THRESHOLD: CompilerConfigurationKey<Int> =
+    CompilerConfigurationKey<Int>("traceAllThreshold")
 }
 
 @OptIn(ExperimentalCompilerApi::class)
@@ -59,6 +65,20 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
       description = "Path to file containing project module names (one per line)",
       required = false,
     )
+
+    public val OPTION_TRACE_ALL: CliOption = CliOption(
+      optionName = "traceAll",
+      valueDescription = "<true|false>",
+      description = "Auto-instrument every restartable composable for recomposition tracing",
+      required = false,
+    )
+
+    public val OPTION_TRACE_ALL_THRESHOLD: CliOption = CliOption(
+      optionName = "traceAllThreshold",
+      valueDescription = "<int>",
+      description = "Recomposition count threshold for auto-traced composables",
+      required = false,
+    )
   }
 
   override val pluginId: String = PLUGIN_ID
@@ -67,6 +87,8 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
     OPTION_ENABLED,
     OPTION_STABILITY_OUTPUT_DIR,
     OPTION_PROJECT_DEPENDENCIES,
+    OPTION_TRACE_ALL,
+    OPTION_TRACE_ALL_THRESHOLD,
   )
 
   override fun processOption(
@@ -88,6 +110,16 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
       OPTION_PROJECT_DEPENDENCIES -> configuration.put(
         StabilityAnalyzerConfigurationKeys.KEY_PROJECT_DEPENDENCIES,
         value,
+      )
+
+      OPTION_TRACE_ALL -> configuration.put(
+        StabilityAnalyzerConfigurationKeys.KEY_TRACE_ALL,
+        value.toBoolean(),
+      )
+
+      OPTION_TRACE_ALL_THRESHOLD -> configuration.put(
+        StabilityAnalyzerConfigurationKeys.KEY_TRACE_ALL_THRESHOLD,
+        value.toIntOrNull() ?: 2,
       )
     }
   }

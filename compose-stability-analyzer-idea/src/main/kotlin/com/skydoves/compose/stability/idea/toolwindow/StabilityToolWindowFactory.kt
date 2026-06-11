@@ -21,6 +21,7 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
 import com.skydoves.compose.stability.idea.blame.BlamePanel
 import com.skydoves.compose.stability.idea.cascade.CascadePanel
+import com.skydoves.compose.stability.idea.doctor.DoctorPanel
 import com.skydoves.compose.stability.idea.heatmap.HeatmapPanel
 import com.skydoves.compose.stability.idea.reality.RealityPanel
 
@@ -84,6 +85,19 @@ public class StabilityToolWindowFactory : ToolWindowFactory {
       false,
     )
     toolWindow.contentManager.addContent(blameContent)
+
+    // Tab 6: Stability Doctor (ranked, actionable fix list)
+    val doctorPanel = DoctorPanel(project)
+    val doctorComponent = doctorPanel.getContent()
+    doctorComponent.putClientProperty(DoctorPanel::class.java, doctorPanel)
+    val doctorContent = contentFactory.createContent(
+      doctorComponent,
+      "Doctor",
+      false,
+    )
+    // The panel runs a scheduled auto-refresh task; tie its lifecycle to the tab content.
+    doctorContent.setDisposer(doctorPanel)
+    toolWindow.contentManager.addContent(doctorContent)
   }
 
   public override fun shouldBeAvailable(project: Project): Boolean = true

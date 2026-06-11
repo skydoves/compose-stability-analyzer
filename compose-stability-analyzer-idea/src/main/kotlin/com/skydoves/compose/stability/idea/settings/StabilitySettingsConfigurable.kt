@@ -273,6 +273,44 @@ public class StabilitySettingsConfigurable(
             .comment("Add a predicted-vs-actual grade column to composable hover tooltips")
         }
       }
+
+      group("Stability Doctor") {
+        row {
+          checkBox("Enable Stability Doctor")
+            .bindSelected(settings::isDoctorEnabled)
+            .comment(
+              "A ranked, quantified fix list combining static analysis, cascade blast radius, " +
+                "and live runtime data — with one-click fixes",
+            )
+        }
+
+        row("Max cascade candidates:") {
+          spinner(1..100, 1)
+            .bindIntValue(settings::doctorMaxCascadeCandidates)
+            .comment(
+              "Number of top-scored composables for which the (expensive) downstream " +
+                "blast radius is computed",
+            )
+        }
+
+        row("Auto-refresh interval (seconds):") {
+          spinner(5..300, 5)
+            .bindIntValue(settings::doctorAutoRefreshSeconds)
+            .comment("Refresh cadence for the Doctor tab while a heatmap session is running")
+        }
+
+        row("Minimum score:") {
+          spinner(0..100, 1)
+            .bindIntValue(settings::doctorMinScore)
+            .comment("Prescriptions scoring below this value are hidden")
+        }
+
+        row {
+          checkBox("Include test sources")
+            .bindSelected(settings::doctorIncludeTestSources)
+            .comment("Scan composables in test source roots as well")
+        }
+      }
     }
   }
 

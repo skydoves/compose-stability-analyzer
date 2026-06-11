@@ -52,6 +52,74 @@ public abstract class StabilityAnalyzerExtension @Inject constructor(
   public fun stabilityValidation(action: Action<StabilityValidationConfig>) {
     action.execute(stabilityValidation)
   }
+
+  /**
+   * Configuration for trace-all auto-instrumentation.
+   */
+  public val traceAll: TraceAllConfig =
+    objects.newInstance(TraceAllConfig::class.java, objects)
+
+  /**
+   * Configure trace-all auto-instrumentation.
+   */
+  public fun traceAll(action: Action<TraceAllConfig>) {
+    action.execute(traceAll)
+  }
+}
+
+/**
+ * Configuration for trace-all auto-instrumentation.
+ *
+ * When enabled, the compiler plugin instruments every restartable composable in the module for
+ * recomposition tracing — as if each one carried `@TraceRecomposition` — so tools like the IDE
+ * plugin's Live Heatmap and Stability Doctor receive module-wide runtime data without manual
+ * annotations. Explicit `@TraceRecomposition` annotations still win (their tag/threshold apply).
+ *
+ * Tracing remains gated at runtime by `ComposeStabilityAnalyzer.setEnabled(...)`; with the
+ * analyzer disabled, the residual overhead per composition is a map lookup plus early-returned
+ * calls. Logging volume is debug-oriented by design: raise [threshold] if very active
+ * composables (e.g. animations) produce too many log lines.
+ *
+ * Example:
+ * ```
+ * composeStabilityAnalyzer {
+ *   traceAll {
+ *     enabled.set(true)
+ *     threshold.set(2)
+ *     variants.set(listOf("debug"))
+ *   }
+ * }
+ * ```
+ */
+public abstract class TraceAllConfig @Inject constructor(objects: ObjectFactory) {
+  /**
+   * Whether trace-all auto-instrumentation is enabled.
+   * Default: false (opt-in)
+   */
+  public val enabled: Property<Boolean> =
+    objects.property(Boolean::class.javaObjectType).convention(false)
+
+  /**
+   * Recomposition count threshold for auto-traced composables: logging starts at this
+   * recomposition number. The default of 2 silences the initial-composition burst — only
+   * composables that actually RE-compose emit events.
+   *
+   * Default: 2
+   */
+  public val threshold: Property<Int> =
+    objects.property(Int::class.javaObjectType).convention(2)
+
+  /**
+   * Android variant/build-type name filters deciding which compilations get trace-all.
+   * A compilation is instrumented when its lowercased name equals or ends with one of these
+   * tokens — so "debug" matches `debug`, `stagingDebug`, and `fullDebug` but not `release`.
+   * Non-Android (KMP/JVM) main compilations are always instrumented while [enabled] is true,
+   * since they have no variant dimension; test compilations are never instrumented.
+   *
+   * Default: ["debug"]
+   */
+  public val variants: ListProperty<String> =
+    objects.listProperty(String::class.java).convention(listOf("debug"))
 }
 
 /**

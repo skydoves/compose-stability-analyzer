@@ -54,6 +54,8 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     private const val OPTION_ENABLED = "enabled"
     private const val OPTION_STABILITY_OUTPUT_DIR = "stabilityOutputDir"
     private const val OPTION_PROJECT_DEPENDENCIES = "projectDependencies"
+    private const val OPTION_TRACE_ALL = "traceAll"
+    private const val OPTION_TRACE_ALL_THRESHOLD = "traceAllThreshold"
   }
 
   override fun apply(target: Project) {
@@ -286,6 +288,9 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       val dependenciesFile = java.io.File(stabilityDir, "project-dependencies.txt")
       dependenciesFile.writeText(projectDependencies.joinToString("\n"))
 
+      val traceAllEnabled = extension.traceAll.enabled.get() &&
+        compilationAcceptsTraceAll(kotlinCompilation, extension.traceAll.variants.get())
+
       listOf(
         SubpluginOption(
           key = OPTION_ENABLED,
@@ -299,8 +304,30 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
           key = OPTION_PROJECT_DEPENDENCIES,
           value = dependenciesFile.absolutePath,
         ),
+        SubpluginOption(
+          key = OPTION_TRACE_ALL,
+          value = traceAllEnabled.toString(),
+        ),
+        SubpluginOption(
+          key = OPTION_TRACE_ALL_THRESHOLD,
+          value = extension.traceAll.threshold.get().toString(),
+        ),
       )
     }
+  }
+
+  /**
+   * Decides whether trace-all instruments this compilation. Test compilations never qualify;
+   * the rest is delegated to [traceAllMatchesCompilationName].
+   */
+  internal fun compilationAcceptsTraceAll(
+    compilation: KotlinCompilation<*>,
+    variantTokens: List<String>,
+  ): Boolean {
+    if (isTestCompilation(compilation)) {
+      return false
+    }
+    return traceAllMatchesCompilationName(compilation.name, variantTokens)
   }
 
   /**
@@ -514,4 +541,27 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
    */
   private fun getLintProject(project: Project): Project? =
     project.rootProject.findProject(":stability-lint")
+}
+
+/**
+ * Pure variant-matching rule for trace-all (extracted for unit testing).
+ *
+ * Android compilations are named after their variant (`debug`, `stagingDebug`, ...), so they
+ * must match one of the configured variant tokens (equals or endsWith, case-insensitive).
+ * Non-Android main compilations (KMP `main`, jvm, js, native) have no variant dimension and
+ * always qualify — the runtime `ComposeStabilityAnalyzer.setEnabled(...)` gate is the
+ * production safety net there.
+ */
+internal fun traceAllMatchesCompilationName(
+  compilationName: String,
+  variantTokens: List<String>,
+): Boolean {
+  val normalizedName = compilationName.lowercase()
+  if (normalizedName == "main") {
+    return true
+  }
+  return variantTokens.any { token ->
+    val normalizedToken = token.lowercase()
+    normalizedName == normalizedToken || normalizedName.endsWith(normalizedToken)
+  }
 }

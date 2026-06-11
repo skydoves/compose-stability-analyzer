@@ -58,6 +58,14 @@ android {
   }
 }
 
+composeStabilityAnalyzer {
+  // Auto-instrument every composable in debug builds so the IDE plugin's Heatmap,
+  // Reality Check, and Stability Doctor get module-wide runtime data without annotations.
+  traceAll {
+    enabled.set(true)
+  }
+}
+
 dependencies {
   implementation(project(":app-model"))
 

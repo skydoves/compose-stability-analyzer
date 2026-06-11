@@ -68,6 +68,7 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
   // Cached symbols
   private var trackerClassSymbol: IrClassSymbol? = null
   private var rememberTrackerFunctionSymbol: IrSimpleFunctionSymbol? = null
+  private var hasFqNameTrackerOverload: Boolean = false
   private var trackParameterFunctionSymbol: IrSimpleFunctionSymbol? = null
   private var trackStateFunctionSymbol: IrSimpleFunctionSymbol? = null
   private var logIfThresholdMetFunctionSymbol: IrSimpleFunctionSymbol? = null
@@ -93,7 +94,9 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
         return false
       }
 
-      // Find rememberRecompositionTracker function
+      // Find rememberRecompositionTracker function. The runtime ships a legacy 3-arg overload
+      // and an fqName-aware 5-arg overload; pick by arity, NOT firstOrNull — findFunctions
+      // returns overloads in unspecified order and arguments are assigned positionally.
       val rememberTrackerFunctions = finder.findFunctions(
         CallableId(
           FqName("com.skydoves.compose.stability.runtime"),
@@ -101,7 +104,10 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
         ),
       )
 
-      rememberTrackerFunctionSymbol = rememberTrackerFunctions.firstOrNull()
+      rememberTrackerFunctionSymbol = rememberTrackerFunctions
+        .maxByOrNull { it.owner.parameters.size }
+      hasFqNameTrackerOverload =
+        (rememberTrackerFunctionSymbol?.owner?.parameters?.size ?: 0) >= 5
 
       if (rememberTrackerFunctionSymbol == null) {
         return false
@@ -160,7 +166,7 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
    *
    * On JVM platforms with timing support, generates:
    * ```
-   * val _tracker = rememberRecompositionTracker(name, tag, threshold)
+   * val _tracker = rememberRecompositionTracker(name, tag, threshold, fqName, isAutoTraced)
    * _tracker.trackParameter("param1", "Type1", param1, isStable1)
    * val _startTime = System.nanoTime()
    * try {
@@ -181,6 +187,8 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
     threshold: Int,
     parameterStabilities: List<ParameterStabilityData>,
     stateVariables: List<StateVariableData> = emptyList(),
+    fqName: String = "",
+    isAutoTraced: Boolean = false,
   ): Boolean {
     try {
       val body = function.body as? IrBlockBody ?: return false
@@ -194,6 +202,8 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
         functionName = functionName,
         tag = tag,
         threshold = threshold,
+        fqName = fqName,
+        isAutoTraced = isAutoTraced,
       )
 
       // 2. Create trackParameter calls for each parameter
@@ -488,8 +498,11 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
     functionName: String,
     tag: String,
     threshold: Int,
+    fqName: String,
+    isAutoTraced: Boolean,
   ): IrVariable {
-    val rememberTrackerCall = createRememberTrackerCall(builder, functionName, tag, threshold)
+    val rememberTrackerCall =
+      createRememberTrackerCall(builder, functionName, tag, threshold, fqName, isAutoTraced)
 
     return buildVariable(
       parent = function,
@@ -509,25 +522,32 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
   /**
    * Creates IR call to rememberRecompositionTracker(...).
    *
-   * This generates:
+   * With a current runtime on the classpath this generates:
    * ```
-   * rememberRecompositionTracker(functionName, tag, threshold)
+   * rememberRecompositionTracker(functionName, tag, threshold, fqName, isAutoTraced)
    * ```
+   * With an older runtime (no 5-arg overload) it degrades to the legacy 3-arg call, dropping
+   * fqName/isAutoTraced but keeping tracking functional.
    */
   private fun createRememberTrackerCall(
     builder: IrBuilderWithScope,
     functionName: String,
     tag: String,
     threshold: Int,
+    fqName: String,
+    isAutoTraced: Boolean,
   ): IrExpression {
     val rememberTrackerSymbol = rememberTrackerFunctionSymbol
       ?: error("rememberRecompositionTracker function not initialized")
 
-    // Call rememberRecompositionTracker(functionName, tag, threshold)
     val call = builder.irCall(rememberTrackerSymbol)
     call.arguments[0] = builder.irString(functionName)
     call.arguments[1] = builder.irString(tag)
     call.arguments[2] = builder.irInt(threshold)
+    if (hasFqNameTrackerOverload) {
+      call.arguments[3] = builder.irString(fqName)
+      call.arguments[4] = builder.irBoolean(isAutoTraced)
+    }
     return call
   }
 

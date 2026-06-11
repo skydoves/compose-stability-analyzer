@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrConst
@@ -46,6 +47,8 @@ public class StabilityAnalyzerTransformer(
   private val pluginContext: IrPluginContext,
   private val stabilityCollector: StabilityInfoCollector? = null,
   private val projectDependencies: List<String> = emptyList(),
+  private val traceAll: Boolean = false,
+  private val traceAllThreshold: Int = 2,
 ) : IrElementTransformerVoidWithContext() {
 
   private val composableFqName = FqName("androidx.compose.runtime.Composable")
@@ -56,6 +59,12 @@ public class StabilityAnalyzerTransformer(
   private val ignoreStabilityReportFqName =
     FqName("com.skydoves.compose.stability.runtime.IgnoreStabilityReport")
   private val previewFqName = FqName("androidx.compose.ui.tooling.preview.Preview")
+  private val nonRestartableComposableFqName =
+    FqName("androidx.compose.runtime.NonRestartableComposable")
+  private val readOnlyComposableFqName =
+    FqName("androidx.compose.runtime.ReadOnlyComposable")
+  private val explicitGroupsComposableFqName =
+    FqName("androidx.compose.runtime.ExplicitGroupsComposable")
 
   private val irBuilder = RecompositionIrBuilder(pluginContext)
   private var irBuilderInitialized = false
@@ -157,21 +166,9 @@ public class StabilityAnalyzerTransformer(
       }
     }
 
-    // If @TraceRecomposition is present, inject tracking code automatically
+    // If @TraceRecomposition is present, inject tracking code automatically.
+    // Otherwise, trace-all mode auto-instruments every eligible restartable composable.
     if (hasTraceRecomposition) {
-      val hasBody = declaration.body != null
-      if (!hasBody) {
-        return super.visitFunctionNew(declaration)
-      }
-
-      // Initialize IR builder symbols once
-      if (!irBuilderInitialized) {
-        irBuilderInitialized = irBuilder.initializeSymbols(currentFile)
-        if (!irBuilderInitialized) {
-          return super.visitFunctionNew(declaration)
-        }
-      }
-
       // Extract annotation parameters
       val annotation = declaration.annotations.find { annot ->
         val annotationClass = annot.symbol.owner.parent as? IrClass
@@ -212,52 +209,126 @@ public class StabilityAnalyzerTransformer(
         }
       }
 
-      // Analyze parameter stability
-      val parameterStabilities = declaration.parameters
-        .filter {
-          val name = it.name.asString()
-          !name.startsWith("$") && name != "<this>"
-        }
-        .map { param ->
-          val renderedType = param.type.render()
-
-          // If rendered type contains @[Composable], it's a composable function - STABLE
-          val isComposableFunction =
-            renderedType.contains("@[Composable]") || renderedType.contains("@Composable")
-
-          val stability = if (isComposableFunction) {
-            ParameterStability.STABLE
-          } else {
-            analyzeTypeStability(param.type)
-          }
-
-          RecompositionIrBuilder.ParameterStabilityData(
-            name = param.name.asString(),
-            typeString = renderedType,
-            parameter = param,
-            stability = stability,
-          )
-        }
-
-      // Detect state variables if traceStates is enabled
-      val stateVariables = if (traceStates) {
-        detectStateVariables(declaration.body as? IrBlockBody)
-      } else {
-        emptyList()
-      }
-
-      // Inject tracking code
-      val injected = irBuilder.injectTrackingCode(
-        function = declaration,
+      instrumentForTracing(
+        declaration = declaration,
         functionName = functionName,
+        fqName = fqName,
         tag = tag,
         threshold = threshold,
-        parameterStabilities = parameterStabilities,
-        stateVariables = stateVariables,
+        traceStates = traceStates,
+        isAutoTraced = false,
+      )
+    } else if (traceAll && isAutoTraceable(declaration, rawFunctionName)) {
+      instrumentForTracing(
+        declaration = declaration,
+        functionName = functionName,
+        fqName = fqName,
+        tag = "",
+        threshold = traceAllThreshold,
+        // State detection multiplies the injected IR across a whole module; auto mode only
+        // needs parameter-level data, so it stays off unless the annotation requests it.
+        traceStates = false,
+        isAutoTraced = true,
       )
     }
 
     return super.visitFunctionNew(declaration)
+  }
+
+  /**
+   * Determines whether trace-all may safely instrument a composable that has no explicit
+   * `@TraceRecomposition` annotation. Only restartable block-bodied composables qualify;
+   * everything else (previews, getters, inline/lambda/readonly composables) is skipped so
+   * auto-instrumentation can never change restartability semantics or break compilation.
+   */
+  private fun isAutoTraceable(declaration: IrFunction, rawFunctionName: String): Boolean {
+    if (declaration.body !is IrBlockBody) return false
+    if (!declaration.returnType.isUnit()) return false
+    if (declaration.isInline) return false
+    if (declaration.name.isSpecial) return false
+    if (rawFunctionName.startsWith("<get-")) return false
+    // Backtick-escaped names can contain whitespace, which would break the single-token
+    // name/fq fields in the log header that downstream parsers rely on.
+    if (rawFunctionName.any { it.isWhitespace() }) return false
+    if ((declaration as? IrSimpleFunction)?.isSuspend == true) return false
+    if (declaration.hasAnnotation(nonRestartableComposableFqName)) return false
+    if (declaration.hasAnnotation(readOnlyComposableFqName)) return false
+    if (declaration.hasAnnotation(explicitGroupsComposableFqName)) return false
+    if (declaration.hasAnnotation(ignoreStabilityReportFqName)) return false
+    if (hasPreviewAnnotation(declaration)) return false
+    return true
+  }
+
+  /**
+   * Injects recomposition-tracking IR into [declaration]. Shared by the `@TraceRecomposition`
+   * path (annotation values win) and the trace-all auto path.
+   */
+  private fun instrumentForTracing(
+    declaration: IrFunction,
+    functionName: String,
+    fqName: String,
+    tag: String,
+    threshold: Int,
+    traceStates: Boolean,
+    isAutoTraced: Boolean,
+  ) {
+    if (declaration.body == null) {
+      return
+    }
+
+    // Initialize IR builder symbols once
+    if (!irBuilderInitialized) {
+      irBuilderInitialized = irBuilder.initializeSymbols(currentFile)
+      if (!irBuilderInitialized) {
+        return
+      }
+    }
+
+    // Analyze parameter stability
+    val parameterStabilities = declaration.parameters
+      .filter {
+        val name = it.name.asString()
+        !name.startsWith("$") && name != "<this>"
+      }
+      .map { param ->
+        val renderedType = param.type.render()
+
+        // If rendered type contains @[Composable], it's a composable function - STABLE
+        val isComposableFunction =
+          renderedType.contains("@[Composable]") || renderedType.contains("@Composable")
+
+        val stability = if (isComposableFunction) {
+          ParameterStability.STABLE
+        } else {
+          analyzeTypeStability(param.type)
+        }
+
+        RecompositionIrBuilder.ParameterStabilityData(
+          name = param.name.asString(),
+          typeString = renderedType,
+          parameter = param,
+          stability = stability,
+        )
+      }
+
+    // Detect state variables if traceStates is enabled
+    val stateVariables = if (traceStates) {
+      detectStateVariables(declaration.body as? IrBlockBody)
+    } else {
+      emptyList()
+    }
+
+    // Inject tracking code
+    irBuilder.injectTrackingCode(
+      function = declaration,
+      functionName = functionName,
+      tag = tag,
+      threshold = threshold,
+      parameterStabilities = parameterStabilities,
+      stateVariables = stateVariables,
+      fqName = fqName,
+      isAutoTraced = isAutoTraced,
+    )
   }
 
   // FqNames for Compose State types
