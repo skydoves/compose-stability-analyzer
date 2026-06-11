@@ -21,14 +21,11 @@ import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
-import com.intellij.psi.PsiManager
-import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.GlobalSearchScope
 import com.skydoves.compose.stability.idea.settings.StabilitySettingsState
-import org.jetbrains.kotlin.idea.KotlinFileType
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtNamedFunction
-import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.idea.stubindex.KotlinFunctionShortNameIndex
+import org.jetbrains.kotlin.idea.stubindex.KotlinTopLevelFunctionFqnNameIndex
+import org.jetbrains.kotlin.idea.stubindex.KotlinTopLevelPropertyFqnNameIndex
 import java.io.File
 
 /**
@@ -140,7 +137,8 @@ public class ComposableStabilityCollector(private val project: Project) {
   }
 
   /**
-   * Finds the source file location for a composable function.
+   * Finds the source file location for a composable function via stub indexes —
+   * never by iterating/parsing project files (Issue #168).
    */
   private fun findSourceLocation(
     qualifiedName: String,
@@ -148,50 +146,24 @@ public class ComposableStabilityCollector(private val project: Project) {
   ): Triple<String, String, Int> {
     try {
       val scope = GlobalSearchScope.projectScope(project)
-      val psiManager = PsiManager.getInstance(project)
 
-      val packageName = qualifiedName.substringBeforeLast(".$simpleName", "")
-      val allFiles = FileTypeIndex.getFiles(
-        KotlinFileType.INSTANCE,
-        scope,
-      )
+      val declaration =
+        KotlinTopLevelFunctionFqnNameIndex.get(qualifiedName, project, scope).firstOrNull()
+          ?: KotlinTopLevelPropertyFqnNameIndex.get(qualifiedName, project, scope).firstOrNull()
+          ?: KotlinFunctionShortNameIndex.get(simpleName, project, scope)
+            .firstOrNull { it.fqName?.asString() == qualifiedName }
+          ?: return Triple("Unknown", "Unknown.kt", 0)
 
-      for (virtualFile in allFiles) {
-        val ktFile = psiManager.findFile(virtualFile) as? KtFile ?: continue
-        if (ktFile.packageFqName.asString() != packageName) {
-          continue
-        }
-
-        // Search for named functions
-        ktFile.declarations.filterIsInstance<KtNamedFunction>().forEach { function ->
-          if (function.name == simpleName) {
-            val line = try {
-              val document = com.intellij.psi.PsiDocumentManager.getInstance(project)
-                .getDocument(ktFile)
-              document?.getLineNumber(function.textOffset)?.plus(1) ?: 0
-            } catch (e: Exception) {
-              0
-            }
-            return Triple(virtualFile.path, virtualFile.name, line)
-          }
-        }
-
-        // Search for properties (for composable properties/getters)
-        ktFile.declarations.filterIsInstance<KtProperty>().forEach { property ->
-          if (property.name == simpleName) {
-            val line = try {
-              val document = com.intellij.psi.PsiDocumentManager.getInstance(project)
-                .getDocument(ktFile)
-              document?.getLineNumber(property.textOffset)?.plus(1) ?: 0
-            } catch (e: Exception) {
-              0
-            }
-            return Triple(virtualFile.path, virtualFile.name, line)
-          }
-        }
+      val virtualFile = declaration.containingFile?.virtualFile
+        ?: return Triple("Unknown", "Unknown.kt", 0)
+      val line = try {
+        val document = com.intellij.psi.PsiDocumentManager.getInstance(project)
+          .getDocument(declaration.containingFile)
+        document?.getLineNumber(declaration.textOffset)?.plus(1) ?: 0
+      } catch (e: Exception) {
+        0
       }
-
-      return Triple("Unknown", "Unknown.kt", 0)
+      return Triple(virtualFile.path, virtualFile.name, line)
     } catch (e: Exception) {
       return Triple("Unknown", "Unknown.kt", 0)
     }
