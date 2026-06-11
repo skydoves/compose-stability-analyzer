@@ -204,6 +204,8 @@ A **Blame** tool-window tab opens showing the *reverse* of the cascade — which
 
 The Stability Doctor answers the question every other feature leads up to: **"what should I fix first, and what will I gain?"** It scans your project, scores every composable by combining the static stability verdict, the downstream cascade blast radius, and — when a heatmap session is running — the *measured* runtime waste from the Reality Check, then presents a ranked list of prescriptions with one-click fixes.
 
+![doctor](art/doctor.png)
+
 Each prescription shows:
 
 - A **score badge**: `ESTIMATED` (static analysis only) or `MEASURED` (backed by live device data — measured waste always outranks speculation).
