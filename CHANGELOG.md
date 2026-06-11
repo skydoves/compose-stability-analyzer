@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-06-11
+
+### Added
+- **Stability Doctor (IDE plugin)** — a ranked, quantified "what to fix first" list that combines the static stability verdict, the downstream cascade blast radius, and measured runtime waste (Reality Check) into prioritized prescriptions. Scores are **ESTIMATED** (static only, works with no device) or **MEASURED** (backed by live heatmap data; measured waste always outranks estimates). Each prescription shows its problem parameters with static reasons, runtime grades, and value provenance, plus one-click fixes: change `var` → `val` (aborts if write usages exist), annotate with `@Immutable`/`@Stable`, add the type to the stability configuration file, and wrap call-site arguments in `remember(keys) { ... }` for silent-waste parameters (guarded by conservative safety rules and a preview dialog). New **Doctor** tool-window tab, **Code → Run Stability Doctor** action, and a settings group.
+- **Trace-All mode (Gradle + compiler + runtime)** — opt-in module-wide auto-instrumentation: every restartable composable is traced as if it carried `@TraceRecomposition`, so the Live Heatmap, Reality Check, and Stability Doctor get module-wide runtime data without manual annotations.
+  ```kotlin
+  composeStabilityAnalyzer {
+    traceAll {
+      enabled.set(true)             // default: false (opt-in)
+      threshold.set(2)              // default: 2 — skips the initial-composition burst
+      variants.set(listOf("debug")) // default: ["debug"]; never applies to tests
+    }
+  }
+  ```
+  Explicit `@TraceRecomposition` annotations keep their own tag/threshold; previews, inline/readonly/non-restartable composables, and property getters are excluded automatically.
+- **Fully qualified names in recomposition logs** — log headers now carry trailing `(fq: com.example.UserProfile)` and `(auto)` tokens (backward compatible with older parsers), so the IDE attributes runtime data precisely even when composables share a simple name across packages. `RecompositionEvent` gains additive `fqName` and `isAutoTraced` fields.
+
+### Fixed
+- **Android Studio freeze when starting the heatmap on large projects** (#168) — the typealias-resolution fallback iterated and parsed every Kotlin file in the project, and the heatmap inlay refresh ran analysis on the EDT. Lookups now use stub indexes, and the refresh computes on a background thread (the EDT only applies inlay mutations).
+- **AGP 9 no longer leaks to consumers** (#165, thanks to @valeriopilo-tomtom) — the Gradle plugin depends on `gradle-api` as `compileOnly` and isolates all AGP types behind an Android-only registrar, so KMP/JVM projects without AGP work and AGP 8.x projects no longer get AGP 9 on their buildscript classpath.
+- **Nullable types now match the stability configuration file** (#166, thanks to @xplayerCZ) — `kotlinx.datetime.LocalTime?` matches a `kotlinx.datetime.LocalTime` config entry.
+
+### Changed
+- **Runtime disabled-path hardening** — with `ComposeStabilityAnalyzer.setEnabled(false)`, trackers allocate nothing (early exits before any event construction); the tracker cache is thread-safe and keyed by fully qualified name to avoid cross-package collisions.
+
 ## [0.9.0] - 2026-06-04
 
 ### Added
