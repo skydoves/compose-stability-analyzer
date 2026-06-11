@@ -15,13 +15,10 @@
  */
 package com.skydoves.compose.stability.gradle
 
-import com.android.build.api.variant.AndroidComponentsExtension
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.Companion.COMMON_MAIN_SOURCE_SET_NAME
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetContainer
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -38,22 +35,34 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
   public companion object {
     // Plugin IDs
     private const val COMPILER_PLUGIN_ID = "com.skydoves.compose.stability.compiler"
-    private const val MULTIPLATFORM_PLUGIN_ID = "org.jetbrains.kotlin.multiplatform"
+    internal const val MULTIPLATFORM_PLUGIN_ID = "org.jetbrains.kotlin.multiplatform"
 
     // Artifact coordinates
-    private const val GROUP_ID = "com.github.skydoves"
+    internal const val GROUP_ID = "com.github.skydoves"
     private const val COMPILER_ARTIFACT_ID = "compose-stability-compiler"
-    private const val RUNTIME_ARTIFACT_ID = "compose-stability-runtime"
+    internal const val RUNTIME_ARTIFACT_ID = "compose-stability-runtime"
 
     // This version should match the version in gradle.properties (VERSION_NAME).
     // Update this when bumping the library version — it pins the compiler/runtime
     // artifacts the Gradle plugin pulls onto the Kotlin compile classpath.
-    private const val VERSION = "0.9.0"
+    internal const val VERSION = "0.9.0"
 
     // Compiler option keys
     private const val OPTION_ENABLED = "enabled"
     private const val OPTION_STABILITY_OUTPUT_DIR = "stabilityOutputDir"
     private const val OPTION_PROJECT_DEPENDENCIES = "projectDependencies"
+
+    /**
+     * Get the runtime project if available.
+     */
+    internal fun getRuntimeProject(project: Project): Project? =
+      project.rootProject.findProject(":stability-runtime")
+
+    /**
+     * Get the lint project if available.
+     */
+    internal fun getLintProject(project: Project): Project? =
+      project.rootProject.findProject(":stability-lint")
   }
 
   override fun apply(target: Project) {
@@ -67,12 +76,13 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     // Add runtime to compiler plugin classpath for all compilations
     addRuntimeToCompilerClasspath(target)
 
-    val androidComponents = target.extensions.findByType(AndroidComponentsExtension::class.java)
-    if (androidComponents == null) {
-      registerTasksNonAndroid(target, extension)
-    } else {
-      registerTasksAndroid(target, extension, androidComponents)
-    }
+    val registrar =
+      if (target.plugins.hasPlugin("com.android.base")) {
+        AndroidStabilityTaskRegistrar()
+      } else {
+        JvmStabilityTaskRegistrar()
+      }
+    registrar.registerStabilityTasks(target, extension)
 
     // Per-task output directory to avoid shared output conflicts with other plugins (Issue #153)
     target.tasks.withType(KotlinCompile::class.java).configureEach {
@@ -94,150 +104,6 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
           }
         }
       }
-    }
-  }
-
-  private fun registerTasksNonAndroid(target: Project, extension: StabilityAnalyzerExtension) {
-    // Register stability dump task
-    val stabilityDumpTask = target.tasks.register(
-      "stabilityDump",
-      StabilityDumpTask::class.java,
-    ) {
-      projectName.set(target.name)
-      stabilityInputFiles.setFrom(
-        target.fileTree(target.layout.buildDirectory.dir("stability")) {
-          include("*/stability-info.json")
-        },
-      )
-      outputDir.set(extension.stabilityValidation.outputDir)
-      ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
-      ignoredClasses.set(extension.stabilityValidation.ignoredClasses)
-      stabilityConfigurationFiles.set(extension.stabilityValidation.stabilityConfigurationFiles)
-      unstableOnly.set(extension.stabilityValidation.unstableOnly)
-    }
-
-    // Register stability check task
-    val stabilityCheckTask = target.tasks.register(
-      "stabilityCheck",
-      StabilityCheckTask::class.java,
-    ) {
-      projectName.set(target.name)
-      stabilityInputFiles.from(
-        target.fileTree(target.layout.buildDirectory.dir("stability")) {
-          include("*/stability-info.json")
-        },
-      )
-      stabilityReferenceFiles.from(extension.stabilityValidation.outputDir)
-      ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
-      ignoredClasses.set(extension.stabilityValidation.ignoredClasses)
-      failOnStabilityChange.set(extension.stabilityValidation.failOnStabilityChange)
-      quietCheck.set(extension.stabilityValidation.quietCheck)
-      ignoreNonRegressiveChanges.set(extension.stabilityValidation.ignoreNonRegressiveChanges)
-      allowMissingBaseline.set(extension.stabilityValidation.allowMissingBaseline)
-      stabilityConfigurationFiles.set(extension.stabilityValidation.stabilityConfigurationFiles)
-    }
-
-    // Make check task depend on stabilityCheck if enabled (only if check task exists)
-    target.plugins.withId("base") {
-      target.tasks.named("check") {
-        dependsOn(stabilityCheckTask)
-      }
-    }
-
-    // Configure after project evaluation
-    target.afterEvaluate {
-      configureTaskDependencies(target, extension, null, stabilityDumpTask, stabilityCheckTask)
-      addRuntimeDependency(target)
-    }
-  }
-
-  private fun registerTasksAndroid(
-    target: Project,
-    extension: StabilityAnalyzerExtension,
-    androidComponents: AndroidComponentsExtension<*, *, *>,
-  ) {
-    val aggregateDumpTask = target.tasks.register("stabilityDump") {
-      group = "verification"
-      description = "Dump composable stability information to stability file"
-    }
-    val aggregateCheckTask = target.tasks.register("stabilityCheck") {
-      group = "verification"
-      description = "Check composable stability against reference file"
-    }
-
-    androidComponents.onVariants { variant ->
-      val variantNameLowerCase = variant.name.replaceFirstChar { it.lowercaseChar() }
-      val variantNameUpperCase = variant.name.replaceFirstChar { it.uppercaseChar() }
-
-      // Register stability dump task
-      val stabilityDumpTask = target.tasks.register(
-        "${variantNameLowerCase}StabilityDump",
-        StabilityDumpTask::class.java,
-      ) {
-        projectName.set(target.name)
-        stabilityInputFiles.setFrom(
-          target.layout.buildDirectory.file(
-            "stability/compile${variantNameUpperCase}Kotlin/stability-info.json",
-          ),
-        )
-        outputDir.set(extension.stabilityValidation.outputDir)
-        ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
-        ignoredClasses.set(extension.stabilityValidation.ignoredClasses)
-        stabilityFileSuffix.set(variant.name)
-        stabilityConfigurationFiles.set(extension.stabilityValidation.stabilityConfigurationFiles)
-        unstableOnly.set(extension.stabilityValidation.unstableOnly)
-      }
-
-      // Register stability check task
-      val stabilityCheckTask = target.tasks.register(
-        "${variantNameLowerCase}StabilityCheck",
-        StabilityCheckTask::class.java,
-      ) {
-        projectName.set(target.name)
-        stabilityInputFiles.from(
-          target.layout.buildDirectory.file(
-            "stability/compile${variantNameUpperCase}Kotlin/stability-info.json",
-          ),
-        )
-        stabilityReferenceFiles.from(extension.stabilityValidation.outputDir)
-        ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
-        ignoredClasses.set(extension.stabilityValidation.ignoredClasses)
-        failOnStabilityChange.set(extension.stabilityValidation.failOnStabilityChange)
-        quietCheck.set(extension.stabilityValidation.quietCheck)
-        stabilityFileSuffix.set(variant.name)
-        ignoreNonRegressiveChanges.set(extension.stabilityValidation.ignoreNonRegressiveChanges)
-        allowMissingBaseline.set(extension.stabilityValidation.allowMissingBaseline)
-        stabilityConfigurationFiles.set(extension.stabilityValidation.stabilityConfigurationFiles)
-      }
-
-      aggregateDumpTask.configure {
-        dependsOn(stabilityDumpTask)
-      }
-      aggregateCheckTask.configure {
-        dependsOn(stabilityCheckTask)
-      }
-
-      // Make check task depend on stabilityCheck if enabled (only if check task exists)
-      target.plugins.withId("base") {
-        target.tasks.named("check") {
-          dependsOn(stabilityCheckTask)
-        }
-      }
-
-      // Configure after project evaluation
-      target.afterEvaluate {
-        configureTaskDependencies(
-          target,
-          extension,
-          variantNameUpperCase,
-          stabilityDumpTask,
-          stabilityCheckTask,
-        )
-      }
-    }
-
-    target.afterEvaluate {
-      addRuntimeDependency(target)
     }
   }
 
@@ -320,98 +186,6 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         }
       }
     }
-  }
-
-  /**
-   * Add runtime dependency to the project.
-   * For multiplatform projects, adds to commonMain sourceSet.
-   * For JVM/Android projects, adds to implementation configuration.
-   */
-  private fun addRuntimeDependency(project: Project) {
-    val runtimeProject = getRuntimeProject(project)
-    val lintProject = getLintProject(project)
-
-    val runtimeDependency = runtimeProject
-      ?: "$GROUP_ID:$RUNTIME_ARTIFACT_ID:$VERSION"
-
-    // Check if this is a multiplatform project
-    if (project.plugins.hasPlugin(MULTIPLATFORM_PLUGIN_ID)) {
-      // For multiplatform projects, add dependency to commonMain sourceSet
-      val kotlinExtension = project.extensions.getByName("kotlin") as KotlinSourceSetContainer
-      val commonMain = kotlinExtension.sourceSets.getByName(COMMON_MAIN_SOURCE_SET_NAME)
-      commonMain.dependencies {
-        implementation(runtimeDependency)
-      }
-    } else {
-      // For JVM/Android projects, add to implementation configuration
-      project.dependencies.add("implementation", runtimeDependency)
-
-      // Lint is only supported for Android projects
-      if (lintProject != null) {
-        project.dependencies.add("lintChecks", lintProject)
-      }
-    }
-  }
-
-  /**
-   * Configure task dependencies for stability dump and check tasks.
-   * Uses lazy configuration to avoid eager task resolution and Gradle 9.x compatibility issues.
-   */
-  private fun configureTaskDependencies(
-    project: Project,
-    extension: StabilityAnalyzerExtension,
-    filter: String? = null,
-    stabilityDumpTask: org.gradle.api.tasks.TaskProvider<StabilityDumpTask>,
-    stabilityCheckTask: org.gradle.api.tasks.TaskProvider<StabilityCheckTask>,
-  ) {
-    // Get the includeTests provider for lazy evaluation
-    val includeTestsProvider = extension.stabilityValidation.includeTests
-
-    // Configure dependencies lazily using TaskProvider
-    stabilityDumpTask.configure {
-      dependsOn(
-        includeTestsProvider.map { includeTests ->
-          project.tasks.matching { task ->
-            isKotlinTaskApplicable(task.name, includeTests) &&
-              (filter == null || task.name.contains(filter))
-          }
-        },
-      )
-    }
-
-    stabilityCheckTask.configure {
-      dependsOn(
-        includeTestsProvider.map { includeTests ->
-          project.tasks.matching { task ->
-            isKotlinTaskApplicable(task.name, includeTests) &&
-              (filter == null || task.name.contains(filter))
-          }
-        },
-      )
-    }
-  }
-
-  private fun isKotlinTaskApplicable(taskName: String, includeTests: Boolean): Boolean {
-    val taskNameLower = taskName.lowercase()
-
-    // Match only actual Kotlin compilation tasks, excluding infrastructure tasks
-    val isKotlinCompile = taskName.startsWith("compile") &&
-      taskName.contains("Kotlin") &&
-      // Exclude wasm-specific sync/webpack/executable tasks
-      !taskNameLower.contains("sync") &&
-      !taskNameLower.contains("webpack") &&
-      !taskNameLower.contains("executable") &&
-      !taskNameLower.contains("link") &&
-      !taskNameLower.contains("assemble")
-
-    val isTestTask = taskNameLower.let {
-      it.contains("test") || it.contains("androidtest") || it.contains("unittest")
-    }
-
-    // Include task if it's a Kotlin compile task and either:
-    // 1. includeTests is true, OR
-    // 2. it's not a test task
-    return isKotlinCompile && (includeTests || !isTestTask)
   }
 
   /**
@@ -502,16 +276,4 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
   private fun getCompilerProject(): Project? {
     return null // Will be resolved from current project's rootProject in actual usage
   }
-
-  /**
-   * Get the runtime project if available.
-   */
-  private fun getRuntimeProject(project: Project): Project? =
-    project.rootProject.findProject(":stability-runtime")
-
-  /**
-   * Get the lint project if available.
-   */
-  private fun getLintProject(project: Project): Project? =
-    project.rootProject.findProject(":stability-lint")
 }
