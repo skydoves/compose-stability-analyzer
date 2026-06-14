@@ -281,7 +281,7 @@ This is incredibly useful for:
 
 ### Including in your project 
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.github.skydoves/compose-stability-runtime.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.github.skydoves%22%20AND%20a:%compose-stability-runtime%22)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.skydoves/compose-stability-runtime.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.github.skydoves%22%20AND%20a:%22compose-stability-runtime%22)
 
 First, add the plugin to the `[plugins]` section of your `libs.versions.toml` file:
 

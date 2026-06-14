@@ -20,10 +20,12 @@ nav:
     - 'Recomposition Heatmap': ide-plugin/recomposition-heatmap.md
     - 'Stability Reality Check': ide-plugin/reality-check.md
     - 'Recomposition Blame': ide-plugin/recomposition-blame.md
+    - 'Stability Doctor': ide-plugin/stability-doctor.md
     - 'Configuration': ide-plugin/configuration.md
   - 'Gradle Plugin':
     - 'Getting Started': gradle-plugin/getting-started.md
     - 'TraceRecomposition': gradle-plugin/trace-recomposition.md
+    - 'Trace-All Mode': gradle-plugin/trace-all.md
     - 'Custom Logger': gradle-plugin/custom-logger.md
     - 'Stability Validation': gradle-plugin/stability-validation.md
     - 'CI/CD Integration': gradle-plugin/ci-cd.md
