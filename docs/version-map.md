@@ -42,7 +42,7 @@ The Compose Stability Analyzer works alongside the Compose compiler. Ensure your
 
 ## Maven Coordinates
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.github.skydoves/compose-stability-runtime.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.github.skydoves%22%20AND%20a:%compose-stability-runtime%22)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.skydoves/compose-stability-runtime.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.github.skydoves%22%20AND%20a:%22compose-stability-runtime%22)
 
 ```kotlin
 // Gradle plugin
