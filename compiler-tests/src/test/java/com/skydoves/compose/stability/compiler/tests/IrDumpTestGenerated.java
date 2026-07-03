@@ -31,6 +31,12 @@ public class IrDumpTestGenerated extends AbstractIrDumpTest {
   }
 
   @Test
+  @TestMetadata("InheritedComputedPropertyStability.kt")
+  public void testInheritedComputedPropertyStability() {
+    run("InheritedComputedPropertyStability.kt");
+  }
+
+  @Test
   @TestMetadata("MutableDataClass.kt")
   public void testMutableDataClass() {
     run("MutableDataClass.kt");
