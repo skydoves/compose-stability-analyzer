@@ -27,6 +27,7 @@ import com.skydoves.compose.stability.runtime.ReceiverStabilityInfo
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.symbols.KaFunctionSymbol
+import org.jetbrains.kotlin.analysis.api.symbols.contextParameters
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
 /**
@@ -187,10 +188,12 @@ internal object StabilityAnalyzerK2 {
       )
     }
 
-    // 3. Context receivers (Kotlin 1.6.20+)
+    // 3. Context parameters (formerly context receivers). Migrated to KaContextParameterSymbol
+    // because Kotlin 2.4 / IDEA 2026.3 drops KaContextReceiver + KaContextReceiversOwner
+    // (issue #177, KT-87310); context parameters are stable as of Kotlin 2.4.
     @Suppress("EXPERIMENTAL_API_USAGE")
-    functionSymbol.contextReceivers.forEach { contextReceiver ->
-      val contextType = contextReceiver.type
+    functionSymbol.contextParameters.forEach { contextParameter ->
+      val contextType = contextParameter.returnType
       val stability = with(inferencer) { ktStabilityOf(contextType) }
 
       receivers.add(
