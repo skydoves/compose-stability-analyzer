@@ -57,10 +57,19 @@ public class StabilityAnalyzerIrGenerationExtension(
       emptyList()
     }
 
-    // Construct matchers out of stability configuration files
+    // Construct matchers out of stability configuration files. Mirrors the project-dependencies
+    // scan above: a malformed or unreadable config file is skipped instead of aborting
+    // compilation, and the remaining valid files still contribute their matchers.
     val stabilityConfigurationMatchers = stabilityConfigurationFiles.flatMap { file ->
-      if (!file.exists()) return@flatMap emptyList()
-      StabilityConfigParser.fromFile(file.absolutePath).stableTypeMatchers
+      try {
+        if (file.exists()) {
+          StabilityConfigParser.fromFile(file.absolutePath).stableTypeMatchers
+        } else {
+          emptyList()
+        }
+      } catch (e: Exception) {
+        emptyList()
+      }
     }
 
     // Create and run the stability analyzer transformer
