@@ -57,6 +57,12 @@ public class StabilityAnalyzerIrGenerationExtension(
       emptyList()
     }
 
+    // Construct matchers out of stability configuration files
+    val stabilityConfigurationMatchers = stabilityConfigurationFiles.flatMap { file ->
+      if (!file.exists()) return@flatMap emptyList()
+      StabilityConfigParser.fromFile(file.absolutePath).stableTypeMatchers
+    }
+
     // Create and run the stability analyzer transformer
     val transformer = StabilityAnalyzerTransformer(
       pluginContext = pluginContext,
@@ -64,6 +70,7 @@ public class StabilityAnalyzerIrGenerationExtension(
       projectDependencies = dependencyModules,
       traceAll = traceAll,
       traceAllThreshold = traceAllThreshold,
+      stabilityConfigurationMatchers = stabilityConfigurationMatchers,
     )
 
     moduleFragment.transformChildrenVoid(transformer)
