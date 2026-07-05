@@ -43,6 +43,13 @@ public final class com/skydoves/compose/stability/compiler/ComposableStabilityIn
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class com/skydoves/compose/stability/compiler/FqNameMatcher {
+	public fun <init> (Ljava/lang/String;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public final fun matches (Ljava/lang/String;)Z
+}
+
 public final class com/skydoves/compose/stability/compiler/ParameterStabilityInfo {
 	public static final field Companion Lcom/skydoves/compose/stability/compiler/ParameterStabilityInfo$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
@@ -92,6 +99,7 @@ public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerComm
 public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerCommandLineProcessor$Companion {
 	public final fun getOPTION_ENABLED ()Lorg/jetbrains/kotlin/compiler/plugin/CliOption;
 	public final fun getOPTION_PROJECT_DEPENDENCIES ()Lorg/jetbrains/kotlin/compiler/plugin/CliOption;
+	public final fun getOPTION_STABILITY_CONFIGURATION_FILE ()Lorg/jetbrains/kotlin/compiler/plugin/CliOption;
 	public final fun getOPTION_STABILITY_OUTPUT_DIR ()Lorg/jetbrains/kotlin/compiler/plugin/CliOption;
 	public final fun getOPTION_TRACE_ALL ()Lorg/jetbrains/kotlin/compiler/plugin/CliOption;
 	public final fun getOPTION_TRACE_ALL_THRESHOLD ()Lorg/jetbrains/kotlin/compiler/plugin/CliOption;
@@ -101,6 +109,7 @@ public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerConf
 	public static final field INSTANCE Lcom/skydoves/compose/stability/compiler/StabilityAnalyzerConfigurationKeys;
 	public final fun getKEY_ENABLED ()Lorg/jetbrains/kotlin/config/CompilerConfigurationKey;
 	public final fun getKEY_PROJECT_DEPENDENCIES ()Lorg/jetbrains/kotlin/config/CompilerConfigurationKey;
+	public final fun getKEY_STABILITY_CONFIGURATION_FILES ()Lorg/jetbrains/kotlin/config/CompilerConfigurationKey;
 	public final fun getKEY_STABILITY_OUTPUT_DIR ()Lorg/jetbrains/kotlin/config/CompilerConfigurationKey;
 	public final fun getKEY_TRACE_ALL ()Lorg/jetbrains/kotlin/config/CompilerConfigurationKey;
 	public final fun getKEY_TRACE_ALL_THRESHOLD ()Lorg/jetbrains/kotlin/config/CompilerConfigurationKey;
@@ -111,8 +120,8 @@ public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerFirE
 }
 
 public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerIrGenerationExtension : org/jetbrains/kotlin/backend/common/extensions/IrGenerationExtension {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZI)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZILjava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZILjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun generate (Lorg/jetbrains/kotlin/ir/declarations/IrModuleFragment;Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;)V
 	public fun getPlatformIntrinsicExtension (Lorg/jetbrains/kotlin/backend/common/LoweringContext;)Lorg/jetbrains/kotlin/backend/common/extensions/IrIntrinsicExtension;
 	public fun getShouldAlsoBeAppliedInKaptStubGenerationMode ()Z
@@ -204,8 +213,8 @@ public final class com/skydoves/compose/stability/compiler/lower/RecompositionIr
 
 public final class com/skydoves/compose/stability/compiler/lower/StabilityAnalyzerTransformer : org/jetbrains/kotlin/backend/common/IrElementTransformerVoidWithContext {
 	public static final field Companion Lcom/skydoves/compose/stability/compiler/lower/StabilityAnalyzerTransformer$Companion;
-	public fun <init> (Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;Lcom/skydoves/compose/stability/compiler/StabilityInfoCollector;Ljava/util/List;ZI)V
-	public synthetic fun <init> (Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;Lcom/skydoves/compose/stability/compiler/StabilityInfoCollector;Ljava/util/List;ZIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;Lcom/skydoves/compose/stability/compiler/StabilityInfoCollector;Ljava/util/List;ZILjava/util/List;)V
+	public synthetic fun <init> (Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;Lcom/skydoves/compose/stability/compiler/StabilityInfoCollector;Ljava/util/List;ZILjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun visitFunctionNew (Lorg/jetbrains/kotlin/ir/declarations/IrFunction;)Lorg/jetbrains/kotlin/ir/IrStatement;
 }
 
