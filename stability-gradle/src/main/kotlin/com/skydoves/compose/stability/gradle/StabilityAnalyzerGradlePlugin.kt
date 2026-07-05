@@ -53,6 +53,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     private const val OPTION_PROJECT_DEPENDENCIES = "projectDependencies"
     private const val OPTION_TRACE_ALL = "traceAll"
     private const val OPTION_TRACE_ALL_THRESHOLD = "traceAllThreshold"
+    private const val OPTION_STABILITY_CONFIGURATION_FILE = "stabilityConfigurationFile"
 
     /**
      * Get the runtime project if available.
@@ -157,6 +158,10 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       val traceAllEnabled = extension.traceAll.enabled.get() &&
         compilationAcceptsTraceAll(kotlinCompilation, extension.traceAll.variants.get())
 
+      val stabilityConfigurationFiles = extension
+        .stabilityConfigurationFiles
+        .getOrElse(emptyList())
+
       listOf(
         SubpluginOption(
           key = OPTION_ENABLED,
@@ -178,7 +183,12 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
           key = OPTION_TRACE_ALL_THRESHOLD,
           value = extension.traceAll.threshold.get().toString(),
         ),
-      )
+      ) + stabilityConfigurationFiles.map { file ->
+        SubpluginOption(
+          key = OPTION_STABILITY_CONFIGURATION_FILE,
+          value = file.asFile.absolutePath,
+        )
+      }
     }
   }
 

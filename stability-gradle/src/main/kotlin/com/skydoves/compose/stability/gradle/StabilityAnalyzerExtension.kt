@@ -65,6 +65,18 @@ public abstract class StabilityAnalyzerExtension @Inject constructor(
   public fun traceAll(action: Action<TraceAllConfig>) {
     action.execute(traceAll)
   }
+
+  /**
+   * List of paths to stability configuration files.
+   *
+   * For more information, see this link:
+   *  - [AndroidX stability configuration file](https://developer.android.com/develop/ui/compose/performance/stability/fix#configuration-file)
+   *
+   * Default: empty
+   */
+  public val stabilityConfigurationFiles: ListProperty<RegularFile> = objects
+    .listProperty(RegularFile::class.java)
+    .convention(emptyList())
 }
 
 /**
