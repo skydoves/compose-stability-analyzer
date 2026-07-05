@@ -29,6 +29,7 @@ nav:
     - 'Custom Logger': gradle-plugin/custom-logger.md
     - 'Stability Validation': gradle-plugin/stability-validation.md
     - 'CI/CD Integration': gradle-plugin/ci-cd.md
+    - 'Stability configuration files': gradle-plugin/stability-configuration-files.md
   - 'Stability Concepts': stability-concepts.md
   - 'Kotlin Version Map': version-map.md
   - 'Sponsor': sponsor.md

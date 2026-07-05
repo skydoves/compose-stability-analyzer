@@ -133,6 +133,7 @@ composeStabilityAnalyzer {
         // Add stability configuration file
         // Matches compose's identical property
         // (see https://developer.android.com/develop/ui/compose/performance/stability/fix#configuration-file)
+        // DEPRECATED: use stabilityConfigurationFiles in top-level composeStabilityAnalyzer block
         stabilityConfigurationFiles.add(
             rootProject.layout.projectDirectory.file("stability_config.conf")
         )
@@ -183,6 +184,10 @@ composeStabilityAnalyzer {
 ```
 
 ### `stabilityConfigurationFiles`
+
+!!! warning "DEPRECATED"
+
+    This option has been deprecated in favor of setting `stabilityConfigurationFiles` in top-level `composeStabilityAnalyzer` block. New option wires stability configuration files directly into compiler plugin to support marking nested class members as stable. See [Stability configuration files](stability-configuration-files.md) for how to use new option.
 
 You can provide stability configuration files to tell `stabilityCheck` which types should be treated as stable, even if the compiler marks them as unstable. This uses the same format as the [Compose compiler's stability configuration file](https://developer.android.com/develop/ui/compose/performance/stability/fix#configuration-file), so you can reuse the same file for both the compiler and stability validation.
 
