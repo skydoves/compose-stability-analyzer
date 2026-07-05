@@ -1,0 +1,59 @@
+data class Wrapper {
+  val value: ToBeStable
+    field = value
+    get
+
+  constructor(value: ToBeStable) /* primary */ {
+    super/*Any*/()
+    /* <init>() */
+
+  }
+
+  operator fun component1(): ToBeStable {
+    return <this>.#value
+  }
+
+  fun copy(value: ToBeStable = <this>.#value): Wrapper {
+    return Wrapper(value = value)
+  }
+
+  override operator fun equals(other: Any?): Boolean {
+    when {
+      EQEQEQ(arg0 = <this>, arg1 = other) -> return true
+    }
+    when {
+      other !is Wrapper -> return false
+    }
+    val tmp_0: Wrapper = other /*as Wrapper */
+    when {
+      EQEQ(arg0 = <this>.#value, arg1 = tmp_0.#value).not() -> return false
+    }
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return <this>.#value.hashCode()
+  }
+
+  override fun toString(): String {
+    return "Wrapper(" + "value=" + <this>.#value + ")"
+  }
+
+}
+
+interface ToBeStable {
+}
+
+@Composable
+fun ComposableToBeSkippable(wrapper: Wrapper) {
+  val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ComposableToBeSkippable", tag = "", threshold = 2, fqName = "ComposableToBeSkippable", isAutoTraced = true)
+  _tracker.trackParameter(name = "wrapper", type = "<root>.Wrapper", value = wrapper, isStable = false)
+  val _startTime: Long = nanoTime()
+  try // COMPOSITE {
+  println(message = wrapper.toString())
+  // }
+  finally // COMPOSITE {
+  _tracker.recordDuration(startTimeNanos = _startTime)
+  _tracker.logIfThresholdMet()
+  // }
+}
