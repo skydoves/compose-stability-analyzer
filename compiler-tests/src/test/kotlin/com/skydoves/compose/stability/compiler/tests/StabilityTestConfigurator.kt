@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.test.directives.model.DirectivesContainer
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.EnvironmentConfigurator
 import org.jetbrains.kotlin.test.services.TestServices
+import java.io.File
 
 /**
  * Test configurator that registers the Stability Analyzer compiler plugin
@@ -53,12 +54,17 @@ class StabilityTestConfigurator(testServices: TestServices) :
 
     val traceAll = StabilityTestDirectives.ENABLE_TRACE_ALL in module.directives
 
+    val stabilityConfigurationFiles = module
+      .directives[StabilityTestDirectives.STABILITY_CONFIGURATION_FILES]
+      .map { File(it) }
+
     // Register IR generation extension for backend transformations
     IrGenerationExtension.registerExtension(
       StabilityAnalyzerIrGenerationExtension(
         stabilityOutputDir = "",
         projectDependencies = "",
         traceAll = traceAll,
+        stabilityConfigurationFiles = stabilityConfigurationFiles,
       ),
     )
   }

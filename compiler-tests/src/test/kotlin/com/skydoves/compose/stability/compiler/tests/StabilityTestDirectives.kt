@@ -29,4 +29,7 @@ object StabilityTestDirectives : SimpleDirectivesContainer() {
   val ENABLE_TRACE_ALL by directive(
     "Enables trace-all auto-instrumentation (composeStabilityAnalyzer.traceAll) for this test",
   )
+  val STABILITY_CONFIGURATION_FILES by stringDirective(
+    "Specifies stability configuration file(s) for this test",
+  )
 }
