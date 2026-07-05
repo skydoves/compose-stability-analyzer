@@ -279,6 +279,10 @@ public abstract class StabilityValidationConfig @Inject constructor(
    *
    * Default: empty
    */
+  @Deprecated(
+    message = "Replaced by stabilityConfigurationFiles option" +
+      "in top-level StabilityAnalyzerExtension",
+  )
   public val stabilityConfigurationFiles: ListProperty<RegularFile> = objects
     .listProperty(RegularFile::class.java)
     .convention(emptyList())
