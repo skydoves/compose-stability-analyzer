@@ -27,6 +27,7 @@ public class StabilityAnalyzerIrGenerationExtension(
   private val projectDependencies: String,
   private val traceAll: Boolean = false,
   private val traceAllThreshold: Int = 2,
+  private val stabilityConfigurationFiles: List<File> = emptyList(),
 ) : IrGenerationExtension {
 
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {

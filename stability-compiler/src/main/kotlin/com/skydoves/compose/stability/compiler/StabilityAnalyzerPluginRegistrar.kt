@@ -56,6 +56,10 @@ public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
       2,
     )
 
+    val stabilityConfigurationFiles = configuration.getList(
+      StabilityAnalyzerConfigurationKeys.KEY_STABILITY_CONFIGURATION_FILES,
+    )
+
     // Register FIR extensions for frontend analysis (K2).
     // Kotlin 2.4.0 (KT-83341) moved K2 extension registration off the IntelliJ
     // ProjectExtensionDescriptor mechanism; use the ExtensionStorage-scoped helpers so the
@@ -71,6 +75,7 @@ public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
         projectDependencies = projectDependencies,
         traceAll = traceAll,
         traceAllThreshold = traceAllThreshold,
+        stabilityConfigurationFiles = stabilityConfigurationFiles,
       ),
     )
   }

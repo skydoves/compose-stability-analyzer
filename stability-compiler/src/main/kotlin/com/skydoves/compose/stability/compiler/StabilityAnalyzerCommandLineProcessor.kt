@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
+import java.io.File
 
 public object StabilityAnalyzerConfigurationKeys {
   public val KEY_ENABLED: CompilerConfigurationKey<Boolean> =
@@ -37,6 +38,9 @@ public object StabilityAnalyzerConfigurationKeys {
 
   public val KEY_TRACE_ALL_THRESHOLD: CompilerConfigurationKey<Int> =
     CompilerConfigurationKey<Int>("traceAllThreshold")
+
+  public val KEY_STABILITY_CONFIGURATION_FILES: CompilerConfigurationKey<List<File>> =
+    CompilerConfigurationKey<List<File>>("stabilityConfigurationFiles")
 }
 
 @OptIn(ExperimentalCompilerApi::class)
@@ -79,6 +83,14 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
       description = "Recomposition count threshold for auto-traced composables",
       required = false,
     )
+
+    public val OPTION_STABILITY_CONFIGURATION_FILE: CliOption = CliOption(
+      optionName = "stabilityConfigurationFile",
+      valueDescription = "<path>",
+      description = "Stability configuration file to take into account when analyzing stability",
+      required = false,
+      allowMultipleOccurrences = true,
+    )
   }
 
   override val pluginId: String = PLUGIN_ID
@@ -89,6 +101,7 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
     OPTION_PROJECT_DEPENDENCIES,
     OPTION_TRACE_ALL,
     OPTION_TRACE_ALL_THRESHOLD,
+    OPTION_STABILITY_CONFIGURATION_FILE,
   )
 
   override fun processOption(
@@ -120,6 +133,11 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
       OPTION_TRACE_ALL_THRESHOLD -> configuration.put(
         StabilityAnalyzerConfigurationKeys.KEY_TRACE_ALL_THRESHOLD,
         value.toIntOrNull() ?: 2,
+      )
+
+      OPTION_STABILITY_CONFIGURATION_FILE -> configuration.appendList(
+        StabilityAnalyzerConfigurationKeys.KEY_STABILITY_CONFIGURATION_FILES,
+        File(value),
       )
     }
   }
