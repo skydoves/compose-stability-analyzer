@@ -50,8 +50,14 @@ internal interface StabilityConfigParser {
     fun fromFile(filepath: String?): StabilityConfigParser {
       if (filepath == null) return StabilityConfigParserImpl(emptyList())
 
-      val confFile = File(filepath)
-      return StabilityConfigParserImpl(confFile.readLines())
+      // Fail open: a malformed or unreadable configuration file falls back to no matchers rather
+      // than throwing, so callers can skip instrumentation instead of aborting compilation.
+      return try {
+        val confFile = File(filepath)
+        StabilityConfigParserImpl(confFile.readLines())
+      } catch (e: Exception) {
+        StabilityConfigParserImpl(emptyList())
+      }
     }
 
     fun fromLines(lines: List<String>): StabilityConfigParser = StabilityConfigParserImpl(lines)
