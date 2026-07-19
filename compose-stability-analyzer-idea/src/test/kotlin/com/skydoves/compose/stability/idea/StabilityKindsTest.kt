@@ -15,9 +15,12 @@
  */
 package com.skydoves.compose.stability.idea
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.runReadAction
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.skydoves.compose.stability.idea.settings.StabilitySettingsState
 import com.skydoves.compose.stability.runtime.ParameterStability
+import java.util.concurrent.Callable
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
@@ -114,5 +117,33 @@ class StabilityKindsTest : BasePlatformTestCase() {
     val s = stabilities()
     assertEquals("final class with stable vals", ParameterStability.STABLE, s["finalStable"])
     assertEquals("class with mutable var", ParameterStability.UNSTABLE, s["mutable"])
+  }
+
+  /**
+   * Issue #175: a vararg parameter compiles to an array, so it must not be reported as its
+   * (often stable) element type. It is treated as an array, which is never stable.
+   */
+  fun testVarargParameterIsTreatedAsArray() {
+    val file = myFixture.configureByText(
+      "VarargStability.kt",
+      """
+      package test
+
+      import androidx.compose.runtime.Composable
+
+      @Composable
+      fun VarargScreen(vararg values: Int, plain: Int) { }
+      """.trimIndent(),
+    ) as KtFile
+    myFixture.doHighlighting()
+    val fn = file.declarations.filterIsInstance<KtNamedFunction>().single { it.name == "VarargScreen" }
+    // Run analysis off the EDT: the K2 Analysis API is prohibited on the EDT (where tests run),
+    // which would otherwise silently fall back to the PSI analyzer and bypass the K2 path.
+    val info = ApplicationManager.getApplication()
+      .executeOnPooledThread(Callable { runReadAction { StabilityAnalyzer.analyze(fn) } })
+      .get()
+    val params = info.parameters.associate { it.name to it.stability }
+    assertEquals("vararg parameter must be treated as an array", ParameterStability.RUNTIME, params["values"])
+    assertEquals("plain Int parameter", ParameterStability.STABLE, params["plain"])
   }
 }

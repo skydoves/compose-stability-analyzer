@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.symbols.KaFunctionSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.contextParameters
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
 /**
@@ -100,14 +101,35 @@ internal object StabilityAnalyzerK2 {
 
     val inferencer = KtStabilityInferencer(function.project, usageSiteModule)
 
+    // Names of value parameters declared `vararg`, read from the PSI modifier (purely syntactic
+    // and reliable regardless of symbol resolution state; KaValueParameterSymbol.isVararg is not
+    // always populated). A vararg compiles to an array, which is never stable, but the symbol
+    // reports the element type as its returnType, so it would otherwise be read as stable (#175).
+    val varargParameterNames = function.valueParameters
+      .filter { it.hasModifier(KtTokens.VARARG_KEYWORD) }
+      .mapNotNull { it.name }
+      .toSet()
+
     // Analyze value parameters
     val parameters = functionSymbol.valueParameters.map { param ->
-      val paramType = param.returnType
-      val stability = with(inferencer) { ktStabilityOf(paramType) }
+      // A vararg parameter is treated as an array to match a real Array<T> parameter (issue #175).
+      val isVararg = param.name.asString() in varargParameterNames
+      val stability = if (isVararg) {
+        KtStability.Runtime(
+          className = "kotlin.Array",
+          reason = "vararg parameter (compiles to an array)",
+        )
+      } else {
+        with(inferencer) { ktStabilityOf(param.returnType) }
+      }
 
       ParameterStabilityInfo(
         name = param.name.asString(),
-        type = paramType.renderAsString(),
+        type = if (isVararg) {
+          "vararg ${param.returnType.renderAsString()}"
+        } else {
+          param.returnType.renderAsString()
+        },
         stability = stability.toParameterStability(),
         reason = stability.getReasonString(),
       )
