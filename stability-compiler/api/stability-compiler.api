@@ -120,8 +120,8 @@ public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerFirE
 }
 
 public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerIrGenerationExtension : org/jetbrains/kotlin/backend/common/extensions/IrGenerationExtension {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZILjava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZILjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZILjava/util/List;Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZILjava/util/List;Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun generate (Lorg/jetbrains/kotlin/ir/declarations/IrModuleFragment;Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;)V
 	public fun getPlatformIntrinsicExtension (Lorg/jetbrains/kotlin/backend/common/LoweringContext;)Lorg/jetbrains/kotlin/backend/common/extensions/IrIntrinsicExtension;
 	public fun getShouldAlsoBeAppliedInKaptStubGenerationMode ()Z

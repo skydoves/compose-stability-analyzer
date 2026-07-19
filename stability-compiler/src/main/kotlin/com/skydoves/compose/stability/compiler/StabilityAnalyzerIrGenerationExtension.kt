@@ -18,6 +18,8 @@ package com.skydoves.compose.stability.compiler
 import com.skydoves.compose.stability.compiler.lower.StabilityAnalyzerTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import java.io.File
@@ -28,6 +30,7 @@ public class StabilityAnalyzerIrGenerationExtension(
   private val traceAll: Boolean = false,
   private val traceAllThreshold: Int = 2,
   private val stabilityConfigurationFiles: List<File> = emptyList(),
+  private val messageCollector: MessageCollector = MessageCollector.NONE,
 ) : IrGenerationExtension {
 
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
@@ -57,17 +60,26 @@ public class StabilityAnalyzerIrGenerationExtension(
       emptyList()
     }
 
-    // Construct matchers out of stability configuration files. Mirrors the project-dependencies
-    // scan above: a malformed or unreadable config file is skipped instead of aborting
-    // compilation, and the remaining valid files still contribute their matchers.
+    // Construct matchers out of stability configuration files. A malformed or unreadable config
+    // file is skipped (with a warning) instead of aborting compilation, and the remaining valid
+    // files still contribute their matchers. Unlike a silent skip, the warning makes a
+    // misconfiguration debuggable instead of silently reverting configured types to unstable.
     val stabilityConfigurationMatchers = stabilityConfigurationFiles.flatMap { file ->
       try {
         if (file.exists()) {
           StabilityConfigParser.fromFile(file.absolutePath).stableTypeMatchers
         } else {
+          messageCollector.report(
+            CompilerMessageSeverity.WARNING,
+            "Stability configuration file not found, ignoring it: ${file.path}",
+          )
           emptyList()
         }
       } catch (e: Exception) {
+        messageCollector.report(
+          CompilerMessageSeverity.WARNING,
+          "Failed to parse stability configuration file, ignoring it: ${file.path} (${e.message})",
+        )
         emptyList()
       }
     }

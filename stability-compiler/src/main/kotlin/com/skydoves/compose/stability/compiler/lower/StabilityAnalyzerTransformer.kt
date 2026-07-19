@@ -548,17 +548,21 @@ public class StabilityAnalyzerTransformer(
       return ParameterStability.RUNTIME
     }
 
+    // 2b'. Stability configuration file types - an explicit user override that a type is stable.
+    // Checked before every instability determination (including the known-unstable Java types
+    // below) so the override always wins, matching the Compose compiler's configuration file.
+    if (isStabilityConfigurationFileType(type)) {
+      return ParameterStability.STABLE
+    }
+
     // 2c. Known unstable types (Java mutable classes)
     // Java classes don't expose mutable fields in Kotlin IR, so we need explicit checks
     if (isKnownUnstableJavaType(fqName)) {
       return ParameterStability.UNSTABLE
     }
 
-    // 3. Known stable types and stability configuration files types
+    // 3. Known stable types
     if (isKnownStableType(type)) {
-      return ParameterStability.STABLE
-    }
-    if (isStabilityConfigurationFileType(type)) {
       return ParameterStability.STABLE
     }
 
@@ -1090,9 +1094,11 @@ public class StabilityAnalyzerTransformer(
         type.isSuspendFunctionTypeOrSubtype() ||
         type.render().contains("suspend ") ||
         type.render().contains("SuspendFunction") -> "function type"
+      // Checked before @Stable / known-stable to match the analysis precedence: a configured type
+      // is forced stable regardless of its own annotations (issue #176).
+      isStabilityConfigurationFileType(type) -> "stability configuration file type"
       type.hasStableAnnotation() -> "marked @Stable or @Immutable"
       isKnownStableType(type) -> "known stable type"
-      isStabilityConfigurationFileType(type) -> "stability configuration file type"
       else -> "class with no mutable properties"
     }
     "UNSTABLE" -> when {

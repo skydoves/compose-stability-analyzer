@@ -50,14 +50,10 @@ internal interface StabilityConfigParser {
     fun fromFile(filepath: String?): StabilityConfigParser {
       if (filepath == null) return StabilityConfigParserImpl(emptyList())
 
-      // Fail open: a malformed or unreadable configuration file falls back to no matchers rather
-      // than throwing, so callers can skip instrumentation instead of aborting compilation.
-      return try {
-        val confFile = File(filepath)
-        StabilityConfigParserImpl(confFile.readLines())
-      } catch (e: Exception) {
-        StabilityConfigParserImpl(emptyList())
-      }
+      // Throws on an unreadable file or a malformed entry, keeping parity with the Gradle plugin's
+      // copy of this parser. The caller (StabilityAnalyzerIrGenerationExtension) catches it, warns,
+      // and skips the file rather than aborting the compilation.
+      return StabilityConfigParserImpl(File(filepath).readLines())
     }
 
     fun fromLines(lines: List<String>): StabilityConfigParser = StabilityConfigParserImpl(lines)
