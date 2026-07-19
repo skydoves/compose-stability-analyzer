@@ -714,8 +714,9 @@ internal class KtStabilityInferencer(
    * body-declared properties in light / not-fully-resolved PSI contexts, whereas a synthesized
    * (default) getter reliably marks a stored `val`/`var`. Delegated properties are always kept.
    */
-  private fun KaPropertySymbol.isComputedGetterOnly(): Boolean =
+  private fun KaPropertySymbol.isComputedGetterOnly(): Boolean = runCatching {
     !isDelegatedProperty && !hasBackingField && getter?.isNotDefault == true
+  }.getOrDefault(false)
 
   /**
    * Analyzes a value class to determine its stability.
