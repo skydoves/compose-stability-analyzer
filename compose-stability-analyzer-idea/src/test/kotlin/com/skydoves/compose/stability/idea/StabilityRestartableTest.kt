@@ -95,6 +95,9 @@ class StabilityRestartableTest : BasePlatformTestCase() {
     fun NonUnitReturn(): Int = 42
 
     @Composable
+    fun NonUnitInferred() = 42
+
+    @Composable
     inline fun InlineWrapper(content: @Composable () -> Unit) { content() }
     """.trimIndent(),
   ) as KtFile
@@ -154,6 +157,25 @@ class StabilityRestartableTest : BasePlatformTestCase() {
         .executeOnPooledThread(Callable { runReadAction { StabilityAnalyzer.analyze(fn) } })
       PlatformTestUtil.waitForFuture(future)
     }
+  }
+
+  /**
+   * A composable with an expression body that infers a non-`Unit` type (no explicit return type) is
+   * also non-restartable. The K2 analyzer resolves the inferred type directly, which is the path
+   * that runs in a K2 project. The PSI fallback resolves it via the K1 descriptor when running in
+   * K1 mode; that branch cannot be exercised here because the BasePlatformTestCase harness resolves
+   * with K2, where the K1 descriptor API returns nothing (issue #184).
+   */
+  fun testInferredNonUnitReturnIsNotRestartable() {
+    val file = configureFixture()
+    myFixture.doHighlighting()
+    val fn = file.function("NonUnitInferred")
+
+    val future = ApplicationManager.getApplication()
+      .executeOnPooledThread(Callable { runReadAction { StabilityAnalyzer.analyze(fn) } })
+    val k2 = PlatformTestUtil.waitForFuture(future)
+    assertFalse("inferred non-Unit return is not restartable (K2)", k2.isRestartable)
+    assertFalse("inferred non-Unit return is not skippable (K2)", k2.isSkippable)
   }
 
   /**

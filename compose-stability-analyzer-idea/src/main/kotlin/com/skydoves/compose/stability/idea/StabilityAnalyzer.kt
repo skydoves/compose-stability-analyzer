@@ -229,18 +229,35 @@ internal object StabilityAnalyzer {
     if (function.hasAnnotation(StabilityConstants.Strings.READ_ONLY_COMPOSABLE)) return false
     if (function.hasAnnotation(StabilityConstants.Strings.EXPLICIT_GROUPS_COMPOSABLE)) return false
     if (function.hasModifier(org.jetbrains.kotlin.lexer.KtTokens.INLINE_KEYWORD)) return false
-    if (function.hasExplicitNonUnitReturnType()) return false
+    if (function.hasNonUnitReturnType()) return false
     return true
   }
 
   /**
-   * Whether the function declares an explicit return type other than `Unit`. A `@Composable`
-   * function normally returns `Unit` (no type reference); an explicit non-`Unit` type (e.g.
-   * `@Composable fun rememberFoo(): Foo`) means the compiler generates no restart group.
+   * Whether the function returns a type other than `Unit`. An explicit non-`Unit` type reference
+   * (e.g. `@Composable fun rememberFoo(): Foo`) is the reliable signal. When there is no type
+   * reference, only an expression body can still infer a non-`Unit` type (a block body always
+   * defaults to `Unit`); that inferred type is resolved via the K1 descriptor, matching the
+   * descriptor-based pattern already used by [analyzeParameter]. The K2 analyzer resolves this on
+   * its own path, so this only has to cover the PSI/K1 fallback (issue #184).
    */
-  private fun KtNamedFunction.hasExplicitNonUnitReturnType(): Boolean {
-    val typeText = typeReference?.text?.trim() ?: return false
-    return typeText != "Unit" && typeText != "kotlin.Unit"
+  private fun KtNamedFunction.hasNonUnitReturnType(): Boolean {
+    val typeText = typeReference?.text?.trim()
+    if (typeText != null) {
+      return typeText != "Unit" && typeText != "kotlin.Unit"
+    }
+    // No explicit return type: a block body (or no body) is always Unit; only resolve an
+    // expression body, whose inferred type may be non-Unit.
+    if (!hasBody() || hasBlockBody()) return false
+    return try {
+      val returnType = analyze(BodyResolveMode.PARTIAL)[BindingContext.FUNCTION, this]?.returnType
+      returnType != null &&
+        returnType.constructor.declarationDescriptor != null &&
+        !KotlinBuiltIns.isUnit(returnType)
+    } catch (e: Exception) {
+      // Descriptor resolution is unavailable (e.g. K2 mode); fall back to assuming Unit.
+      false
+    }
   }
 
   /**
