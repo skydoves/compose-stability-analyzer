@@ -20,6 +20,23 @@ import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Compa
 import org.gradle.api.Project
 
 /**
+ * Relative build-directory paths where the compiler plugin may write `stability-info.json` for the
+ * given AGP [variantName].
+ *
+ * The compiler writes the file under a per-compilation directory named after the Kotlin compile
+ * task (issue #153). In a pure Android project that task is `compile<Variant>Kotlin`; in a Kotlin
+ * Multiplatform project with an Android target it is `compile<Variant>KotlinAndroid`. The dump and
+ * check tasks consume whichever candidate exists, so both are registered (issue #183).
+ */
+internal fun stabilityInfoRelativePaths(variantName: String): List<String> {
+  val variantNameUpperCase = variantName.replaceFirstChar { it.uppercaseChar() }
+  return listOf(
+    "stability/compile${variantNameUpperCase}Kotlin/stability-info.json",
+    "stability/compile${variantNameUpperCase}KotlinAndroid/stability-info.json",
+  )
+}
+
+/**
  * Registers stability tasks for Android projects, per variant.
  */
 internal class AndroidStabilityTaskRegistrar : StabilityTaskRegistrar() {
@@ -48,9 +65,7 @@ internal class AndroidStabilityTaskRegistrar : StabilityTaskRegistrar() {
       ) {
         projectName.set(target.name)
         stabilityInputFiles.setFrom(
-          target.layout.buildDirectory.file(
-            "stability/compile${variantNameUpperCase}Kotlin/stability-info.json",
-          ),
+          stabilityInfoRelativePaths(variant.name).map { target.layout.buildDirectory.file(it) },
         )
         outputDir.set(extension.stabilityValidation.outputDir)
         ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
@@ -67,9 +82,7 @@ internal class AndroidStabilityTaskRegistrar : StabilityTaskRegistrar() {
       ) {
         projectName.set(target.name)
         stabilityInputFiles.from(
-          target.layout.buildDirectory.file(
-            "stability/compile${variantNameUpperCase}Kotlin/stability-info.json",
-          ),
+          stabilityInfoRelativePaths(variant.name).map { target.layout.buildDirectory.file(it) },
         )
         stabilityReferenceFiles.from(extension.stabilityValidation.outputDir)
         ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
