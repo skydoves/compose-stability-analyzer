@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-07-19
+
+### Added
+- **Stability configuration files in the compiler plugin** — configuration files (the same format as the Compose compiler's) can now be passed straight to the compiler through the new top-level `composeStabilityAnalyzer { stabilityConfigurationFiles }` option, so configured types are treated as stable everywhere the compiler runs — `stabilityDump`/`stabilityCheck`, trace-all, and the IDE data. This fixes a data class that wraps a configured type being reported unstable by `stabilityCheck` (#176). The old `stabilityValidation { stabilityConfigurationFiles }` option is deprecated in favor of the top-level one.
+
+### Fixed
+- **Non-restartable composables are reported as not skippable or restartable** (#184) — `@NonRestartableComposable`, `@ReadOnlyComposable`, `@ExplicitGroupsComposable`, `inline` functions, and composables returning a non-`Unit` value are no longer reported as restartable/skippable, matching the Compose compiler. `stabilityCheck` now also detects `restartable`/`skippable` regressions.
+- **Computed getter-only properties are ignored in stability inference** (#178) — a property with no backing field (`val x get() = ...`) no longer makes its class unstable, in both the compiler and the IDE.
+- **Vararg composable parameters are treated as arrays** (#175) — a `vararg` parameter compiles to an array, so it is no longer reported as its (often stable) element type.
+- **Kotlin Multiplatform**: `stabilityDump`/`stabilityCheck` now find `stability-info.json` under the KMP Android compile task path `compile<Variant>KotlinAndroid` (#183).
+
 ## [0.10.0] - 2026-06-11
 
 ### Added

@@ -2,6 +2,13 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.11.0] - 2026-07-19
+
+### Fixed
+- **Non-restartable composables** (#184) — `@NonRestartableComposable`, `@ReadOnlyComposable`, `@ExplicitGroupsComposable`, `inline`, and non-`Unit`-returning composables now show as not skippable/restartable in gutter icons, tooltips, the Stability Explorer, and Doctor, matching the compiler.
+- **Computed getter-only properties** (#178) — a property with no backing field no longer makes its class unstable, keeping the IDE's K2 inference in sync with the compiler.
+- **Vararg parameters** (#175) — a `vararg` composable parameter is treated as an array instead of its element type.
+
 ## [0.10.0] - 2026-06-11
 
 ### Added

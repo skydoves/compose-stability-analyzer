@@ -26,7 +26,7 @@ kotlin {
 }
 
 group = "com.github.skydoves"
-version = "0.10.0"
+version = "0.11.0"
 
 repositories {
   mavenLocal()
@@ -38,7 +38,7 @@ repositories {
 }
 
 dependencies {
-  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.10.0")
+  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.11.0")
 
   intellijPlatform {
     intellijIdeaCommunity("2025.2")
@@ -74,6 +74,12 @@ intellijPlatform {
             </ul>
         """.trimIndent()
     changeNotes = """
+            <b>0.11.0</b>
+            <ul>
+                <li><b>Fixed: Non-restartable composables</b> - @NonRestartableComposable, @ReadOnlyComposable, @ExplicitGroupsComposable, inline, and non-Unit-returning composables now show as not skippable/restartable in gutter icons, tooltips, the Stability Explorer, and Doctor, matching the compiler.</li>
+                <li><b>Fixed: Computed getter-only properties</b> - a property with no backing field no longer makes its class unstable, keeping IDE inference in sync with the compiler.</li>
+                <li><b>Fixed: Vararg parameters</b> - a vararg composable parameter is treated as an array instead of its element type.</li>
+            </ul>
             <b>0.10.0</b>
             <ul>
                 <li><b>New: Stability Doctor</b> - A ranked, quantified "what to fix first" list combining the static stability verdict, cascade blast radius, and measured runtime waste into prioritized prescriptions with one-click fixes (var &rarr; val, @Immutable/@Stable, stability-config entry, and guarded remember(...) hoisting for silent-waste parameters). Works without a device (ESTIMATED scores) and upgrades to MEASURED during a heatmap session. New Doctor tool-window tab and Code &rarr; Run Stability Doctor action.</li>
