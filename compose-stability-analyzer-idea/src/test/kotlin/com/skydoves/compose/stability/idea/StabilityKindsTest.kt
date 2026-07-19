@@ -147,4 +147,69 @@ class StabilityKindsTest : BasePlatformTestCase() {
     assertEquals("vararg parameter must be treated as an array", ParameterStability.RUNTIME, params["values"])
     assertEquals("plain Int parameter", ParameterStability.STABLE, params["plain"])
   }
+
+  /**
+   * Issue #178: computed getter-only properties store no state and must be ignored (matching the
+   * compiler). A concrete class extending an unannotated abstract/open base with no destabilizing
+   * state stays STABLE; an inherited `var` still makes it UNSTABLE. This keeps the IDE's K2
+   * inference in sync with the compiler's `stabilityDump`.
+   *
+   * The analysis runs off the EDT because the K2 Analysis API is prohibited on the EDT (where
+   * tests run) and would otherwise silently fall back to the PSI analyzer, bypassing the K2 path.
+   */
+  fun testInheritedAndComputedPropertyStability() {
+    val file = myFixture.configureByText(
+      "InheritedStability.kt",
+      """
+      package test
+
+      import androidx.compose.runtime.Composable
+
+      // Inherited getter-only (no backing field) property -> STABLE
+      data class DataHolder(val input: String) : AbstractHolderBase()
+      abstract class AbstractHolderBase { open val meta: MetaInfo? get() = null }
+      interface MetaInfo
+
+      // Own getter-only computed property -> STABLE
+      data class CardData(val title: String) { val badge: MetaInfo? get() = null }
+
+      // Inherited stored var -> UNSTABLE
+      data class CounterData(val label: String) : CounterBase(0)
+      open class CounterBase(var count: Int)
+
+      // Inherited stored stable val -> STABLE
+      data class LabeledData(val label: String) : LabelBase(0)
+      open class LabelBase(val labelId: Int)
+
+      // Only computed props + abstract base with no stored state -> STABLE
+      class ProfileCard : BaseCard() {
+        val header: String get() = "profile"
+        override fun render() {}
+      }
+      abstract class BaseCard { abstract fun render() }
+
+      @Composable
+      fun InheritScreen(
+        holder: DataHolder,
+        card: CardData,
+        counter: CounterData,
+        labeled: LabeledData,
+        profile: ProfileCard,
+      ) { }
+      """.trimIndent(),
+    ) as KtFile
+    myFixture.doHighlighting()
+    val fn = file.declarations.filterIsInstance<KtNamedFunction>().single { it.name == "InheritScreen" }
+    // Run analysis off the EDT (K2 is prohibited on the EDT), and wait with waitForFuture, which
+    // pumps the event queue instead of hard-blocking the EDT with Future.get().
+    val future = ApplicationManager.getApplication()
+      .executeOnPooledThread(Callable { runReadAction { StabilityAnalyzer.analyze(fn) } })
+    val info = PlatformTestUtil.waitForFuture(future)
+    val s = info.parameters.associate { it.name to it.stability }
+    assertEquals("inherited computed property (no backing field)", ParameterStability.STABLE, s["holder"])
+    assertEquals("own computed property (no backing field)", ParameterStability.STABLE, s["card"])
+    assertEquals("inherited stored var", ParameterStability.UNSTABLE, s["counter"])
+    assertEquals("inherited stored stable val", ParameterStability.STABLE, s["labeled"])
+    assertEquals("computed-only class extending an abstract base", ParameterStability.STABLE, s["profile"])
+  }
 }
