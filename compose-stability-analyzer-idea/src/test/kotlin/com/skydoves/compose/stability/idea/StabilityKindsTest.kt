@@ -17,6 +17,7 @@ package com.skydoves.compose.stability.idea
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
+import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.skydoves.compose.stability.idea.settings.StabilitySettingsState
 import com.skydoves.compose.stability.runtime.ParameterStability
@@ -139,10 +140,10 @@ class StabilityKindsTest : BasePlatformTestCase() {
     val fn = file.declarations.filterIsInstance<KtNamedFunction>().single { it.name == "VarargScreen" }
     // Run analysis off the EDT: the K2 Analysis API is prohibited on the EDT (where tests run),
     // which would otherwise silently fall back to the PSI analyzer and bypass the K2 path.
-    val info = ApplicationManager.getApplication()
+    // waitForFuture pumps the event queue instead of hard-blocking the EDT with Future.get().
+    val future = ApplicationManager.getApplication()
       .executeOnPooledThread(Callable { runReadAction { StabilityAnalyzer.analyze(fn) } })
-      .get()
-    val params = info.parameters.associate { it.name to it.stability }
+    val params = PlatformTestUtil.waitForFuture(future).parameters.associate { it.name to it.stability }
     assertEquals("vararg parameter must be treated as an array", ParameterStability.RUNTIME, params["values"])
     assertEquals("plain Int parameter", ParameterStability.STABLE, params["plain"])
   }
