@@ -423,6 +423,9 @@ internal class KtStabilityInferencer(
     if (hasParcelize) {
       val properties = classSymbol.declaredMemberScope.callables
         .filterIsInstance<KaPropertySymbol>()
+        // Only state-storing members count; computed getter-only properties (no backing field)
+        // are ignored, matching the Compose compiler (issue #178).
+        .filterNot { it.isComputedGetterOnly() }
         .toList()
 
       // Check for var properties
@@ -452,36 +455,32 @@ internal class KtStabilityInferencer(
       return KtStability.Unknown(fqName ?: simpleName)
     }
 
-    // 19. Abstract classes - concrete implementation unknown (Compose 2.4.0: Unknown)
-    // EXCEPT: Sealed classes with @Stable/@Immutable should be analyzed like regular classes
-    // Issue #31: Sealed classes with @Immutable/@Stable should propagate stability to subclasses
-    if (classSymbol.modality == KaSymbolModality.ABSTRACT) {
-      // Check if this abstract class has @Stable or @Immutable annotation
-      // If it does, it should be analyzed (not immediately returned as Unknown)
-      val hasStabilityAnnotation = classSymbol.annotations.any { annotation ->
-        val annotationFqName = annotation.classId?.asSingleFqName()?.asString()
-        annotationFqName == "androidx.compose.runtime.Stable" ||
-          annotationFqName == "androidx.compose.runtime.Immutable"
-      }
-
-      // Only return Unknown if it doesn't have stability annotations
-      if (!hasStabilityAnnotation) {
-        return KtStability.Unknown(fqName ?: simpleName)
-      }
-      // Abstract classes with @Stable/@Immutable continue to property analysis
-    }
-
-    // 19a. Non-final (open) classes - concrete subtype unknown (Compose 2.4.0: Unknown)
-    //      EXCEPT: classes explicitly trusted via @Stable/@Immutable.
-    if (classSymbol.modality == KaSymbolModality.OPEN) {
+    // 19. Non-final (abstract/open) classes. As a direct parameter type the concrete subtype is
+    // unknown, so they are at best UNKNOWN (Compose 2.4.0). But their fields still matter: an
+    // inherited `var` or unstable-typed backing field makes the class — and any subclass —
+    // unstable, so analyze the fields instead of short-circuiting to Unknown. A class explicitly
+    // trusted via @Stable/@Immutable continues to regular property analysis below. Sealed classes
+    // (modality SEALED) are not handled here and fall through as before (issue #178, #31).
+    val isNonFinal = classSymbol.modality == KaSymbolModality.ABSTRACT ||
+      classSymbol.modality == KaSymbolModality.OPEN
+    if (isNonFinal) {
       val hasStabilityAnnotation = classSymbol.annotations.any { annotation ->
         val annotationFqName = annotation.classId?.asSingleFqName()?.asString()
         annotationFqName == "androidx.compose.runtime.Stable" ||
           annotationFqName == "androidx.compose.runtime.Immutable"
       }
       if (!hasStabilityAnnotation) {
-        return KtStability.Unknown(fqName ?: simpleName)
+        val fieldStability = analyzeClassProperties(classSymbol, currentlyAnalyzing)
+        // No destabilizing state → the concrete subtype is still unknown → UNKNOWN. Otherwise
+        // (a var / unstable / runtime field) propagate that verdict as-is: it holds regardless
+        // of the concrete subtype, which is exactly what lets a subclass inherit the instability.
+        return if (fieldStability.isStable()) {
+          KtStability.Unknown(fqName ?: simpleName)
+        } else {
+          fieldStability
+        }
       }
+      // @Stable/@Immutable non-final classes continue to property analysis below.
     }
 
     // 19b. Cross-module types without @Stable/@Immutable/@StabilityInferred are UNSTABLE
@@ -571,9 +570,11 @@ internal class KtStabilityInferencer(
     // Check superclass stability first
     val superClassStability = analyzeSuperclassStability(classSymbol, currentlyAnalyzing)
 
-    // Get all properties from class
+    // Get all state-storing properties from the class. Computed getter-only properties have no
+    // backing field, store no state, and are ignored — matching the Compose compiler (issue #178).
     val properties = classSymbol.declaredMemberScope.callables
       .filterIsInstance<KaPropertySymbol>()
+      .filterNot { it.isComputedGetterOnly() }
       .toList()
 
     // If no properties, return superclass stability or stable
@@ -677,9 +678,13 @@ internal class KtStabilityInferencer(
         )
       }
 
-      // If superclass has runtime stability, propagate that
+      // If superclass has runtime stability, propagate that. A bare-Unknown super (an
+      // abstract/open base with no destabilizing state) is intentionally NOT propagated —
+      // a concrete subclass fully determines its inherited fields, so an uncertain-only base
+      // must not taint it. This matches the Compose compiler, which drops an Unknown superclass
+      // (issue #178). Real instability from an abstract/open base still propagates: it now
+      // resolves to Unstable/Runtime/Combined via field analysis, handled by the branches here.
       if (stability is KtStability.Runtime ||
-        stability is KtStability.Unknown ||
         stability is KtStability.Parameter
       ) {
         val superClassName = superType.expandedSymbol
@@ -700,6 +705,20 @@ internal class KtStabilityInferencer(
   }
 
   /**
+   * True for a computed getter-only property — one with an explicit (non-default) getter and no
+   * backing field. Such a property stores no state and must be excluded from stability inference,
+   * matching the Compose compiler, whose class inference only considers members with a backing
+   * field (issue #178).
+   *
+   * The getter's default-ness is the primary signal: `hasBackingField` alone is unreliable for
+   * body-declared properties in light / not-fully-resolved PSI contexts, whereas a synthesized
+   * (default) getter reliably marks a stored `val`/`var`. Delegated properties are always kept.
+   */
+  private fun KaPropertySymbol.isComputedGetterOnly(): Boolean = runCatching {
+    !isDelegatedProperty && !hasBackingField && getter?.isNotDefault == true
+  }.getOrDefault(false)
+
+  /**
    * Analyzes a value class to determine its stability.
    * Value classes inherit the stability of their underlying type.
    */
@@ -710,6 +729,7 @@ internal class KtStabilityInferencer(
     // Value classes must have exactly one property
     val properties = classSymbol.declaredMemberScope.callables
       .filterIsInstance<KaPropertySymbol>()
+      .filterNot { it.isComputedGetterOnly() }
       .toList()
 
     val underlyingProperty = properties.firstOrNull()

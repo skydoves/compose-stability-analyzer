@@ -175,11 +175,16 @@ public class StabilityToolWindow(private val project: Project) {
         }
       }
 
-      // Recalculate skippability: a composable is skippable if all parameters are stable
-      // (after applying ignore patterns)
+      // Recalculate skippability. The compiler's verdict already accounts for
+      // @NonSkippableComposable and non-restartable composables, so honor it as the floor and only
+      // *upgrade* to skippable when ignore patterns stabilized a parameter the compiler saw as
+      // unstable on an otherwise-restartable composable (issue #184).
       val allParametersStable = processedParameters.all { it.isStable }
-      val isSkippable = composable.isRestartable &&
-        (processedParameters.isEmpty() || allParametersStable)
+      val rescuedByIgnorePatterns = processedParameters.isNotEmpty() &&
+        allParametersStable &&
+        composable.parameters.any { !it.isStable }
+      val isSkippable = composable.isSkippable ||
+        (composable.isRestartable && rescuedByIgnorePatterns)
 
       composable.copy(
         parameters = processedParameters,

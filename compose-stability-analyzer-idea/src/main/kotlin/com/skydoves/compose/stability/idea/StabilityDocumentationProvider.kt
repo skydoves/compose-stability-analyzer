@@ -79,6 +79,12 @@ public class StabilityDocumentationProvider : AbstractDocumentationProvider() {
               "- This composable can skip recomposition when inputs haven't changed"
           }
 
+          !analysis.isRestartable -> {
+            "<span style='color: #808080;'><b>⛔ Not Skippable</b></span> " +
+              "- This composable has no restart group (non-restartable), " +
+              "so it cannot be skipped even with Strong Skipping mode"
+          }
+
           else -> {
             "<span style='color: #E8684A;'><b>❌ Not Skippable</b></span> " +
               "- This composable will always recompose. " +

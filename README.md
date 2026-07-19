@@ -791,7 +791,16 @@ public fun com.example.DetailScreen(repository: com.example.UserRepository): kot
   restartable: true
   params:
     - repository: UNKNOWN (interface or non-final class; concrete implementation unknown)
+
+@Composable
+public fun com.example.rememberUserState(user: com.example.User): com.example.UserState
+  skippable: false
+  restartable: false
+  params:
+    - user: STABLE (marked @Stable or @Immutable)
 ```
+
+**Skippable vs. restartable.** A composable is `restartable` only when the Compose compiler wraps it in a restart group. It does not for `@NonRestartableComposable`, `@ReadOnlyComposable`, or `@ExplicitGroupsComposable` composables, `inline` functions, or composables that return a non-`Unit` value (such as `rememberUserState` above). A non-restartable composable can never be `skippable`, regardless of how stable its parameters are. `@NonSkippableComposable` is the exception that stays restartable but opts out of skipping (`skippable: false`, `restartable: true`). In `stabilityCheck`, both a `skippable` and a `restartable` `true → false` transition are reported as regressions.
 
 Each parameter is reported with one of four stability values, matching the Compose compiler:
 

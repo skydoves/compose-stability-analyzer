@@ -1,0 +1,253 @@
+abstract class AbstractBase {
+  constructor() /* primary */ {
+    super/*Any*/()
+    /* <init>() */
+
+  }
+
+  open val meta: Metadata?
+    open get(): Metadata? {
+      return null
+    }
+
+}
+
+abstract class BaseCard {
+  constructor() /* primary */ {
+    super/*Any*/()
+    /* <init>() */
+
+  }
+
+  abstract fun render()
+
+}
+
+data class CardData {
+  val title: String
+    field = title
+    get
+
+  constructor(title: String) /* primary */ {
+    super/*Any*/()
+    /* <init>() */
+
+  }
+
+  operator fun component1(): String {
+    return <this>.#title
+  }
+
+  fun copy(title: String = <this>.#title): CardData {
+    return CardData(title = title)
+  }
+
+  override operator fun equals(other: Any?): Boolean {
+    when {
+      EQEQEQ(arg0 = <this>, arg1 = other) -> return true
+    }
+    when {
+      other !is CardData -> return false
+    }
+    val tmp_0: CardData = other /*as CardData */
+    when {
+      EQEQ(arg0 = <this>.#title, arg1 = tmp_0.#title).not() -> return false
+    }
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return <this>.#title.hashCode()
+  }
+
+  override fun toString(): String {
+    return "CardData(" + "title=" + <this>.#title + ")"
+  }
+
+  val badge: Metadata?
+    get(): Metadata? {
+      return null
+    }
+
+}
+
+open class CounterBase {
+  var count: Int
+    field = 0
+    get
+    set
+
+  constructor() /* primary */ {
+    super/*Any*/()
+    /* <init>() */
+
+  }
+
+}
+
+data class CounterData : CounterBase {
+  val label: String
+    field = label
+    get
+
+  constructor(label: String) /* primary */ {
+    super/*CounterBase*/()
+    /* <init>() */
+
+  }
+
+  operator fun component1(): String {
+    return <this>.#label
+  }
+
+  fun copy(label: String = <this>.#label): CounterData {
+    return CounterData(label = label)
+  }
+
+  override operator fun equals(other: Any?): Boolean {
+    when {
+      EQEQEQ(arg0 = <this>, arg1 = other) -> return true
+    }
+    when {
+      other !is CounterData -> return false
+    }
+    val tmp_1: CounterData = other /*as CounterData */
+    when {
+      EQEQ(arg0 = <this>.#label, arg1 = tmp_1.#label).not() -> return false
+    }
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return <this>.#label.hashCode()
+  }
+
+  override fun toString(): String {
+    return "CounterData(" + "label=" + <this>.#label + ")"
+  }
+
+}
+
+data class DataHolder : AbstractBase {
+  val input: String
+    field = input
+    get
+
+  constructor(input: String) /* primary */ {
+    super/*AbstractBase*/()
+    /* <init>() */
+
+  }
+
+  operator fun component1(): String {
+    return <this>.#input
+  }
+
+  fun copy(input: String = <this>.#input): DataHolder {
+    return DataHolder(input = input)
+  }
+
+  override operator fun equals(other: Any?): Boolean {
+    when {
+      EQEQEQ(arg0 = <this>, arg1 = other) -> return true
+    }
+    when {
+      other !is DataHolder -> return false
+    }
+    val tmp_2: DataHolder = other /*as DataHolder */
+    when {
+      EQEQ(arg0 = <this>.#input, arg1 = tmp_2.#input).not() -> return false
+    }
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return <this>.#input.hashCode()
+  }
+
+  override fun toString(): String {
+    return "DataHolder(" + "input=" + <this>.#input + ")"
+  }
+
+}
+
+class ProfileCard : BaseCard {
+  constructor() /* primary */ {
+    super/*BaseCard*/()
+    /* <init>() */
+
+  }
+
+  override fun render() {
+  }
+
+  val header: String
+    get(): String {
+      return "profile"
+    }
+
+}
+
+interface Metadata {
+}
+
+@TraceRecomposition(threshold = 1)
+@Composable
+fun ShowCard(card: CardData) {
+  val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ShowCard", tag = "", threshold = 1, fqName = "ShowCard", isAutoTraced = false)
+  _tracker.trackParameter(name = "card", type = "<root>.CardData", value = card, isStable = true)
+  val _startTime: Long = nanoTime()
+  try // COMPOSITE {
+  println(message = card.<get-title>())
+  // }
+  finally // COMPOSITE {
+  _tracker.recordDuration(startTimeNanos = _startTime)
+  _tracker.logIfThresholdMet()
+  // }
+}
+
+@TraceRecomposition(threshold = 1)
+@Composable
+fun ShowCounter(counter: CounterData) {
+  val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ShowCounter", tag = "", threshold = 1, fqName = "ShowCounter", isAutoTraced = false)
+  _tracker.trackParameter(name = "counter", type = "<root>.CounterData", value = counter, isStable = false)
+  val _startTime: Long = nanoTime()
+  try // COMPOSITE {
+  println(message = counter.<get-label>())
+  // }
+  finally // COMPOSITE {
+  _tracker.recordDuration(startTimeNanos = _startTime)
+  _tracker.logIfThresholdMet()
+  // }
+}
+
+@TraceRecomposition(threshold = 1)
+@Composable
+fun ShowHolder(holder: DataHolder) {
+  val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ShowHolder", tag = "", threshold = 1, fqName = "ShowHolder", isAutoTraced = false)
+  _tracker.trackParameter(name = "holder", type = "<root>.DataHolder", value = holder, isStable = true)
+  val _startTime: Long = nanoTime()
+  try // COMPOSITE {
+  println(message = holder.<get-input>())
+  // }
+  finally // COMPOSITE {
+  _tracker.recordDuration(startTimeNanos = _startTime)
+  _tracker.logIfThresholdMet()
+  // }
+}
+
+@TraceRecomposition(threshold = 1)
+@Composable
+fun ShowProfile(profile: ProfileCard) {
+  val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ShowProfile", tag = "", threshold = 1, fqName = "ShowProfile", isAutoTraced = false)
+  _tracker.trackParameter(name = "profile", type = "<root>.ProfileCard", value = profile, isStable = true)
+  val _startTime: Long = nanoTime()
+  try // COMPOSITE {
+  println(message = profile.<get-header>())
+  // }
+  finally // COMPOSITE {
+  _tracker.recordDuration(startTimeNanos = _startTime)
+  _tracker.logIfThresholdMet()
+  // }
+}
+

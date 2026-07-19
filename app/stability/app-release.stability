@@ -28,8 +28,8 @@ public fun com.skydoves.myapplication.Card(modifier: androidx.compose.ui.Modifie
 
 @Composable
 private fun com.skydoves.myapplication.ComposableValue(): kotlin.String
-  skippable: true
-  restartable: true
+  skippable: false
+  restartable: false
   params:
 
 @Composable
@@ -93,6 +93,13 @@ public fun com.skydoves.myapplication.ImmutableDataDisplay(data: com.skydoves.my
     - data: STABLE (marked @Stable or @Immutable)
 
 @Composable
+public fun com.skydoves.myapplication.InlineWrapperDemo(content: kotlin.Function2<androidx.compose.runtime.Composer, kotlin.Int, kotlin.Unit>): kotlin.Unit
+  skippable: false
+  restartable: false
+  params:
+    - content: STABLE (function type)
+
+@Composable
 public fun com.skydoves.myapplication.MainScreen(): kotlin.Unit
   skippable: true
   restartable: true
@@ -125,6 +132,20 @@ public fun com.skydoves.myapplication.MyComposable(uiResult: com.skydoves.myappl
     - uiResult: RUNTIME (requires runtime check)
     - uiResult2: RUNTIME (requires runtime check)
     - uiResult4: RUNTIME (requires runtime check)
+
+@Composable
+public fun com.skydoves.myapplication.NonRestartableDemo(text: kotlin.String): kotlin.Unit
+  skippable: false
+  restartable: false
+  params:
+    - text: STABLE (String is immutable)
+
+@Composable
+public fun com.skydoves.myapplication.NonSkippableDemo(text: kotlin.String): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - text: STABLE (String is immutable)
 
 @Composable
 public fun com.skydoves.myapplication.RealityCheckExample(tick: kotlin.Int): kotlin.Unit
@@ -286,4 +307,16 @@ public fun com.skydoves.myapplication.UnstableUserCard(user: com.skydoves.myappl
   restartable: true
   params:
     - user: UNSTABLE (has mutable properties or unstable members)
+
+@Composable
+public fun com.skydoves.myapplication.nonUnitReturnDemo(): kotlin.Int
+  skippable: false
+  restartable: false
+  params:
+
+@Composable
+public fun com.skydoves.myapplication.readOnlyDemo(): kotlin.String
+  skippable: false
+  restartable: false
+  params:
 
