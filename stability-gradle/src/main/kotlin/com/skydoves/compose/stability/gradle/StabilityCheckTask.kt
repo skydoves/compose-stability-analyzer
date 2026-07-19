@@ -365,7 +365,9 @@ public abstract class StabilityCheckTask : DefaultTask() {
     var currentReturnType: String? = null
     var currentParams = mutableListOf<ParameterInfo>()
     var currentSkippable = false
-    var currentRestartable = false
+    // Absent `restartable:` line means a legacy baseline predating restartability tracking; assume
+    // restartable (the historical behavior), matching the JSON parser's default (issue #184).
+    var currentRestartable = true
     var inParams = false
 
     file.readLines().forEach { line ->
@@ -462,6 +464,8 @@ public abstract class StabilityCheckTask : DefaultTask() {
           )
           currentQualifiedName = null
           currentParams = mutableListOf()
+          currentSkippable = false
+          currentRestartable = true
           inParams = false
         }
       }
@@ -522,6 +526,14 @@ internal sealed class StabilityDifference {
   public data class SkippabilityChanged(val function: String, val from: Boolean, val to: Boolean) :
     StabilityDifference() {
     override fun format(): String = "~ $function: skippable changed from $from to $to"
+  }
+
+  public data class RestartabilityChanged(
+    val function: String,
+    val from: Boolean,
+    val to: Boolean,
+  ) : StabilityDifference() {
+    override fun format(): String = "~ $function: restartable changed from $from to $to"
   }
 
   public data class ParameterCountChanged(val function: String, val from: Int, val to: Int) :

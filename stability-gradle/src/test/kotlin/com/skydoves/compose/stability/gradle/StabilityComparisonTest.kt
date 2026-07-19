@@ -836,11 +836,113 @@ class StabilityComparisonTest {
     assertTrue(differences[0] is StabilityDifference.NewFunction)
   }
 
+  // Issue #184: a composable that loses its restart group (restartable true -> false, e.g. by
+  // gaining @NonRestartableComposable / @ReadOnlyComposable / inline / a non-Unit return type) must
+  // be reported, so the CI gate can catch the regression.
+  @Test
+  fun testCompareStability_restartabilityChanged_trueToFalse() {
+    val current = mapOf(
+      createEntry("com.example.Test", skippable = false, restartable = false),
+    )
+    val reference = mapOf(
+      createEntry("com.example.Test", skippable = true, restartable = true),
+    )
+
+    val differences = compareStability(current, reference)
+
+    val restartabilityDiff = differences
+      .filterIsInstance<StabilityDifference.RestartabilityChanged>()
+      .single()
+    assertEquals("com.example.Test", restartabilityDiff.function)
+    assertEquals(true, restartabilityDiff.from)
+    assertEquals(false, restartabilityDiff.to)
+  }
+
+  // A restartable -> non-restartable transition is a regression and must survive regression
+  // filtering, while the reverse (false -> true) must be suppressed as non-regressive.
+  @Test
+  fun testCompareStability_restartabilityChanged_regressionFiltering() {
+    val regressed = compareStability(
+      current = mapOf(createEntry("com.example.Test", skippable = false, restartable = false)),
+      reference = mapOf(createEntry("com.example.Test", skippable = false, restartable = true)),
+      ignoreNonRegressiveChanges = true,
+    )
+    assertEquals(1, regressed.filterIsInstance<StabilityDifference.RestartabilityChanged>().size)
+
+    val recovered = compareStability(
+      current = mapOf(createEntry("com.example.Test", skippable = false, restartable = true)),
+      reference = mapOf(createEntry("com.example.Test", skippable = false, restartable = false)),
+      ignoreNonRegressiveChanges = true,
+    )
+    assertEquals(0, recovered.filterIsInstance<StabilityDifference.RestartabilityChanged>().size)
+  }
+
+  // A @NonSkippableComposable stays restartable but opts out of skipping. With all-stable params it
+  // must NOT be masked as skippable: gaining @NonSkippableComposable is a reportable regression.
+  @Test
+  fun testCompareStability_nonSkippableWithStableParamsIsNotMaskedAsSkippable() {
+    val current = mapOf(
+      createEntry(
+        "com.example.Test",
+        skippable = false,
+        restartable = true,
+        params = listOf(ParameterInfo("text", "String", "STABLE")),
+      ),
+    )
+    val reference = mapOf(
+      createEntry(
+        "com.example.Test",
+        skippable = true,
+        restartable = true,
+        params = listOf(ParameterInfo("text", "String", "STABLE")),
+      ),
+    )
+
+    val diff = compareStability(current, reference)
+      .filterIsInstance<StabilityDifference.SkippabilityChanged>()
+      .single()
+    assertEquals(true, diff.from)
+    assertEquals(false, diff.to)
+  }
+
+  // The stability configuration must still be able to rescue a genuinely unstable parameter: a
+  // restartable composable whose only unstable parameter is force-stabilized is skippable again, so
+  // no skippability regression is reported.
+  @Test
+  fun testCompareStability_configStillRescuesUnstableParam() {
+    val current = mapOf(
+      createEntry(
+        "com.example.Test",
+        skippable = false,
+        restartable = true,
+        params = listOf(ParameterInfo("user", "com.example.User", "UNSTABLE")),
+      ),
+    )
+    val reference = mapOf(
+      createEntry(
+        "com.example.Test",
+        skippable = true,
+        restartable = true,
+        params = listOf(ParameterInfo("user", "com.example.User", "STABLE")),
+      ),
+    )
+
+    val differences = compareStability(
+      current,
+      reference,
+      ignoreNonRegressiveChanges = true,
+      forceStableTypes = listOf(FqNameMatcher("com.example.User")),
+    )
+
+    assertEquals(0, differences.size)
+  }
+
   // Helper methods
   private fun createEntry(
     qualifiedName: String,
     skippable: Boolean = true,
     params: List<ParameterInfo> = emptyList(),
+    restartable: Boolean = true,
   ): Pair<String, StabilityEntry> = qualifiedName to StabilityEntry(
     qualifiedName = qualifiedName,
     simpleName = qualifiedName.substringAfterLast("."),
@@ -848,6 +950,6 @@ class StabilityComparisonTest {
     parameters = params,
     returnType = "kotlin.Unit",
     skippable = skippable,
-    restartable = true,
+    restartable = restartable,
   )
 }

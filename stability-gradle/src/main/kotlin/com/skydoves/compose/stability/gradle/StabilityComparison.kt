@@ -66,6 +66,23 @@ internal fun compareStability(
       )
     }
 
+    // Check restartability change. A composable that loses its restart group (restartable
+    // true -> false, e.g. by gaining @NonRestartableComposable / @ReadOnlyComposable /
+    // @ExplicitGroupsComposable / inline / a non-Unit return type) can no longer be skipped and
+    // re-runs whenever its parent recomposes, so it is a regression worth surfacing. Restartability
+    // is structural, so the stability configuration cannot rescue it (issue #184).
+    if (currentEntry.restartable != referenceEntry.restartable &&
+      (!ignoreNonRegressiveChanges || !currentEntry.restartable)
+    ) {
+      differences.add(
+        StabilityDifference.RestartabilityChanged(
+          functionName,
+          referenceEntry.restartable,
+          currentEntry.restartable,
+        ),
+      )
+    }
+
     // Check if parameter count changed
     if (currentEntry.parameters.size != referenceEntry.parameters.size) {
       if (
@@ -102,8 +119,25 @@ internal fun compareStability(
   return differences
 }
 
+/**
+ * Whether a composable is effectively skippable for comparison purposes. The compiler's [skippable]
+ * verdict is authoritative; the only reason to override it is that a stability configuration can
+ * mark a previously-unstable parameter type as stable at check time (without recompiling), which
+ * would make an otherwise-unstable composable skippable.
+ *
+ * That override only applies when the composable is [restartable] (a non-restartable composable is
+ * never skippable) and the configuration actually rescues a parameter the compiler saw as unstable.
+ * If every parameter was already stable yet the compiler still reported `skippable = false`, the
+ * composable opted out of skipping (`@NonSkippableComposable`), so it must not be treated as
+ * skippable (issue #184).
+ */
 private fun StabilityEntry.isStable(forceStableTypes: List<FqNameMatcher>): Boolean = skippable ||
-  (parameters.isNotEmpty() && parameters.all { it.isStable(forceStableTypes) })
+  (
+    restartable &&
+      parameters.isNotEmpty() &&
+      parameters.all { it.isStable(forceStableTypes) } &&
+      parameters.any { it.stability != "STABLE" }
+    )
 
 private fun ParameterInfo.isStable(forceStableTypes: List<FqNameMatcher>): Boolean =
   stability == "STABLE" ||

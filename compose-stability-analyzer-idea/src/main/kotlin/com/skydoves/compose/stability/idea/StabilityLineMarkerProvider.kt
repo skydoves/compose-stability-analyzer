@@ -155,9 +155,11 @@ public class StabilityLineMarkerProvider : LineMarkerProvider {
           isRuntimeOnly ->
             "🟡 Runtime Stability (skippability determined at runtime)"
 
-          // Non-restartable / non-skippable with no params → annotated to skip caching
+          // Non-restartable: the compiler generates no restart group (@NonRestartableComposable /
+          // @ReadOnlyComposable / @ExplicitGroupsComposable / inline / a non-Unit return type), so
+          // skippability does not apply.
           !analysis.isRestartable && totalCount == 0 ->
-            "⏭️ Non-Restartable (@NonRestartableComposable)" +
+            "⏭️ Non-Restartable (no restart group)" +
               "\nStability analysis is not applicable."
 
           analysis.isRestartable && !analysis.isSkippable && totalCount == 0 ->

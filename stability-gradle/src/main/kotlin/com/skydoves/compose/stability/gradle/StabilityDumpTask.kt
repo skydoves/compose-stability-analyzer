@@ -317,8 +317,15 @@ public abstract class StabilityDumpTask : DefaultTask() {
           param
         }
       }
-      val resolvedSkippable = entry.skippable ||
-        (resolvedParams.isNotEmpty() && resolvedParams.all { it.stability == "STABLE" })
+      // Only upgrade skippability when the configuration actually rescues a parameter the compiler
+      // saw as unstable, and only for a restartable composable. A non-restartable composable is
+      // never skippable, and a restartable one whose parameters were already all stable yet still
+      // reported skippable=false opted out via @NonSkippableComposable, so neither must be flipped
+      // to skippable here (issue #184).
+      val rescuedByConfiguration = resolvedParams.isNotEmpty() &&
+        resolvedParams.all { it.stability == "STABLE" } &&
+        entry.parameters.any { it.stability != "STABLE" }
+      val resolvedSkippable = entry.skippable || (entry.restartable && rescuedByConfiguration)
       entry.copy(parameters = resolvedParams, skippable = resolvedSkippable)
     }
   }

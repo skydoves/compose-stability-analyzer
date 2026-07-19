@@ -167,6 +167,10 @@ internal object DoctorAnalyzer {
         blastRadius = candidate.blastRadius,
       )
       val score = DoctorScorer.score(staticInputs, reality, live)
+      // A non-restartable composable (no restart group: @ReadOnlyComposable / @NonRestartableComposable
+      // / @ExplicitGroupsComposable / inline / a non-Unit return) is structurally non-skippable and
+      // has no actionable stability fix, so it is not a prescription target (issue #184).
+      if (!candidate.info.isRestartable) return@forEachIndexed
       if (score.value < settings.doctorMinScore) return@forEachIndexed
 
       val causes = buildCauses(candidate, reality)

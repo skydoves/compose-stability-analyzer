@@ -75,18 +75,19 @@ internal object StabilityAnalyzerK2 {
     // Get function symbol
     val functionSymbol = function.symbol
 
-    // Skip analysis for @NonRestartableComposable / @NonSkippableComposable —
-    // these composables have no caching/comparison code, so stability is irrelevant.
-    val hasNonRestartable =
-      function.hasAnnotation(StabilityConstants.Strings.NON_RESTARTABLE_COMPOSABLE)
+    // A non-restartable composable has no restart group, so it can never be skipped, and
+    // @NonSkippableComposable opts out of skipping explicitly. In either case parameter stability
+    // is irrelevant, so skip the analysis. Kept in sync with the compiler's
+    // StabilityAnalyzerTransformer (issue #184).
+    val isRestartable = isRestartableComposable(function, functionSymbol)
     val hasNonSkippable =
       function.hasAnnotation(StabilityConstants.Strings.NON_SKIPPABLE_COMPOSABLE)
-    if (hasNonRestartable || hasNonSkippable) {
+    if (!isRestartable || hasNonSkippable) {
       return ComposableStabilityInfo(
         name = function.name ?: StabilityConstants.Strings.UNKNOWN,
         fqName = functionSymbol.callableId?.asSingleFqName()?.asString()
           ?: StabilityConstants.Strings.UNKNOWN,
-        isRestartable = !hasNonRestartable,
+        isRestartable = isRestartable,
         isSkippable = false,
         isReadonly = function.hasAnnotation(StabilityConstants.Strings.READ_ONLY_COMPOSABLE),
         parameters = emptyList(),
@@ -152,8 +153,7 @@ internal object StabilityAnalyzerK2 {
     }
 
     val isSkippableInStrongSkippingMode = isStrongSkippingEnabled && !isNaturallySkippable
-    val isRestartable =
-      !function.hasAnnotation(StabilityConstants.Strings.NON_RESTARTABLE_COMPOSABLE)
+    // isRestartable was computed above; only restartable composables reach this point.
     val isReadonly = function.hasAnnotation(StabilityConstants.Strings.READ_ONLY_COMPOSABLE)
 
     return ComposableStabilityInfo(
@@ -167,6 +167,28 @@ internal object StabilityAnalyzerK2 {
       isSkippableInStrongSkippingMode = isSkippableInStrongSkippingMode,
       receivers = receivers,
     )
+  }
+
+  /**
+   * Whether a @Composable is restartable — i.e. the compiler wraps it in a restart group. A
+   * non-restartable composable has no restart group, so it can never be skipped and its parameter
+   * stability is moot. Mirrors the compiler's StabilityAnalyzerTransformer.isRestartable so the IDE
+   * verdict and the `stabilityDump` output stay in sync (issue #184):
+   * `@NonRestartableComposable`, `@ReadOnlyComposable`, `@ExplicitGroupsComposable`, `inline`, and a
+   * non-`Unit` return type each make a composable non-restartable.
+   */
+  private fun KaSession.isRestartableComposable(
+    function: KtNamedFunction,
+    functionSymbol: KaFunctionSymbol,
+  ): Boolean {
+    if (function.hasAnnotation(StabilityConstants.Strings.NON_RESTARTABLE_COMPOSABLE)) return false
+    if (function.hasAnnotation(StabilityConstants.Strings.READ_ONLY_COMPOSABLE)) return false
+    if (function.hasAnnotation(StabilityConstants.Strings.EXPLICIT_GROUPS_COMPOSABLE)) return false
+    if (function.hasModifier(KtTokens.INLINE_KEYWORD)) return false
+    val returnTypeFqName =
+      functionSymbol.returnType.expandedSymbol?.classId?.asSingleFqName()?.asString()
+    if (returnTypeFqName != "kotlin.Unit") return false
+    return true
   }
 
   /**

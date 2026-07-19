@@ -154,19 +154,19 @@ internal object StabilityAnalyzer {
    * PSI-based analysis (fallback for K1 mode or when K2 fails).
    */
   private fun analyzePsi(function: KtNamedFunction): ComposableStabilityInfo {
-    // Skip analysis for @NonRestartableComposable / @NonSkippableComposable —
-    // these composables have no caching/comparison code, so stability is irrelevant.
-    val hasNonRestartable = function.hasAnnotation(
-      StabilityConstants.Strings.NON_RESTARTABLE_COMPOSABLE,
-    )
+    // A non-restartable composable has no restart group, so it can never be skipped, and
+    // @NonSkippableComposable opts out of skipping explicitly. In either case parameter stability
+    // is irrelevant, so skip the analysis. Kept in sync with the compiler's
+    // StabilityAnalyzerTransformer and the K2 analyzer (issue #184).
+    val isRestartable = isRestartableComposable(function)
     val hasNonSkippable = function.hasAnnotation(
       StabilityConstants.Strings.NON_SKIPPABLE_COMPOSABLE,
     )
-    if (hasNonRestartable || hasNonSkippable) {
+    if (!isRestartable || hasNonSkippable) {
       return ComposableStabilityInfo(
         name = function.name ?: StabilityConstants.Strings.UNKNOWN,
         fqName = function.fqName?.asString() ?: StabilityConstants.Strings.UNKNOWN,
-        isRestartable = !hasNonRestartable,
+        isRestartable = isRestartable,
         isSkippable = false,
         isReadonly = function.hasAnnotation(StabilityConstants.Strings.READ_ONLY_COMPOSABLE),
         parameters = emptyList(),
@@ -197,7 +197,7 @@ internal object StabilityAnalyzer {
     // Track if skippable ONLY due to strong skipping mode
     val isSkippableInStrongSkippingMode = isStrongSkippingEnabled && !isNaturallySkippable
 
-    val isRestartable = !function.hasAnnotation("NonRestartableComposable")
+    // isRestartable was computed above; only restartable composables reach this point.
     val isReadonly = function.hasAnnotation("ReadOnlyComposable")
 
     return ComposableStabilityInfo(
@@ -210,6 +210,37 @@ internal object StabilityAnalyzer {
       isSkippableInStrongSkippingMode = isSkippableInStrongSkippingMode,
       receivers = receivers,
     )
+  }
+
+  /**
+   * Whether a @Composable is restartable — i.e. the compiler wraps it in a restart group. A
+   * non-restartable composable has no restart group, so it can never be skipped and its parameter
+   * stability is moot. Mirrors the compiler's StabilityAnalyzerTransformer.isRestartable and the K2
+   * analyzer so every path agrees (issue #184): `@NonRestartableComposable`, `@ReadOnlyComposable`,
+   * `@ExplicitGroupsComposable`, `inline`, and a non-`Unit` return type each make a composable
+   * non-restartable.
+   *
+   * The return-type check is best-effort on the PSI path: only an explicit non-`Unit` return type is
+   * detected (an inferred expression-body type cannot be resolved without the K2 API, which the K2
+   * analyzer handles).
+   */
+  private fun isRestartableComposable(function: KtNamedFunction): Boolean {
+    if (function.hasAnnotation(StabilityConstants.Strings.NON_RESTARTABLE_COMPOSABLE)) return false
+    if (function.hasAnnotation(StabilityConstants.Strings.READ_ONLY_COMPOSABLE)) return false
+    if (function.hasAnnotation(StabilityConstants.Strings.EXPLICIT_GROUPS_COMPOSABLE)) return false
+    if (function.hasModifier(org.jetbrains.kotlin.lexer.KtTokens.INLINE_KEYWORD)) return false
+    if (function.hasExplicitNonUnitReturnType()) return false
+    return true
+  }
+
+  /**
+   * Whether the function declares an explicit return type other than `Unit`. A `@Composable`
+   * function normally returns `Unit` (no type reference); an explicit non-`Unit` type (e.g.
+   * `@Composable fun rememberFoo(): Foo`) means the compiler generates no restart group.
+   */
+  private fun KtNamedFunction.hasExplicitNonUnitReturnType(): Boolean {
+    val typeText = typeReference?.text?.trim() ?: return false
+    return typeText != "Unit" && typeText != "kotlin.Unit"
   }
 
   /**

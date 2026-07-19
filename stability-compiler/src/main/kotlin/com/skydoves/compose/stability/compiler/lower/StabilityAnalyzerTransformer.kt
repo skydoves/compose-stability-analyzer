@@ -61,6 +61,8 @@ public class StabilityAnalyzerTransformer(
   private val previewFqName = FqName("androidx.compose.ui.tooling.preview.Preview")
   private val nonRestartableComposableFqName =
     FqName("androidx.compose.runtime.NonRestartableComposable")
+  private val nonSkippableComposableFqName =
+    FqName("androidx.compose.runtime.NonSkippableComposable")
   private val readOnlyComposableFqName =
     FqName("androidx.compose.runtime.ReadOnlyComposable")
   private val explicitGroupsComposableFqName =
@@ -158,7 +160,7 @@ public class StabilityAnalyzerTransformer(
             simpleName = functionName,
             visibility = visibility,
             skippable = isSkippable(declaration, parameters),
-            restartable = true, // All composables are restartable by default
+            restartable = isRestartable(declaration),
             returnType = declaration.returnType.render(),
             parameters = parameters,
           ),
@@ -1093,14 +1095,36 @@ public class StabilityAnalyzerTransformer(
   }
 
   /**
-   * Determine if a composable function is skippable.
-   * A function is skippable if all parameters are stable.
+   * Determine if a composable function is restartable, i.e. whether the Compose compiler generates
+   * a restart group for it. It does not for `@NonRestartableComposable`, `@ReadOnlyComposable`, or
+   * `@ExplicitGroupsComposable` composables, `inline` functions, or composables that return a
+   * non-`Unit` value (e.g. `@Composable fun rememberFoo(): Foo`). These are the restart-group-relevant
+   * subset of the conditions in [isAutoTraceable] (which additionally filters out non-block bodies,
+   * property getters, `suspend`, `@IgnoreStabilityReport`, and `@Preview`) (issue #184).
+   */
+  private fun isRestartable(declaration: IrFunction): Boolean {
+    if (declaration.hasAnnotation(nonRestartableComposableFqName)) return false
+    if (declaration.hasAnnotation(readOnlyComposableFqName)) return false
+    if (declaration.hasAnnotation(explicitGroupsComposableFqName)) return false
+    if (declaration.isInline) return false
+    if (!declaration.returnType.isUnit()) return false
+    return true
+  }
+
+  /**
+   * Determine if a composable function is skippable. A non-restartable composable (see
+   * [isRestartable]) can never be skipped, and `@NonSkippableComposable` opts out of skipping
+   * explicitly; otherwise a function is skippable if all parameters are stable.
    */
   private fun isSkippable(
     declaration: IrFunction,
     parameters: List<com.skydoves.compose.stability.compiler.ParameterStabilityInfo>,
   ): Boolean {
-    // If any parameter is unstable, the function is not skippable
+    // Skipping requires a restart group, so a non-restartable composable is never skippable.
+    if (!isRestartable(declaration)) return false
+    // @NonSkippableComposable is restartable but opts out of skipping (issue #184).
+    if (declaration.hasAnnotation(nonSkippableComposableFqName)) return false
+    // Otherwise a function is skippable only if all parameters are stable.
     return parameters.all { it.stability == "STABLE" }
   }
 

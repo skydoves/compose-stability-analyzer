@@ -86,6 +86,7 @@ internal object StabilityConstants {
     const val NON_RESTARTABLE_COMPOSABLE = "NonRestartableComposable"
     const val NON_SKIPPABLE_COMPOSABLE = "NonSkippableComposable"
     const val READ_ONLY_COMPOSABLE = "ReadOnlyComposable"
+    const val EXPLICIT_GROUPS_COMPOSABLE = "ExplicitGroupsComposable"
   }
 
   // Stability reason messages
