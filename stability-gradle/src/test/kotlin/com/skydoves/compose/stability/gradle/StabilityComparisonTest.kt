@@ -98,6 +98,14 @@ class StabilityComparisonTest {
         skippable = false,
         restartable = false,
       ),
+      // Composable that returns a non-Unit value (also non-restartable) with a stable parameter,
+      // e.g. `@Composable fun returnValue(text: String): String` (PR #193 follow-up).
+      createEntry(
+        "com.example.returnValue",
+        skippable = false,
+        restartable = false,
+        params = listOf(ParameterInfo("text", "kotlin.String", "STABLE")),
+      ),
       // Control: a new composable that actually introduces an unstable parameter is still reported.
       createEntry(
         "com.example.UnstableDemo",
