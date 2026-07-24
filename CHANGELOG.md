@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.1] - 2026-07-24
+
+### Fixed
+- **IDE plugin compatibility with newer IDEs** — removed the `until-build` upper bound so the plugin installs on IntelliJ IDEA / Android Studio 2026.2 and later, and K2 Analysis API access now falls back to PSI on any linkage error so it stays resilient across IDE versions (#191).
+- **`ignoreNonRegressiveChanges`** — a new composable whose parameters are all stable is no longer reported when it is non-restartable or opts out of skipping (`@NonSkippableComposable`, a non-`Unit` return, `inline`, etc.). Only composables that introduce an unstable parameter are reported (#192).
+
 ## [0.11.0] - 2026-07-19
 
 ### Added

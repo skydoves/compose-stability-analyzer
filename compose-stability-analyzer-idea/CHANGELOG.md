@@ -2,6 +2,11 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.11.1] - 2026-07-24
+
+### Fixed
+- **Compatibility with newer IDEs** (#191) — removed the `until-build` upper bound so the plugin installs on IntelliJ IDEA / Android Studio 2026.2 and later, and K2 Analysis API access now falls back to PSI on any linkage error.
+
 ## [0.11.0] - 2026-07-19
 
 ### Fixed

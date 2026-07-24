@@ -46,7 +46,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     // This version should match the version in gradle.properties (VERSION_NAME).
     // Update this when bumping the library version — it pins the compiler/runtime
     // artifacts the Gradle plugin pulls onto the Kotlin compile classpath.
-    internal const val VERSION = "0.11.0"
+    internal const val VERSION = "0.11.1"
 
     // Compiler option keys
     private const val OPTION_ENABLED = "enabled"
