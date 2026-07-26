@@ -8,10 +8,7 @@ on:
 jobs:
   publish:
     name: Snapshot build and publish
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v6
