@@ -32,6 +32,11 @@ kotlin {
   macosX64()
   macosArm64()
 
+  linuxX64()
+  linuxArm64()
+
+  mingwX64()
+
   js {
     browser()
     nodejs()
@@ -61,6 +66,15 @@ kotlin {
               withMacosArm64()
             }
           }
+        }
+
+        group("linux") {
+          withLinuxX64()
+          withLinuxArm64()
+        }
+
+        group("mingw") {
+          withMingwX64()
         }
       }
     }
