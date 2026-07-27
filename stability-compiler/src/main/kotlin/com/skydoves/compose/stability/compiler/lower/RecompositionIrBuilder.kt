@@ -148,22 +148,26 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
       // own recompositionNanoTime(): it exists on every target and reads the very clock
       // RecompositionTracker.recordDuration() subtracts from. System.nanoTime() is only a
       // fallback for runtimes older than that function, where it is the clock the runtime used.
+      // Both lookups match on the signature rather than taking the first hit: findFunctions and
+      // IrClass.functions return candidates in an unspecified order, so an added overload would
+      // otherwise silently make the generated call target the wrong function.
       try {
         nanoTimeFunctionSymbol = finder.findFunctions(
           CallableId(
             runtimePackageFqName,
             Name.identifier("recompositionNanoTime"),
           ),
-        ).firstOrNull()
+        ).singleOrNull { it.isNoArgLongFunction() }
 
         if (nanoTimeFunctionSymbol == null) {
           val systemClass = finder.findClass(
             ClassId.topLevel(FqName("java.lang.System")),
           )
           nanoTimeFunctionSymbol =
-            systemClass?.owner?.functions?.firstOrNull {
-              it.name.asString() == "nanoTime"
-            }?.symbol
+            systemClass?.owner?.functions
+              ?.filter { it.name.asString() == "nanoTime" }
+              ?.singleOrNull { it.symbol.isNoArgLongFunction() }
+              ?.symbol
         }
       } catch (_: Exception) {
         // Timing stays off when neither clock can be resolved.
@@ -174,6 +178,12 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
       return false
     }
   }
+
+  /**
+   * True for a clock candidate: takes no arguments (no receivers either) and returns `Long`.
+   */
+  private fun IrSimpleFunctionSymbol.isNoArgLongFunction(): Boolean =
+    owner.parameters.isEmpty() && owner.returnType == context.irBuiltIns.longType
 
   /**
    * Injects recomposition tracking code into the given function.

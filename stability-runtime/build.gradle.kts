@@ -58,8 +58,10 @@ kotlin {
         withJvm()
       }
       group("nonJvm") {
-        withJs()
-        withWasmJs()
+        group("web") {
+          withJs()
+          withWasmJs()
+        }
         group("native") {
           group("apple") {
             group("ios") {

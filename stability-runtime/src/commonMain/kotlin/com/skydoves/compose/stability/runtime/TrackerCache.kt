@@ -19,10 +19,13 @@ package com.skydoves.compose.stability.runtime
  * Returns the tracker cached under [key], creating and caching it with [create] on first use.
  *
  * The cache is what makes a [RecompositionTracker] survive across recompositions, so it is
- * process-global. Only the storage differs per platform:
+ * process-global. Implementations must return the same instance for a repeated [key] and must be
+ * safe against a concurrent insert wherever the platform can actually run threads. Only the
+ * storage differs:
  * - Android/JVM: a `ConcurrentHashMap`, since trace-all lets several composition threads (or
- *   Previews) reach the same key at once and the insert has to be atomic.
- * - Everything else: a plain map, because those runtimes compose on a single thread.
+ *   Previews) reach the same key at once.
+ * - Native: a copy-on-write map behind an atomic compare-and-set, for the same reason.
+ * - JS/Wasm: a plain map, because those runtimes execute Kotlin on a single thread.
  */
 internal expect fun getOrCreateTracker(
   key: String,

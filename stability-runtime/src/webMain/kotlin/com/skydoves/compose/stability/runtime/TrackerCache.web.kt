@@ -15,8 +15,8 @@
  */
 package com.skydoves.compose.stability.runtime
 
-// Global cache to persist trackers across recompositions. A plain map is enough here: JS, Wasm
-// and native compose on a single thread, so there is no concurrent insert to guard against.
+// Global cache to persist trackers across recompositions. A plain map is safe here: JS and Wasm
+// run Kotlin on a single thread, so two callers cannot insert into this map at the same time.
 private val trackerCache = mutableMapOf<String, RecompositionTracker>()
 
 internal actual fun getOrCreateTracker(

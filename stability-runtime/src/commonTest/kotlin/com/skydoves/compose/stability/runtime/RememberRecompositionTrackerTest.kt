@@ -33,16 +33,20 @@ import kotlin.test.assertTrue
 class RememberRecompositionTrackerTest {
 
   private lateinit var logger: RecordingLogger
+  private var wasEnabled: Boolean = true
 
   @BeforeTest
   fun setup() {
     logger = RecordingLogger()
+    wasEnabled = ComposeStabilityAnalyzer.isEnabled()
     ComposeStabilityAnalyzer.setLogger(logger)
     ComposeStabilityAnalyzer.setEnabled(true)
   }
 
   @AfterTest
   fun tearDown() {
+    // Both the logger and the enabled flag are process-global, so restore them for other tests.
+    ComposeStabilityAnalyzer.setEnabled(wasEnabled)
     ComposeStabilityAnalyzer.setLogger(DefaultRecompositionLogger())
   }
 
@@ -86,17 +90,9 @@ class RememberRecompositionTrackerTest {
   @Test
   fun recompositionNanoTime_advances() {
     val start = recompositionNanoTime()
+    val later = awaitClockAdvance(start)
 
-    // Reads the clock until it moves instead of sleeping: this is the regression guard for
-    // platforms that used to hardcode 0, so it must fail rather than hang if the clock is frozen.
-    var reads = 0
-    var later = recompositionNanoTime()
-    while (later <= start && reads < MAX_CLOCK_READS) {
-      later = recompositionNanoTime()
-      reads++
-    }
-
-    assertTrue(later > start, "clock did not advance after $reads reads")
+    assertTrue(later > start, "clock did not advance within $MAX_CLOCK_READS reads")
   }
 
   @Test
@@ -115,11 +111,25 @@ class RememberRecompositionTrackerTest {
     val tracker = RecompositionTracker("Timed", "", 1)
 
     val startedAt = recompositionNanoTime()
+    // Let the clock move first: a positive duration is what proves recordDuration and the
+    // generated start-time capture read the same working clock, which `>= 0` would not.
+    awaitClockAdvance(startedAt)
     tracker.recordDuration(startedAt)
     tracker.logIfThresholdMet()
 
     val duration = logger.events.single().durationNanos
-    assertTrue(duration >= 0, "duration must not be negative, was $duration")
+    assertTrue(duration > 0, "duration must be positive, was $duration")
+  }
+
+  /** Reads the clock until it passes [from], instead of sleeping. Returns the last reading. */
+  private fun awaitClockAdvance(from: Long): Long {
+    var reads = 0
+    var now = recompositionNanoTime()
+    while (now <= from && reads < MAX_CLOCK_READS) {
+      now = recompositionNanoTime()
+      reads++
+    }
+    return now
   }
 
   private class RecordingLogger : RecompositionLogger {

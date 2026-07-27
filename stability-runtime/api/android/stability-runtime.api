@@ -176,6 +176,11 @@ public final class com/skydoves/compose/stability/runtime/RememberRecompositionT
 	public static final fun rememberRecompositionTracker (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Z)Lcom/skydoves/compose/stability/runtime/RecompositionTracker;
 }
 
+public final class com/skydoves/compose/stability/runtime/RememberRecompositionTracker_androidKt {
+	public static final synthetic fun rememberRecompositionTracker (Ljava/lang/String;Ljava/lang/String;I)Lcom/skydoves/compose/stability/runtime/RecompositionTracker;
+	public static final synthetic fun rememberRecompositionTracker (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Z)Lcom/skydoves/compose/stability/runtime/RecompositionTracker;
+}
+
 public abstract interface annotation class com/skydoves/compose/stability/runtime/StableForAnalysis : java/lang/annotation/Annotation {
 }
 
