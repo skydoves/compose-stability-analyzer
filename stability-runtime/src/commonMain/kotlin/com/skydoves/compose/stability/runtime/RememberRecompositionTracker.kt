@@ -15,13 +15,13 @@
  */
 package com.skydoves.compose.stability.runtime
 
-import java.util.concurrent.ConcurrentHashMap
-
 /**
  * Gets or creates a RecompositionTracker instance for tracking.
  *
  * This function is called by compiler-generated code to get a tracker instance.
- * The tracker manages its own state across recompositions using a global map.
+ * The tracker manages its own state across recompositions using a global cache, so it lives in
+ * common code: every target the runtime publishes must expose it, otherwise the compiler plugin
+ * cannot resolve it and silently skips instrumenting `@TraceRecomposition` composables.
  *
  * @param composableName The name of the composable function being tracked
  * @param tag Custom tag from @TraceRecomposition annotation
@@ -39,9 +39,7 @@ public fun rememberRecompositionTracker(
   isAutoTraced: Boolean,
 ): RecompositionTracker {
   val key = "${fqName.ifEmpty { composableName }}|$tag"
-  // Resolves to the ConcurrentMap.getOrPut extension (putIfAbsent-based), so concurrent callers
-  // always converge on one tracker instance. computeIfAbsent is avoided: it requires API 24+.
-  return trackerCache.getOrPut(key) {
+  return getOrCreateTracker(key) {
     createRecompositionTracker(composableName, tag, threshold, fqName, isAutoTraced)
   }
 }
@@ -56,7 +54,3 @@ public fun rememberRecompositionTracker(
   threshold: Int,
 ): RecompositionTracker =
   rememberRecompositionTracker(composableName, tag, threshold, fqName = "", isAutoTraced = false)
-
-// Global cache to persist trackers across recompositions. Concurrent because trace-all lets
-// multiple composition threads (or Previews) hit this map simultaneously.
-private val trackerCache = ConcurrentHashMap<String, RecompositionTracker>()

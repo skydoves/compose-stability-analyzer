@@ -64,6 +64,8 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
     FqName("com.skydoves.compose.stability.runtime.RecompositionTracker")
   private val rememberRecompositionTrackerFqName =
     FqName("com.skydoves.compose.stability.runtime.rememberRecompositionTracker")
+  private val runtimePackageFqName =
+    FqName("com.skydoves.compose.stability.runtime")
 
   // Cached symbols
   private var trackerClassSymbol: IrClassSymbol? = null
@@ -73,7 +75,7 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
   private var trackStateFunctionSymbol: IrSimpleFunctionSymbol? = null
   private var logIfThresholdMetFunctionSymbol: IrSimpleFunctionSymbol? = null
   private var recordDurationFunctionSymbol: IrSimpleFunctionSymbol? = null
-  private var systemNanoTimeFunctionSymbol: IrSimpleFunctionSymbol? = null
+  private var nanoTimeFunctionSymbol: IrSimpleFunctionSymbol? = null
 
   /**
    * Initialize and cache symbols for runtime classes.
@@ -142,17 +144,29 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
           it.name.asString() == "recordDuration"
         }?.symbol
 
-      // Resolve System.nanoTime() for JVM platforms
+      // Resolve the clock for the start time captured at composable entry. Prefer the runtime's
+      // own recompositionNanoTime(): it exists on every target and reads the very clock
+      // RecompositionTracker.recordDuration() subtracts from. System.nanoTime() is only a
+      // fallback for runtimes older than that function, where it is the clock the runtime used.
       try {
-        val systemClass = finder.findClass(
-          ClassId.topLevel(FqName("java.lang.System")),
-        )
-        systemNanoTimeFunctionSymbol =
-          systemClass?.owner?.functions?.firstOrNull {
-            it.name.asString() == "nanoTime"
-          }?.symbol
+        nanoTimeFunctionSymbol = finder.findFunctions(
+          CallableId(
+            runtimePackageFqName,
+            Name.identifier("recompositionNanoTime"),
+          ),
+        ).firstOrNull()
+
+        if (nanoTimeFunctionSymbol == null) {
+          val systemClass = finder.findClass(
+            ClassId.topLevel(FqName("java.lang.System")),
+          )
+          nanoTimeFunctionSymbol =
+            systemClass?.owner?.functions?.firstOrNull {
+              it.name.asString() == "nanoTime"
+            }?.symbol
+        }
       } catch (_: Exception) {
-        // Not available on non-JVM platforms
+        // Timing stays off when neither clock can be resolved.
       }
 
       return true
@@ -164,11 +178,11 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
   /**
    * Injects recomposition tracking code into the given function.
    *
-   * On JVM platforms with timing support, generates:
+   * With timing support, generates:
    * ```
    * val _tracker = rememberRecompositionTracker(name, tag, threshold, fqName, isAutoTraced)
    * _tracker.trackParameter("param1", "Type1", param1, isStable1)
-   * val _startTime = System.nanoTime()
+   * val _startTime = recompositionNanoTime()
    * try {
    *   // ... original function body
    * } finally {
@@ -177,8 +191,8 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
    * }
    * ```
    *
-   * On non-JVM platforms (or when timing symbols are unavailable),
-   * falls back to the original behavior without timing.
+   * When the timing symbols are unavailable (a runtime older than `recompositionNanoTime` on a
+   * target without `System.nanoTime`), falls back to the original behavior without timing.
    */
   public fun injectTrackingCode(
     function: IrFunction,
@@ -219,9 +233,9 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
       val logCall =
         createLogIfThresholdMetCall(builder, trackerVariable)
 
-      // Check if timing injection is available (JVM only)
+      // Check if timing injection is available (needs a clock and recordDuration)
       val timingAvailable =
-        systemNanoTimeFunctionSymbol != null &&
+        nanoTimeFunctionSymbol != null &&
           recordDurationFunctionSymbol != null
 
       if (stateVariables.isEmpty()) {
@@ -387,14 +401,14 @@ public class RecompositionIrBuilder(private val context: IrPluginContext) {
 
   /**
    * Creates an IrVariable for the start time:
-   * `val _startTime = System.nanoTime()`
+   * `val _startTime = recompositionNanoTime()`
    */
   private fun createStartTimeVariable(
     builder: IrBuilderWithScope,
     function: IrFunction,
   ): IrVariable {
     val nanoTimeCall =
-      builder.irCall(systemNanoTimeFunctionSymbol!!)
+      builder.irCall(nanoTimeFunctionSymbol!!)
     return buildVariable(
       parent = function,
       startOffset = UNDEFINED_OFFSET,

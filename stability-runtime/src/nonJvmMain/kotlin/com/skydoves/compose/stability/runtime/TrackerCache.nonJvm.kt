@@ -15,8 +15,11 @@
  */
 package com.skydoves.compose.stability.runtime
 
-internal actual fun installStateWriteTracker() {
-  // No Compose Snapshot API wired on this platform; write-site capture is unavailable.
-}
+// Global cache to persist trackers across recompositions. A plain map is enough here: JS, Wasm
+// and native compose on a single thread, so there is no concurrent insert to guard against.
+private val trackerCache = mutableMapOf<String, RecompositionTracker>()
 
-internal actual fun writeSiteFor(state: Any?): String? = null
+internal actual fun getOrCreateTracker(
+  key: String,
+  create: () -> RecompositionTracker,
+): RecompositionTracker = trackerCache.getOrPut(key, create)

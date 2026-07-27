@@ -46,15 +46,21 @@ kotlin {
     browser()
   }
 
+  // Every target belongs to a family that owns the platform-specific bits (tracker cache,
+  // monotonic clock, logger, state-write capture). Adding a target means joining a family, so
+  // it inherits working actuals instead of silently missing the `@TraceRecomposition` entry
+  // point the compiler plugin looks up.
   @Suppress("OPT_IN_USAGE")
   applyHierarchyTemplate {
     common {
-      withAndroidTarget()
-      withJvm()
-      withJs()
-      withWasmJs()
-      group("skia") {
-        group("darwin") {
+      group("jvmCommon") {
+        withAndroidTarget()
+        withJvm()
+      }
+      group("nonJvm") {
+        withJs()
+        withWasmJs()
+        group("native") {
           group("apple") {
             group("ios") {
               withIosX64()
@@ -66,15 +72,15 @@ kotlin {
               withMacosArm64()
             }
           }
-        }
 
-        group("linux") {
-          withLinuxX64()
-          withLinuxArm64()
-        }
+          group("linux") {
+            withLinuxX64()
+            withLinuxArm64()
+          }
 
-        group("mingw") {
-          withMingwX64()
+          group("mingw") {
+            withMingwX64()
+          }
         }
       }
     }

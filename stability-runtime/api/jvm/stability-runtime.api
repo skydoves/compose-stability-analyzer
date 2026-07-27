@@ -171,7 +171,7 @@ public final class com/skydoves/compose/stability/runtime/RecompositionTrackerKt
 	public static synthetic fun createRecompositionTracker$default (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;ZILjava/lang/Object;)Lcom/skydoves/compose/stability/runtime/RecompositionTracker;
 }
 
-public final class com/skydoves/compose/stability/runtime/RememberRecompositionTracker_jvmKt {
+public final class com/skydoves/compose/stability/runtime/RememberRecompositionTrackerKt {
 	public static final fun rememberRecompositionTracker (Ljava/lang/String;Ljava/lang/String;I)Lcom/skydoves/compose/stability/runtime/RecompositionTracker;
 	public static final fun rememberRecompositionTracker (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Z)Lcom/skydoves/compose/stability/runtime/RecompositionTracker;
 }
@@ -199,6 +199,10 @@ public final class com/skydoves/compose/stability/runtime/StateChange {
 	public final fun getWriteSite ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/skydoves/compose/stability/runtime/TimeSourceKt {
+	public static final fun recompositionNanoTime ()J
 }
 
 public abstract interface annotation class com/skydoves/compose/stability/runtime/TraceRecomposition : java/lang/annotation/Annotation {

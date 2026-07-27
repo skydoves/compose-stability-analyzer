@@ -15,4 +15,11 @@
  */
 package com.skydoves.compose.stability.runtime
 
-internal actual fun currentNanoTime(): Long = 0L
+import kotlin.time.TimeSource
+
+// The monotonic clock the platform provides: getTimeNanos() on native, performance.now() on JS
+// and Wasm. Marked once and read as an elapsed value, since kotlin.time exposes no absolute
+// reading. Only differences between two readings are ever used.
+private val origin = TimeSource.Monotonic.markNow()
+
+internal actual fun currentNanoTime(): Long = origin.elapsedNow().inWholeNanoseconds

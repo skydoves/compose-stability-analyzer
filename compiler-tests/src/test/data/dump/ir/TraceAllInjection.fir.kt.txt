@@ -67,7 +67,7 @@ data class User {
 fun AutoTracedCard(user: User) {
   val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "AutoTracedCard", tag = "", threshold = 2, fqName = "AutoTracedCard", isAutoTraced = true)
   _tracker.trackParameter(name = "user", type = "<root>.User", value = user, isStable = true)
-  val _startTime: Long = nanoTime()
+  val _startTime: Long = recompositionNanoTime()
   try // COMPOSITE {
   println(message = "Rendering: " + user.<get-name>())
   // }
@@ -82,7 +82,7 @@ fun CardWithDefaults(user: User, highlighted: Boolean = false) {
   val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "CardWithDefaults", tag = "", threshold = 2, fqName = "CardWithDefaults", isAutoTraced = true)
   _tracker.trackParameter(name = "user", type = "<root>.User", value = user, isStable = true)
   _tracker.trackParameter(name = "highlighted", type = "kotlin.Boolean", value = highlighted, isStable = true)
-  val _startTime: Long = nanoTime()
+  val _startTime: Long = recompositionNanoTime()
   try // COMPOSITE {
   println(message = "Rendering: " + user.<get-name>() + " (" + highlighted + ")")
   // }
@@ -97,7 +97,7 @@ fun CardWithDefaults(user: User, highlighted: Boolean = false) {
 fun ExplicitlyTracedCard(user: User) {
   val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ExplicitlyTracedCard", tag = "explicit", threshold = 5, fqName = "ExplicitlyTracedCard", isAutoTraced = false)
   _tracker.trackParameter(name = "user", type = "<root>.User", value = user, isStable = true)
-  val _startTime: Long = nanoTime()
+  val _startTime: Long = recompositionNanoTime()
   try // COMPOSITE {
   println(message = "Rendering: " + user.<get-name>())
   // }
@@ -111,7 +111,7 @@ fun ExplicitlyTracedCard(user: User) {
 fun ExpressionBodyCard(user: User) {
   val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ExpressionBodyCard", tag = "", threshold = 2, fqName = "ExpressionBodyCard", isAutoTraced = true)
   _tracker.trackParameter(name = "user", type = "<root>.User", value = user, isStable = true)
-  val _startTime: Long = nanoTime()
+  val _startTime: Long = recompositionNanoTime()
   try // COMPOSITE {
   return println(message = "Rendering: " + user.<get-name>())
   // }
@@ -142,7 +142,7 @@ fun NonRestartableCard(user: User) {
 fun CardScope.ScopedCard(user: User) {
   val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ScopedCard", tag = "", threshold = 2, fqName = "ScopedCard", isAutoTraced = true)
   _tracker.trackParameter(name = "user", type = "<root>.User", value = user, isStable = true)
-  val _startTime: Long = nanoTime()
+  val _startTime: Long = recompositionNanoTime()
   try // COMPOSITE {
   println(message = "Rendering in scope: " + user.<get-name>())
   // }

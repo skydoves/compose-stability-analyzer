@@ -48,7 +48,7 @@ interface ToBeStable {
 fun ComposableToBeSkippable(wrapper: Wrapper) {
   val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ComposableToBeSkippable", tag = "", threshold = 2, fqName = "ComposableToBeSkippable", isAutoTraced = true)
   _tracker.trackParameter(name = "wrapper", type = "<root>.Wrapper", value = wrapper, isStable = true)
-  val _startTime: Long = nanoTime()
+  val _startTime: Long = recompositionNanoTime()
   try // COMPOSITE {
   println(message = wrapper.toString())
   // }
@@ -57,3 +57,4 @@ fun ComposableToBeSkippable(wrapper: Wrapper) {
   _tracker.logIfThresholdMet()
   // }
 }
+

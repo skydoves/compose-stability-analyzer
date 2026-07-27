@@ -15,8 +15,16 @@
  */
 package com.skydoves.compose.stability.runtime
 
-internal actual fun installStateWriteTracker() {
-  // No Compose Snapshot API wired on this platform; write-site capture is unavailable.
-}
-
-internal actual fun writeSiteFor(state: Any?): String? = null
+/**
+ * Returns the tracker cached under [key], creating and caching it with [create] on first use.
+ *
+ * The cache is what makes a [RecompositionTracker] survive across recompositions, so it is
+ * process-global. Only the storage differs per platform:
+ * - Android/JVM: a `ConcurrentHashMap`, since trace-all lets several composition threads (or
+ *   Previews) reach the same key at once and the insert has to be atomic.
+ * - Everything else: a plain map, because those runtimes compose on a single thread.
+ */
+internal expect fun getOrCreateTracker(
+  key: String,
+  create: () -> RecompositionTracker,
+): RecompositionTracker

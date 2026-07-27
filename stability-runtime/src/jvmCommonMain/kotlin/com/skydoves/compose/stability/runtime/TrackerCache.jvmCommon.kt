@@ -15,4 +15,15 @@
  */
 package com.skydoves.compose.stability.runtime
 
-internal actual fun currentNanoTime(): Long = 0L
+import java.util.concurrent.ConcurrentHashMap
+
+// Global cache to persist trackers across recompositions. Concurrent because trace-all lets
+// multiple composition threads (or Previews) hit this map simultaneously.
+private val trackerCache = ConcurrentHashMap<String, RecompositionTracker>()
+
+// Resolves to the ConcurrentMap.getOrPut extension (putIfAbsent-based), so concurrent callers
+// always converge on one tracker instance. computeIfAbsent is avoided: it requires API 24+.
+internal actual fun getOrCreateTracker(
+  key: String,
+  create: () -> RecompositionTracker,
+): RecompositionTracker = trackerCache.getOrPut(key, create)

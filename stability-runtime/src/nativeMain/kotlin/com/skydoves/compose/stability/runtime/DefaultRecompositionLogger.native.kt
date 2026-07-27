@@ -16,7 +16,9 @@
 package com.skydoves.compose.stability.runtime
 
 /**
- * iOS implementation of DefaultRecompositionLogger that uses println.
+ * Native implementation of DefaultRecompositionLogger that uses println.
+ *
+ * Shared by every Kotlin/Native target: iOS, macOS, Linux and Windows.
  *
  * Example output:
  * ```
@@ -111,7 +113,7 @@ public actual class DefaultRecompositionLogger : RecompositionLogger {
       value.toString()
     } catch (e: Throwable) {
       // Fallback for any toString() failures (including reflection errors)
-      // On iOS/native, we don't have javaClass.simpleName, so use a simpler approach
+      // On native, we don't have javaClass.simpleName, so use a simpler approach
       "Object@${value.hashCode().toString(16)}"
     }
   }

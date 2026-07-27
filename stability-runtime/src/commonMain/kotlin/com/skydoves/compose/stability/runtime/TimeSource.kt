@@ -22,7 +22,20 @@ package com.skydoves.compose.stability.runtime
  * recomposition duration from a start time captured at composable entry.
  *
  * Platform implementations:
- * - Android/JVM: delegates to [System.nanoTime]
- * - Other platforms: returns 0 (timing not supported)
+ * - Android/JVM: delegates to `System.nanoTime()`
+ * - Everything else: elapsed nanoseconds from `kotlin.time.TimeSource.Monotonic`
+ *
+ * Readings are only ever subtracted from each other, so the origin does not matter as long as
+ * both readings come from this same clock. That is why compiler-generated code captures its
+ * start time through [recompositionNanoTime] rather than reading a platform clock directly.
  */
 internal expect fun currentNanoTime(): Long
+
+/**
+ * Public entry point for the monotonic clock behind [RecompositionTracker.recordDuration].
+ *
+ * Compiler-generated code calls this at composable entry and hands the value back to
+ * [RecompositionTracker.recordDuration], which subtracts it from its own reading. Both sides
+ * therefore share one clock on every target, including those without `System.nanoTime()`.
+ */
+public fun recompositionNanoTime(): Long = currentNanoTime()

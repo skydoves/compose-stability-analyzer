@@ -196,7 +196,7 @@ interface Metadata {
 fun ShowCard(card: CardData) {
   val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ShowCard", tag = "", threshold = 1, fqName = "ShowCard", isAutoTraced = false)
   _tracker.trackParameter(name = "card", type = "<root>.CardData", value = card, isStable = true)
-  val _startTime: Long = nanoTime()
+  val _startTime: Long = recompositionNanoTime()
   try // COMPOSITE {
   println(message = card.<get-title>())
   // }
@@ -211,7 +211,7 @@ fun ShowCard(card: CardData) {
 fun ShowCounter(counter: CounterData) {
   val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ShowCounter", tag = "", threshold = 1, fqName = "ShowCounter", isAutoTraced = false)
   _tracker.trackParameter(name = "counter", type = "<root>.CounterData", value = counter, isStable = false)
-  val _startTime: Long = nanoTime()
+  val _startTime: Long = recompositionNanoTime()
   try // COMPOSITE {
   println(message = counter.<get-label>())
   // }
@@ -226,7 +226,7 @@ fun ShowCounter(counter: CounterData) {
 fun ShowHolder(holder: DataHolder) {
   val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ShowHolder", tag = "", threshold = 1, fqName = "ShowHolder", isAutoTraced = false)
   _tracker.trackParameter(name = "holder", type = "<root>.DataHolder", value = holder, isStable = true)
-  val _startTime: Long = nanoTime()
+  val _startTime: Long = recompositionNanoTime()
   try // COMPOSITE {
   println(message = holder.<get-input>())
   // }
@@ -241,7 +241,7 @@ fun ShowHolder(holder: DataHolder) {
 fun ShowProfile(profile: ProfileCard) {
   val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ShowProfile", tag = "", threshold = 1, fqName = "ShowProfile", isAutoTraced = false)
   _tracker.trackParameter(name = "profile", type = "<root>.ProfileCard", value = profile, isStable = true)
-  val _startTime: Long = nanoTime()
+  val _startTime: Long = recompositionNanoTime()
   try // COMPOSITE {
   println(message = profile.<get-header>())
   // }

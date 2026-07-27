@@ -275,7 +275,9 @@ The Compose Stability Analyzer allows you to mark your own custom types as stabl
 
 ## Gradle Plugin for Tracking Runtime Recomposition and Stability Validation
 
-You can track the recomposition for specific composable functions with the `@TraceRecomposition` annotation at runtime (KMP supports). You don't need to write any logging code yourself, just add the annotation, run your app, and watch detailed recomposition logs appear in Logcat. This compiler plugin supports Kotlin Multiplatform.
+You can track the recomposition for specific composable functions with the `@TraceRecomposition` annotation at runtime (KMP supports). You don't need to write any logging code yourself, just add the annotation, run your app, and watch detailed recomposition logs appear in Logcat.
+
+Recomposition tracing runs on **every target the runtime publishes**: Android, JVM, iOS, macOS, Linux, Windows (MinGW), JS and Wasm. On Android the logs go to Logcat; everywhere else they are printed to standard output. Internal state **write-site** capture (the `← onClick (Screen.kt:42)` suffix on `[state]` lines) needs the Compose Snapshot write observer and stays Android/JVM-only; parameter tracing, timing, thresholds and tags work everywhere.
 
 ![preview](art/preview6.png)
 

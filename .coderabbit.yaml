@@ -114,9 +114,12 @@ reviews:
         (2) BINARY/SOURCE COMPAT — public API changes must be additive (new overloads or
         defaulted parameters; keep legacy entry points delegating). RecompositionLogger
         implementations in user code must keep compiling.
-        (3) EXPECT/ACTUAL — a change to one platform actual (androidMain/jvmMain/jsMain/
-        skiaMain/wasmJsMain) usually needs the same change in ALL of them; flag asymmetry,
-        including divergent log output between platforms.
+        (3) EXPECT/ACTUAL — a change to one platform actual (jvmCommonMain/nonJvmMain/
+        nativeMain/androidMain/jvmMain/jsMain/wasmJsMain) usually needs the same change in ALL
+        of them; flag asymmetry, including divergent log output between platforms. A new KMP
+        target must join a family in the runtime's applyHierarchyTemplate block, otherwise it
+        silently loses the actuals the compiler plugin resolves (rememberRecompositionTracker,
+        recompositionNanoTime) and @TraceRecomposition becomes a no-op there.
         (4) HOT PATH OVERHEAD — tracker code runs on every recomposition of instrumented
         composables. When ComposeStabilityAnalyzer is disabled the path must allocate nothing
         (early returns BEFORE building events/lists).
