@@ -277,8 +277,6 @@ The Compose Stability Analyzer allows you to mark your own custom types as stabl
 
 You can track the recomposition for specific composable functions with the `@TraceRecomposition` annotation at runtime (KMP supports). You don't need to write any logging code yourself, just add the annotation, run your app, and watch detailed recomposition logs appear in Logcat.
 
-Recomposition tracing runs on **every target the runtime publishes**: Android, JVM, iOS, macOS, Linux, Windows (MinGW), JS and Wasm. On Android the logs go to Logcat; everywhere else they are printed to standard output. Internal state **write-site** capture (the `← onClick (Screen.kt:42)` suffix on `[state]` lines) needs the Compose Snapshot write observer and stays Android/JVM-only; parameter tracing, timing, thresholds and tags work everywhere.
-
 ![preview](art/preview6.png)
 
 This is incredibly useful for:
@@ -328,6 +326,26 @@ It’s **strongly recommended to use the exact same Kotlin version** as this lib
 | 0.7.4              | 2.3.20 |
 | 0.6.5~0.7.0        | 2.3.0 |
 | 0.4.0~0.6.4        | 2.2.21 |
+
+### Kotlin Multiplatform Support
+
+The compiler plugin runs on every Kotlin compilation in your module, and the runtime is published for these targets:
+
+| Family | Targets |
+|--------|---------|
+| Android | `androidTarget` |
+| JVM | `jvm` |
+| iOS | `iosX64`, `iosArm64`, `iosSimulatorArm64` |
+| macOS | `macosX64`, `macosArm64` |
+| Linux | `linuxX64`, `linuxArm64` (since 0.12.0) |
+| Windows | `mingwX64` (since 0.12.0) |
+| Web | `js` (browser and Node.js), `wasmJs` |
+
+Apply the plugin to your shared module and it adds the runtime to `commonMain` for you. Stability analysis, `@TraceRecomposition` parameter tracing, tags, thresholds, timing and internal state changes work on all of the targets above. Two things are Android or JVM only: the `← onClick (Screen.kt:42)` write-site suffix on `[state]` lines needs Compose's Snapshot write observer, and the IDE plugin's live Heatmap, Reality Check and measured Doctor scores read logs from a device over ADB. Everything the IDE derives statically works for any target.
+
+watchOS, tvOS, Android Native and wasmWasi are not published yet, so [open an issue](https://github.com/skydoves/compose-stability-analyzer/issues) if you need one.
+
+See [the Kotlin Multiplatform guide](https://skydoves.github.io/compose-stability-analyzer/gradle-plugin/kotlin-multiplatform/) for the full breakdown, including where logs go per target, how trace-all behaves without build variants, and how `stabilityDump` works in a multiplatform module.
 
 ### Trace-All: Module-Wide Recomposition Tracing
 

@@ -17,7 +17,7 @@ fun UserProfile(user: User) {
 }
 ```
 
-When this composable recomposes, detailed logs appear in Logcat showing the recomposition count, each parameter's stability status, and whether the parameter's value changed since the last composition.
+When this composable recomposes, detailed logs appear in Logcat showing the recomposition count, each parameter's stability status, and whether the parameter's value changed since the last composition. The examples on this page use Logcat because that is where Android logs land. Tracing works the same on the other targets the runtime publishes, where the logs go to standard output or the browser console instead. See [Kotlin Multiplatform](kotlin-multiplatform.md) for the details.
 
 ```
 D/Recomposition: [Recomposition #1] UserProfile (0.12ms)

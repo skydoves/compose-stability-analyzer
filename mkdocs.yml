@@ -24,6 +24,7 @@ nav:
     - 'Configuration': ide-plugin/configuration.md
   - 'Gradle Plugin':
     - 'Getting Started': gradle-plugin/getting-started.md
+    - 'Kotlin Multiplatform': gradle-plugin/kotlin-multiplatform.md
     - 'TraceRecomposition': gradle-plugin/trace-recomposition.md
     - 'Trace-All Mode': gradle-plugin/trace-all.md
     - 'Custom Logger': gradle-plugin/custom-logger.md

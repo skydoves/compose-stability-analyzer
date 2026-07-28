@@ -1,6 +1,6 @@
 # Custom Logger
 
-By default, `@TraceRecomposition` logs recomposition events to Logcat using Android's `Log.d()`. You can completely replace this behavior by implementing your own `RecompositionLogger`. This is useful when you want to format logs differently, send analytics events, or integrate with your existing logging infrastructure.
+By default, `@TraceRecomposition` logs recomposition events to Logcat using Android's `Log.d()`. On the other targets the default logger writes to standard output, or to the console on JS. You can completely replace this behavior by implementing your own `RecompositionLogger`, which is also how you collect runtime data from a non Android target. This is useful when you want to format logs differently, send analytics events, or integrate with your existing logging infrastructure.
 
 ## Setting a Custom Logger
 
