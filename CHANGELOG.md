@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-07-28
+
+### Added
+- **New Kotlin/Native targets for the runtime** (#196, thanks @der-fruhling): `linuxX64`, `linuxArm64` and `mingwX64` are now published, so applying the Gradle plugin to a KMP project with Linux or Windows native targets no longer fails to resolve the runtime.
+- **`recompositionNanoTime()`**: the public monotonic clock behind `RecompositionTracker.recordDuration`, used by compiler-generated timing code. Compiler-generated code prefers it and falls back to `System.nanoTime()` when the runtime predates it.
+
+### Fixed
+- **`@TraceRecomposition` now works on every published target** (#197): tracing was silently a no-op on iOS, macOS, Linux, Windows, JS and Wasm. The compiler plugin skips instrumentation when it cannot resolve `rememberRecompositionTracker`, and that entry point only existed for Android and JVM. It moved to `commonMain`, so every target the runtime publishes gets parameter tracing, tags, thresholds and per-recomposition timing. Internal state **write-site** capture (the `← onClick (Screen.kt:42)` suffix) still needs the Compose Snapshot observer and stays Android/JVM-only.
+- **Recomposition durations are no longer `0.00ms` outside Android and JVM** (#197): `currentNanoTime()` returned a hardcoded `0` on JS, Wasm and all native targets. It now reads `kotlin.time.TimeSource.Monotonic` there, which maps to `performance.now()` and `getTimeNanos()`.
+
+### Changed
+- Runtime source sets are grouped so each target family owns its platform code: `jvmCommon` (JVM, Android), `web` (JS, Wasm) and `native` (Apple, Linux, MinGW). A new target now inherits a working set of actuals instead of silently losing the entry points the compiler plugin resolves. `skiaMain` became `nativeMain`.
+- The tracker cache is safe against concurrent inserts on every threaded platform: `ConcurrentHashMap` on JVM/Android, a copy-on-write map behind an atomic compare-and-set on native, and a plain map on JS/Wasm where Kotlin runs single-threaded.
+- New call sites of `rememberRecompositionTracker` target the `RememberRecompositionTrackerKt` JVM facade. The previous `RememberRecompositionTracker_jvmKt` and `RememberRecompositionTracker_androidKt` facades are retained as hidden delegates, so binaries instrumented by 0.11.x and earlier keep linking. No action needed when upgrading.
+
 ## [0.11.1] - 2026-07-24
 
 ### Fixed

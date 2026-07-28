@@ -2,6 +2,11 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.12.0] - 2026-07-28
+
+### Changed
+- Version bump to stay in sync with the library. No functional changes in the IDE plugin itself, but the Heatmap, Reality Check and Doctor now receive data from Kotlin Multiplatform targets that previously produced no recomposition logs at all, and durations from those targets are no longer reported as `0.00ms` (library #197).
+
 ## [0.11.1] - 2026-07-24
 
 ### Fixed

@@ -26,7 +26,7 @@ kotlin {
 }
 
 group = "com.github.skydoves"
-version = "0.11.1"
+version = "0.12.0"
 
 repositories {
   mavenLocal()
@@ -38,7 +38,7 @@ repositories {
 }
 
 dependencies {
-  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.11.1")
+  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.12.0")
 
   intellijPlatform {
     intellijIdeaCommunity("2025.2")
@@ -79,6 +79,10 @@ intellijPlatform {
             </ul>
         """.trimIndent()
     changeNotes = """
+            <b>0.12.0</b>
+            <ul>
+                <li><b>Kotlin Multiplatform recomposition data</b> - @TraceRecomposition was a silent no-op outside Android and JVM, so the Heatmap, Reality Check and Doctor received nothing from iOS, macOS, Linux, Windows, JS and Wasm targets. Those targets now log recompositions with real durations (library 0.12.0).</li>
+            </ul>
             <b>0.11.1</b>
             <ul>
                 <li><b>Fixed: Compatibility with newer IDEs</b> - removed the until-build upper bound so the plugin installs on IntelliJ IDEA / Android Studio 2026.2 and later, and K2 Analysis API access falls back to PSI on any linkage error.</li>
