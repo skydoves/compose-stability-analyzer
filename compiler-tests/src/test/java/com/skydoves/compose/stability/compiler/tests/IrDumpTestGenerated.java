@@ -73,6 +73,12 @@ public class IrDumpTestGenerated extends AbstractIrDumpTest {
   }
 
   @Test
+  @TestMetadata("StabilityInferredIsBinaryOnly.kt")
+  public void testStabilityInferredIsBinaryOnly() {
+    run("StabilityInferredIsBinaryOnly.kt");
+  }
+
+  @Test
   @TestMetadata("TraceAllInjection.kt")
   public void testTraceAllInjection() {
     run("TraceAllInjection.kt");

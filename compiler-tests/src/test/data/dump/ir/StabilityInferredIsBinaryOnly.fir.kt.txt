@@ -1,0 +1,102 @@
+@StabilityInferred(parameters = 0)
+data class LoweredLocal {
+  val names: List<String>
+    field = names
+    get
+
+  constructor(names: List<String>) /* primary */ {
+    super/*Any*/()
+    /* <init>() */
+
+  }
+
+  operator fun component1(): List<String> {
+    return <this>.#names
+  }
+
+  fun copy(names: List<String> = <this>.#names): LoweredLocal {
+    return LoweredLocal(names = names)
+  }
+
+  override operator fun equals(other: Any?): Boolean {
+    when {
+      EQEQEQ(arg0 = <this>, arg1 = other) -> return true
+    }
+    when {
+      other !is LoweredLocal -> return false
+    }
+    val tmp_0: LoweredLocal = other /*as LoweredLocal */
+    when {
+      EQEQ(arg0 = <this>.#names, arg1 = tmp_0.#names).not() -> return false
+    }
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return <this>.#names.hashCode()
+  }
+
+  override fun toString(): String {
+    return "LoweredLocal(" + "names=" + <this>.#names + ")"
+  }
+
+}
+
+data class PlainLocal {
+  val names: List<String>
+    field = names
+    get
+
+  constructor(names: List<String>) /* primary */ {
+    super/*Any*/()
+    /* <init>() */
+
+  }
+
+  operator fun component1(): List<String> {
+    return <this>.#names
+  }
+
+  fun copy(names: List<String> = <this>.#names): PlainLocal {
+    return PlainLocal(names = names)
+  }
+
+  override operator fun equals(other: Any?): Boolean {
+    when {
+      EQEQEQ(arg0 = <this>, arg1 = other) -> return true
+    }
+    when {
+      other !is PlainLocal -> return false
+    }
+    val tmp_1: PlainLocal = other /*as PlainLocal */
+    when {
+      EQEQ(arg0 = <this>.#names, arg1 = tmp_1.#names).not() -> return false
+    }
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return <this>.#names.hashCode()
+  }
+
+  override fun toString(): String {
+    return "PlainLocal(" + "names=" + <this>.#names + ")"
+  }
+
+}
+
+@TraceRecomposition(threshold = 1)
+@Composable
+fun ShowLocals(lowered: LoweredLocal, plain: PlainLocal) {
+  val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ShowLocals", tag = "", threshold = 1, fqName = "ShowLocals", isAutoTraced = false)
+  _tracker.trackParameter(name = "lowered", type = "<root>.LoweredLocal", value = lowered, isStable = false)
+  _tracker.trackParameter(name = "plain", type = "<root>.PlainLocal", value = plain, isStable = false)
+  val _startTime: Long = recompositionNanoTime()
+  try // COMPOSITE {
+  println(message = lowered.<get-names>().<get-size>().plus(other = plain.<get-names>().<get-size>()))
+  // }
+  finally // COMPOSITE {
+  _tracker.recordDuration(startTimeNanos = _startTime)
+  _tracker.logIfThresholdMet()
+  // }
+}

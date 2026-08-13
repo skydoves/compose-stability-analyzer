@@ -697,7 +697,19 @@ public class StabilityAnalyzerTransformer(
       ParameterStability.UNSTABLE -> return ParameterStability.UNSTABLE
       ParameterStability.UNKNOWN -> return ParameterStability.UNKNOWN
       ParameterStability.RUNTIME -> {
-        // 19. Check @StabilityInferred: parameters=0 means stable, else runtime
+        // 19. Refine with @StabilityInferred: parameters=0 means stable, else runtime.
+        //
+        // Only for declarations outside this compilation unit, where the annotation is baked into
+        // the binary and is the intended cross-module channel. For a class in the module being
+        // compiled, the annotation exists only once the Compose compiler plugin's IR lowering has
+        // run, and whether that happens before or after this extension is decided by the resolved
+        // order of `kotlinCompilerPluginClasspath` — nothing pins it. Reading it here made the
+        // verdict depend on artifact ordering (issue #107). Our own property analysis is
+        // authoritative for source classes anyway, and skipping the annotation also matches the
+        // IDE plugin, which only ever sees source and therefore never finds it.
+        if (!isFromDifferentModule(clazz)) {
+          return ParameterStability.RUNTIME
+        }
         val stabilityInferredParams = type.getStabilityInferredParameters()
         return if (stabilityInferredParams == 0) {
           ParameterStability.STABLE
