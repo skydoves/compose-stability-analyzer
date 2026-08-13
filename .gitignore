@@ -63,3 +63,6 @@ docs/api
 
 # Local working notes (plans, lessons)
 tasks/
+
+# Included build output
+build-logic/build/

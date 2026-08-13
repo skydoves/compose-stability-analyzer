@@ -17,6 +17,7 @@
 import org.gradle.jvm.tasks.Jar
 
 plugins {
+  id("compose-stability.conventions")
   kotlin("jvm")
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.shadow)

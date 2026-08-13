@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 plugins {
+  id("compose-stability.conventions")
   kotlin("jvm")
 }
 

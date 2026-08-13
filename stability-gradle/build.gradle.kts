@@ -16,6 +16,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    id("compose-stability.conventions")
     alias(libs.plugins.kotlin.jvm)
     `kotlin-dsl`
     alias(libs.plugins.nexus.plugin)

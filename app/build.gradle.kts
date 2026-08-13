@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 plugins {
+  id("compose-stability.conventions")
   id(libs.plugins.android.application.get().pluginId)
   id(libs.plugins.kotlin.android.get().pluginId)
   id(libs.plugins.compose.compiler.get().pluginId)
