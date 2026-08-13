@@ -1,0 +1,61 @@
+// FILE: main.kt
+
+data class LocalModel {
+  val name: String
+    field = name
+    get
+
+  constructor(name: String) /* primary */ {
+    super/*Any*/()
+    /* <init>() */
+
+  }
+
+  operator fun component1(): String {
+    return <this>.#name
+  }
+
+  fun copy(name: String = <this>.#name): LocalModel {
+    return LocalModel(name = name)
+  }
+
+  override operator fun equals(other: Any?): Boolean {
+    when {
+      EQEQEQ(arg0 = <this>, arg1 = other) -> return true
+    }
+    when {
+      other !is LocalModel -> return false
+    }
+    val tmp_0: LocalModel = other /*as LocalModel */
+    when {
+      EQEQ(arg0 = <this>.#name, arg1 = tmp_0.#name).not() -> return false
+    }
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return <this>.#name.hashCode()
+  }
+
+  override fun toString(): String {
+    return "LocalModel(" + "name=" + <this>.#name + ")"
+  }
+
+}
+
+@TraceRecomposition(threshold = 1)
+@Composable
+fun ThirdPartyCard(model: ThirdPartyModel, stable: ThirdPartyModelStable, local: LocalModel) {
+  val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ThirdPartyCard", tag = "", threshold = 1, fqName = "ThirdPartyCard", isAutoTraced = false)
+  _tracker.trackParameter(name = "model", type = "lib.ThirdPartyModel", value = model, isStable = false)
+  _tracker.trackParameter(name = "stable", type = "lib.ThirdPartyModelStable", value = stable, isStable = true)
+  _tracker.trackParameter(name = "local", type = "<root>.LocalModel", value = local, isStable = true)
+  val _startTime: Long = recompositionNanoTime()
+  try // COMPOSITE {
+  println(message = model.<get-name>().plus(other = stable.<get-name>()).plus(other = local.<get-name>()))
+  // }
+  finally // COMPOSITE {
+  _tracker.recordDuration(startTimeNanos = _startTime)
+  _tracker.logIfThresholdMet()
+  // }
+}

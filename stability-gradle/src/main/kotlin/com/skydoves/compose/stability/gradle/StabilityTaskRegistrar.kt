@@ -15,11 +15,8 @@
  */
 package com.skydoves.compose.stability.gradle
 
-import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.GROUP_ID
 import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.MULTIPLATFORM_PLUGIN_ID
-import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.RUNTIME_ARTIFACT_ID
-import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.VERSION
-import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.getRuntimeProject
+import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.RUNTIME_DEPENDENCY
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.Companion.COMMON_MAIN_SOURCE_SET_NAME
@@ -43,10 +40,7 @@ internal abstract class StabilityTaskRegistrar {
    * For JVM/Android projects, adds to implementation configuration.
    */
   protected fun addRuntimeDependency(project: Project) {
-    val runtimeProject = getRuntimeProject(project)
-
-    val runtimeDependency = runtimeProject
-      ?: "$GROUP_ID:$RUNTIME_ARTIFACT_ID:$VERSION"
+    val runtimeDependency = RUNTIME_DEPENDENCY
 
     // Check if this is a multiplatform project
     if (project.plugins.hasPlugin(MULTIPLATFORM_PLUGIN_ID)) {
@@ -75,31 +69,18 @@ internal abstract class StabilityTaskRegistrar {
     stabilityDumpTask: TaskProvider<StabilityDumpTask>,
     stabilityCheckTask: TaskProvider<StabilityCheckTask>,
   ) {
-    // Get the includeTests provider for lazy evaluation
     val includeTestsProvider = extension.stabilityValidation.includeTests
 
-    // Configure dependencies lazily using TaskProvider
-    stabilityDumpTask.configure {
-      dependsOn(
-        includeTestsProvider.map { includeTests ->
-          project.tasks.matching { task ->
-            isKotlinTaskApplicable(task.name, includeTests) &&
-              (filter == null || task.name.contains(filter))
-          }
-        },
-      )
+    // A live TaskCollection is the idiomatic lazy dependsOn value: `matching` re-evaluates its
+    // spec on every query, so `includeTests` is still read lazily and tasks registered later are
+    // still picked up — without capturing the Project inside a Provider.
+    val kotlinCompileTasks = project.tasks.matching { task ->
+      isKotlinTaskApplicable(task.name, includeTestsProvider.get()) &&
+        (filter == null || task.name.contains(filter))
     }
 
-    stabilityCheckTask.configure {
-      dependsOn(
-        includeTestsProvider.map { includeTests ->
-          project.tasks.matching { task ->
-            isKotlinTaskApplicable(task.name, includeTests) &&
-              (filter == null || task.name.contains(filter))
-          }
-        },
-      )
-    }
+    stabilityDumpTask.configure { dependsOn(kotlinCompileTasks) }
+    stabilityCheckTask.configure { dependsOn(kotlinCompileTasks) }
   }
 
   private fun isKotlinTaskApplicable(taskName: String, includeTests: Boolean): Boolean {

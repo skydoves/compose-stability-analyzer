@@ -30,6 +30,10 @@ public object StabilityAnalyzerConfigurationKeys {
   public val KEY_STABILITY_OUTPUT_DIR: CompilerConfigurationKey<String> =
     CompilerConfigurationKey<String>("stabilityOutputDir")
 
+  @Deprecated(
+    "Cross-module types are detected from their IR declaration origin; this key is no longer " +
+      "read. Kept so older Gradle plugin versions keep compiling. Removed in 1.0.",
+  )
   public val KEY_PROJECT_DEPENDENCIES: CompilerConfigurationKey<String> =
     CompilerConfigurationKey<String>("projectDependencies")
 
@@ -63,10 +67,20 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
       required = false,
     )
 
+    /**
+     * No longer read. Cross-module types are detected from their IR declaration origin instead of
+     * a Gradle-side scan of sibling projects, which was incompatible with Isolated Projects
+     * (issue #107). The option stays registered because [CommandLineProcessor] rejects unknown
+     * options outright, which would break builds that pin an older Gradle plugin against this
+     * compiler artifact. Removed in 1.0.
+     */
+    @Deprecated(
+      "No longer read; cross-module detection uses IR declaration origins. Removed in 1.0.",
+    )
     public val OPTION_PROJECT_DEPENDENCIES: CliOption = CliOption(
       optionName = "projectDependencies",
       valueDescription = "<path>",
-      description = "Path to file containing project module names (one per line)",
+      description = "Deprecated and ignored; cross-module types are detected from IR origins",
       required = false,
     )
 
@@ -95,6 +109,7 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
 
   override val pluginId: String = PLUGIN_ID
 
+  @Suppress("DEPRECATION")
   override val pluginOptions: Collection<AbstractCliOption> = listOf(
     OPTION_ENABLED,
     OPTION_STABILITY_OUTPUT_DIR,
@@ -104,6 +119,7 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
     OPTION_STABILITY_CONFIGURATION_FILE,
   )
 
+  @Suppress("DEPRECATION")
   override fun processOption(
     option: AbstractCliOption,
     value: String,
@@ -120,10 +136,8 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
         value,
       )
 
-      OPTION_PROJECT_DEPENDENCIES -> configuration.put(
-        StabilityAnalyzerConfigurationKeys.KEY_PROJECT_DEPENDENCIES,
-        value,
-      )
+      // Accepted and ignored — see OPTION_PROJECT_DEPENDENCIES.
+      OPTION_PROJECT_DEPENDENCIES -> Unit
 
       OPTION_TRACE_ALL -> configuration.put(
         StabilityAnalyzerConfigurationKeys.KEY_TRACE_ALL,

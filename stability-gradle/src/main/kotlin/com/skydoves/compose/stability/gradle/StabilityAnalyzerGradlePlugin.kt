@@ -51,22 +51,12 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     // Compiler option keys
     private const val OPTION_ENABLED = "enabled"
     private const val OPTION_STABILITY_OUTPUT_DIR = "stabilityOutputDir"
-    private const val OPTION_PROJECT_DEPENDENCIES = "projectDependencies"
     private const val OPTION_TRACE_ALL = "traceAll"
     private const val OPTION_TRACE_ALL_THRESHOLD = "traceAllThreshold"
     private const val OPTION_STABILITY_CONFIGURATION_FILE = "stabilityConfigurationFile"
 
-    /**
-     * Get the runtime project if available.
-     */
-    internal fun getRuntimeProject(project: Project): Project? =
-      project.rootProject.findProject(":stability-runtime")
-
-    /**
-     * Get the lint project if available.
-     */
-    internal fun getLintProject(project: Project): Project? =
-      project.rootProject.findProject(":stability-lint")
+    /** Maven coordinate of the runtime this plugin version pairs with. */
+    internal const val RUNTIME_DEPENDENCY: String = "$GROUP_ID:$RUNTIME_ARTIFACT_ID:$VERSION"
   }
 
   override fun apply(target: Project) {
@@ -94,18 +84,31 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       outputs.dir(stabilityDir).optional(true)
     }
 
-    // Disable incremental compilation when stability tasks are in the graph (Issue #156)
-    // Kotlin IC may skip recompiling files when dependency changes are binary-compatible,
-    // but stability can still change (e.g., val → var makes a type UNSTABLE).
+    // Disable incremental compilation when this project's stability tasks are in the graph
+    // (Issue #156). Kotlin IC may skip recompiling files when dependency changes are
+    // binary-compatible, but stability can still change (e.g., val → var makes a type UNSTABLE).
+    //
+    // Only this project's own task paths are probed: `TaskExecutionGraph.allTasks` observes tasks
+    // created by other projects, which Isolated Projects rejects ("Project … cannot access the
+    // tasks in the task graph that were created by other projects" — issue #107), whereas
+    // `hasTask(path)` is clean for own-project paths. The scoping is per project as a result:
+    // `./gradlew :app:stabilityCheck` no longer disables incremental compilation in `:core`, which
+    // is also more correct, since that task only reads `:app`'s own stability-info.json.
+    val projectPathPrefix = if (target.path.endsWith(":")) target.path else "${target.path}:"
+    val dumpTasks = target.tasks.withType(StabilityDumpTask::class.java)
+    val checkTasks = target.tasks.withType(StabilityCheckTask::class.java)
+    val allowIncrementalDisabling = extension.stabilityValidation.allowIncrementalDisabling
     target.gradle.taskGraph.whenReady {
-      if (extension.stabilityValidation.allowIncrementalDisabling.get()) {
-        val hasStabilityTasks = allTasks.any {
-          it is StabilityDumpTask || it is StabilityCheckTask
-        }
-        if (hasStabilityTasks) {
-          target.tasks.withType(KotlinCompile::class.java).configureEach {
-            incremental = false
-          }
+      if (!allowIncrementalDisabling.get()) {
+        return@whenReady
+      }
+      // `names` merges realized and pending registrations, so no task is realized here.
+      val hasStabilityTasks = (dumpTasks.names + checkTasks.names).any {
+        hasTask("$projectPathPrefix$it")
+      }
+      if (hasStabilityTasks) {
+        target.tasks.withType(KotlinCompile::class.java).configureEach {
+          incremental = false
         }
       }
     }
@@ -145,19 +148,23 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     val project = kotlinCompilation.target.project
     val extension = project.extensions.getByType(StabilityAnalyzerExtension::class.java)
 
-    return project.provider {
-      val projectDependencies = collectProjectDependencies(project)
+    // Everything the provider needs is resolved to a plain value or a Provider here, so the lambda
+    // below closes over neither Project nor KotlinCompilation (the latter transitively holds the
+    // Project). That matters on Kotlin/Native, where KGP realizes this provider eagerly during
+    // task configuration rather than at configuration-cache store time.
+    // Per-compilation output directory avoids shared output conflicts (Issue #153).
+    val stabilityDir = project.layout.buildDirectory
+      .dir("stability/${kotlinCompilation.compileTaskProvider.name}")
+    val compilationName = kotlinCompilation.name
+    val isTestCompilation = isTestCompilation(kotlinCompilation)
 
-      // Per-compilation output directory to avoid shared output conflicts (Issue #153)
-      val compileTaskName = kotlinCompilation.compileTaskProvider.name
-      val stabilityDir = project.layout.buildDirectory
-        .dir("stability/$compileTaskName").get().asFile
-      stabilityDir.mkdirs()
-      val dependenciesFile = java.io.File(stabilityDir, "project-dependencies.txt")
-      dependenciesFile.writeText(projectDependencies.joinToString("\n"))
-
+    return project.providers.provider {
       val traceAllEnabled = extension.traceAll.enabled.get() &&
-        compilationAcceptsTraceAll(kotlinCompilation, extension.traceAll.variants.get())
+        compilationAcceptsTraceAll(
+          compilationName,
+          isTestCompilation,
+          extension.traceAll.variants.get(),
+        )
 
       val stabilityConfigurationFiles = extension
         .stabilityConfigurationFiles
@@ -170,11 +177,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         ),
         SubpluginOption(
           key = OPTION_STABILITY_OUTPUT_DIR,
-          value = stabilityDir.absolutePath,
-        ),
-        SubpluginOption(
-          key = OPTION_PROJECT_DEPENDENCIES,
-          value = dependenciesFile.absolutePath,
+          value = stabilityDir.get().asFile.absolutePath,
         ),
         SubpluginOption(
           key = OPTION_TRACE_ALL,
@@ -202,13 +205,14 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
    * the rest is delegated to [traceAllMatchesCompilationName].
    */
   internal fun compilationAcceptsTraceAll(
-    compilation: KotlinCompilation<*>,
+    compilationName: String,
+    isTestCompilation: Boolean,
     variantTokens: List<String>,
   ): Boolean {
-    if (isTestCompilation(compilation)) {
+    if (isTestCompilation) {
       return false
     }
-    return traceAllMatchesCompilationName(compilation.name, variantTokens)
+    return traceAllMatchesCompilationName(compilationName, variantTokens)
   }
 
   /**
@@ -216,16 +220,10 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
    * This ensures the compiler plugin can access runtime classes during compilation.
    */
   private fun addRuntimeToCompilerClasspath(project: Project) {
-    project.afterEvaluate {
-      val runtimeProject = getRuntimeProject(project)
-      val runtimeDependency = runtimeProject
-        ?: "$GROUP_ID:$RUNTIME_ARTIFACT_ID:$VERSION"
-
-      // Add runtime to all compiler plugin classpath configurations
-      project.configurations.configureEach {
-        if (name.contains("CompilerPluginClasspath", ignoreCase = true)) {
-          project.dependencies.add(name, runtimeDependency)
-        }
+    // Add runtime to all compiler plugin classpath configurations
+    project.configurations.configureEach {
+      if (name.contains("CompilerPluginClasspath", ignoreCase = true)) {
+        project.dependencies.add(name, RUNTIME_DEPENDENCY)
       }
     }
   }
@@ -238,85 +236,6 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     return compilationName.contains("test") ||
       compilationName.contains("androidtest") ||
       compilationName.contains("unittest")
-  }
-
-  /**
-   * Collects package names from project dependencies for cross-module detection.
-   * Used by compiler plugin to identify classes from other Gradle modules.
-   */
-  private fun collectProjectDependencies(project: Project): List<String> = try {
-    val dependencies = mutableSetOf<String>()
-
-    // Collect packages from all other subprojects
-    // This is a conservative approach: mark all cross-module classes as requiring annotations
-    project.rootProject.allprojects.forEach { subproject ->
-      if (subproject != project && subproject.name != project.rootProject.name) {
-        val packageName = extractPackageName(subproject)
-        if (packageName.isNotEmpty()) {
-          dependencies.add(packageName)
-        }
-      }
-    }
-
-    dependencies.toList()
-  } catch (e: Exception) {
-    emptyList()
-  }
-
-  /**
-   * Extracts package name from a project using: group property, source files, or project path.
-   */
-  private fun extractPackageName(project: Project): String {
-    return try {
-      // Strategy 1: Use the group property if set
-      val group = project.group.toString()
-      if (group.isNotEmpty() && group != "unspecified") {
-        return group
-      }
-
-      // Strategy 2: Try to find package from source files
-      val kotlinSources = project.projectDir.resolve("src/main/kotlin")
-      if (kotlinSources.exists()) {
-        val packageFromSource = findPackageFromSourceDir(kotlinSources)
-        if (packageFromSource.isNotEmpty()) {
-          return packageFromSource
-        }
-      }
-
-      // Strategy 3: Use project path as fallback (e.g., :app-model -> app.model)
-      val projectPath = project.path
-        .removePrefix(":")
-        .replace("-", ".")
-        .replace("/", ".")
-      projectPath
-    } catch (e: Exception) {
-      ""
-    }
-  }
-
-  /**
-   * Finds the base package name from a source directory by reading the first .kt file.
-   */
-  private fun findPackageFromSourceDir(dir: java.io.File): String = try {
-    dir.walkTopDown()
-      .filter { it.extension == "kt" }
-      .firstOrNull()
-      ?.let { file ->
-        file.readLines()
-          .firstOrNull { it.trim().startsWith("package ") }
-          ?.removePrefix("package ")
-          ?.trim()
-          ?.removeSuffix(";")
-      } ?: ""
-  } catch (e: Exception) {
-    ""
-  }
-
-  /**
-   * Get the compiler plugin project if available.
-   */
-  private fun getCompilerProject(): Project? {
-    return null // Will be resolved from current project's rootProject in actual usage
   }
 }
 

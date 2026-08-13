@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Gradle Isolated Projects compatibility** (#107): the plugin no longer performs any cross-project access at configuration time, so builds using `--isolated-projects` / `org.gradle.isolated-projects=true` (incubating since Gradle 9.7) configure and compile cleanly. Two violations are gone:
+  - `collectProjectDependencies()` walked `rootProject.allprojects` and read every sibling project's `group`, `projectDir` and `path` — including a filesystem scan of each sibling's sources — on every Kotlin compile-task configuration.
+  - The incremental-compilation guard read `gradle.taskGraph.allTasks`, which observes tasks created by other projects.
+- **Types declared in the module being compiled are no longer mis-reported as `UNSTABLE`**: cross-module detection used to match a parameter type's fully-qualified name against package prefixes guessed from sibling projects, and the first guess was the sibling's Gradle `group`. With the very common `allprojects { group = "com.example" }`, that prefix also matched the module's *own* `com.example.*` types, marking them unstable. Detection now relies solely on the IR declaration origin (`IR_EXTERNAL_DECLARATION_STUB`), which is the signal the Compose compiler itself uses and already covered every cross-module case. **If you were affected, run `./gradlew stabilityDump` to refresh your baseline** — with the default `failOnStabilityChange = true`, `stabilityCheck` will otherwise fail on the resulting `UNSTABLE → STABLE` transitions.
+- **Cross-module types report an accurate reason**: they were labelled `UNSTABLE (has mutable properties or unstable members)` even when they had none. They now read `UNSTABLE (cross-module type without @Stable/@Immutable)`. Reasons are not compared by `stabilityCheck`, so this alone cannot fail a build.
+
+### Changed
+- **`allowIncrementalDisabling` is now scoped per project.** Previously a stability task anywhere in the build disabled Kotlin incremental compilation in *every* project applying the plugin. Each project now decides based on its own task paths. `./gradlew stabilityDump`, `stabilityCheck` and `check` behave identically; only a path-qualified invocation such as `./gradlew :app:stabilityCheck` differs, and there it is more correct — that task only reads `:app`'s own `stability-info.json`.
+- **The implicit `:stability-runtime` / `:stability-lint` project wiring is gone.** The plugin used to call `rootProject.findProject(...)` and, when a module with either path existed, add that `Project` object as a dependency notation. That only ever resolved inside this repository, silently hijacked any consumer build containing a module with those names, and is deprecated in Gradle 9 (an error in Gradle 10). The published Maven coordinates are now always used; lint checks continue to ship inside the runtime AAR's `lint.jar`.
+
+### Note for contributors
+
+The sample `:app` module now resolves the runtime from its published coordinate like any consumer, instead of from the in-build `:stability-runtime` project. Two consequences: `./gradlew :stability-runtime:publishToMavenLocal` must run before `:app` picks up local runtime edits, and after a version bump `:app` cannot build until the new version is published to Maven Local.
+
+That change also shifted where the analyzer's IR pass sits relative to the Compose compiler plugin's IR lowering — plugin order follows the resolved `kotlinCompilerPluginClasspath` order, and the in-build project dependency used to push the analyzer behind Compose. Consumers were always on the other side of that boundary, so nothing changes for them, but `app/stability/*.stability` was regenerated and now records what a real consumer sees: composable-lambda parameters render in their pre-lowering form (`@[Composable] ComposableFunction0<T>` rather than `Function2<Composer, Int, T>`), and `Icon.normalSealedClass` reports `RUNTIME` instead of `STABLE` because `@StabilityInferred` is not yet attached to same-module classes when the pass runs. Making the analysis independent of that ordering is tracked separately.
+- The compiler plugin's `projectDependencies` option is deprecated and ignored. It stays registered so builds that pin the compiler artifact independently keep working, and will be removed in 1.0.
+
 ## [0.12.0] - 2026-07-28
 
 ### Added

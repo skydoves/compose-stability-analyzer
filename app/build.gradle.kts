@@ -69,6 +69,11 @@ composeStabilityAnalyzer {
 dependencies {
   implementation(project(":app-model"))
 
+  // NOTE: the lint checks are intentionally NOT declared here. They reach this module the same way
+  // they reach a real consumer — through the `lint.jar` that `stability-runtime` packages into its
+  // published AAR via `lintPublish(project(":stability-lint"))`. Declaring them explicitly would
+  // register the detectors twice and stop the sample from exercising the path consumers use.
+
   implementation(platform(libs.androidx.compose.bom))
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.compose.ui)

@@ -16,7 +16,6 @@
 package com.skydoves.compose.stability.gradle
 
 import com.android.build.api.variant.AndroidComponentsExtension
-import com.skydoves.compose.stability.gradle.StabilityAnalyzerGradlePlugin.Companion.getLintProject
 import org.gradle.api.Project
 
 /**
@@ -126,9 +125,12 @@ internal class AndroidStabilityTaskRegistrar : StabilityTaskRegistrar() {
     }
   }
 
-  override fun registerLintingTask(target: Project) {
-    getLintProject(target) ?.let { lintProject ->
-      target.dependencies.add("lintChecks", lintProject)
-    }
-  }
+  /**
+   * No-op: the lint checks ship inside the published runtime AAR (`stability-runtime` declares
+   * `lintPublish(project(":stability-lint"))`), so AGP discovers them from the runtime dependency
+   * added by [addRuntimeDependency]. The previous `rootProject.findProject(":stability-lint")`
+   * lookup only ever resolved inside this repository's own build, and passing the resulting
+   * `Project` as a dependency notation is deprecated in Gradle 9 and an error in Gradle 10.
+   */
+  override fun registerLintingTask(target: Project) = Unit
 }

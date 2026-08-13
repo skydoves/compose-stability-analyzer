@@ -171,7 +171,9 @@ composeStabilityAnalyzer {
 
 ### `allowIncrementalDisabling`
 
-Kotlin's incremental compiler may skip recompiling files when dependency changes are binary-compatible, even though stability can still change (for example, switching a property from `val` to `var` makes a type `UNSTABLE`). To keep stability results accurate, the plugin disables incremental compilation whenever `stabilityDump` or `stabilityCheck` is in the task graph.
+Kotlin's incremental compiler may skip recompiling files when dependency changes are binary-compatible, even though stability can still change (for example, switching a property from `val` to `var` makes a type `UNSTABLE`). To keep stability results accurate, the plugin disables incremental compilation when a stability task for **that project** is in the task graph.
+
+The decision is made per project so that the plugin never inspects other projects' tasks, which Gradle's [Isolated Projects](https://docs.gradle.org/current/userguide/isolated_projects.html) forbids. `./gradlew stabilityDump`, `./gradlew stabilityCheck` and `./gradlew check` are unaffected — every project applying the plugin selects its own task. Only a path-qualified invocation differs: `./gradlew :app:stabilityCheck` leaves incremental compilation on in other modules, which is correct, because that task only reads `:app`'s own `stability-info.json`.
 
 This is enabled by default (`true`). Set it to `false` to opt out and keep incremental compilation on even when stability tasks run, at the cost of potentially stale stability results.
 

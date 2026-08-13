@@ -26,7 +26,6 @@ import java.io.File
 
 public class StabilityAnalyzerIrGenerationExtension(
   private val stabilityOutputDir: String,
-  private val projectDependencies: String,
   private val traceAll: Boolean = false,
   private val traceAllThreshold: Int = 2,
   private val stabilityConfigurationFiles: List<File> = emptyList(),
@@ -40,24 +39,6 @@ public class StabilityAnalyzerIrGenerationExtension(
       StabilityInfoCollector(outputFile)
     } else {
       null
-    }
-
-    // Read project dependencies from file (projectDependencies is now a file path)
-    val dependencyModules = if (projectDependencies.isNotEmpty()) {
-      try {
-        val dependenciesFile = File(projectDependencies)
-        if (dependenciesFile.exists()) {
-          dependenciesFile.readLines()
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-        } else {
-          emptyList()
-        }
-      } catch (e: Exception) {
-        emptyList()
-      }
-    } else {
-      emptyList()
     }
 
     // Construct matchers out of stability configuration files. A malformed or unreadable config
@@ -88,7 +69,6 @@ public class StabilityAnalyzerIrGenerationExtension(
     val transformer = StabilityAnalyzerTransformer(
       pluginContext = pluginContext,
       stabilityCollector = collector,
-      projectDependencies = dependencyModules,
       traceAll = traceAll,
       traceAllThreshold = traceAllThreshold,
       stabilityConfigurationMatchers = stabilityConfigurationMatchers,

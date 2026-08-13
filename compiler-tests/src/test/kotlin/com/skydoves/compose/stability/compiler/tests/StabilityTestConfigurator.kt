@@ -62,7 +62,6 @@ class StabilityTestConfigurator(testServices: TestServices) :
     IrGenerationExtension.registerExtension(
       StabilityAnalyzerIrGenerationExtension(
         stabilityOutputDir = "",
-        projectDependencies = "",
         traceAll = traceAll,
         stabilityConfigurationFiles = stabilityConfigurationFiles,
       ),

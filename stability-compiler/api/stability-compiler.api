@@ -120,8 +120,8 @@ public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerFirE
 }
 
 public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerIrGenerationExtension : org/jetbrains/kotlin/backend/common/extensions/IrGenerationExtension {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZILjava/util/List;Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZILjava/util/List;Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;ZILjava/util/List;Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;)V
+	public synthetic fun <init> (Ljava/lang/String;ZILjava/util/List;Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun generate (Lorg/jetbrains/kotlin/ir/declarations/IrModuleFragment;Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;)V
 	public fun getPlatformIntrinsicExtension (Lorg/jetbrains/kotlin/backend/common/LoweringContext;)Lorg/jetbrains/kotlin/backend/common/extensions/IrIntrinsicExtension;
 	public fun getShouldAlsoBeAppliedInKaptStubGenerationMode ()Z
@@ -213,8 +213,8 @@ public final class com/skydoves/compose/stability/compiler/lower/RecompositionIr
 
 public final class com/skydoves/compose/stability/compiler/lower/StabilityAnalyzerTransformer : org/jetbrains/kotlin/backend/common/IrElementTransformerVoidWithContext {
 	public static final field Companion Lcom/skydoves/compose/stability/compiler/lower/StabilityAnalyzerTransformer$Companion;
-	public fun <init> (Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;Lcom/skydoves/compose/stability/compiler/StabilityInfoCollector;Ljava/util/List;ZILjava/util/List;)V
-	public synthetic fun <init> (Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;Lcom/skydoves/compose/stability/compiler/StabilityInfoCollector;Ljava/util/List;ZILjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;Lcom/skydoves/compose/stability/compiler/StabilityInfoCollector;ZILjava/util/List;)V
+	public synthetic fun <init> (Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;Lcom/skydoves/compose/stability/compiler/StabilityInfoCollector;ZILjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun visitFunctionNew (Lorg/jetbrains/kotlin/ir/declarations/IrFunction;)Lorg/jetbrains/kotlin/ir/IrStatement;
 }
 

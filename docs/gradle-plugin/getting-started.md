@@ -62,3 +62,16 @@ The **`stabilityDump` task** generates a human-readable baseline file containing
 !!! note "Independence"
 
     This Gradle plugin is completely independent of the IDE plugin. You can use it on its own for runtime tracing and CI validation, without installing the IDE plugin.
+
+## Configuration Cache and Isolated Projects
+
+The plugin is compatible with Gradle's [Configuration Cache](https://docs.gradle.org/current/userguide/configuration_cache.html) and with [Isolated Projects](https://docs.gradle.org/current/userguide/isolated_projects.html), which graduated to incubating in Gradle 9.7. No extra configuration is required — just enable them in `gradle.properties`:
+
+```properties
+org.gradle.configuration-cache=true
+org.gradle.isolated-projects=true
+```
+
+On Gradle releases before 9.7 the property is spelled `org.gradle.unsafe.isolated-projects`; the newer name is silently ignored there.
+
+Isolated Projects forbids reading another project's state while configuring a project. Earlier versions violated that in two places: `collectProjectDependencies()` scanned `rootProject.allprojects` to guess each sibling module's package names, and the incremental-compilation guard read the whole build's task graph. Neither is needed — cross-module types are identified from their compiled IR declaration origin, and the incremental-compilation decision is made per project (see [`allowIncrementalDisabling`](stability-validation.md#allowincrementaldisabling)).

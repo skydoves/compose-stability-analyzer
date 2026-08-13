@@ -43,11 +43,6 @@ public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
       "",
     )
 
-    val projectDependencies = configuration.get(
-      StabilityAnalyzerConfigurationKeys.KEY_PROJECT_DEPENDENCIES,
-      "",
-    )
-
     val traceAll = configuration.get(
       StabilityAnalyzerConfigurationKeys.KEY_TRACE_ALL,
       false,
@@ -77,7 +72,6 @@ public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
     IrGenerationExtension.registerExtension(
       StabilityAnalyzerIrGenerationExtension(
         stabilityOutputDir = stabilityOutputDir,
-        projectDependencies = projectDependencies,
         traceAll = traceAll,
         traceAllThreshold = traceAllThreshold,
         stabilityConfigurationFiles = stabilityConfigurationFiles,

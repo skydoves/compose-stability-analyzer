@@ -31,6 +31,12 @@ public class IrDumpTestGenerated extends AbstractIrDumpTest {
   }
 
   @Test
+  @TestMetadata("CrossModuleBinaryDependency.kt")
+  public void testCrossModuleBinaryDependency() {
+    run("CrossModuleBinaryDependency.kt");
+  }
+
+  @Test
   @TestMetadata("InheritedComputedPropertyStability.kt")
   public void testInheritedComputedPropertyStability() {
     run("InheritedComputedPropertyStability.kt");

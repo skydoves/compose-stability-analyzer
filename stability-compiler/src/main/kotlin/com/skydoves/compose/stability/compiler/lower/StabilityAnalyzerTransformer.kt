@@ -47,7 +47,6 @@ import org.jetbrains.kotlin.name.FqName
 public class StabilityAnalyzerTransformer(
   private val pluginContext: IrPluginContext,
   private val stabilityCollector: StabilityInfoCollector? = null,
-  private val projectDependencies: List<String> = emptyList(),
   private val traceAll: Boolean = false,
   private val traceAllThreshold: Int = 2,
   private val stabilityConfigurationMatchers: List<FqNameMatcher> = emptyList(),
@@ -1104,7 +1103,9 @@ public class StabilityAnalyzerTransformer(
     "UNSTABLE" -> when {
       type.isMutableCollection() -> "mutable collection"
       isKnownUnstableJavaType(type.classFqName?.asString()) -> "mutable Java class"
-      else -> "has mutable properties or unstable members"
+      // Ordered after the two branches above because their analysis steps (2c, 9) run before the
+      // out-of-module step (17), so they must keep winning when a type matches both.
+      else -> outOfModuleUnstableReason(type) ?: "has mutable properties or unstable members"
     }
     "RUNTIME" -> "requires runtime check"
     "UNKNOWN" -> "interface or non-final class; concrete implementation unknown"
@@ -1242,33 +1243,48 @@ public class StabilityAnalyzerTransformer(
   }
 
   /**
-   * Checks if a class is from a different module or external library.
-   * Detects: (1) External JARs/AARs via IR origins, (2) Other Gradle modules via package matching
+   * The reason text for an UNSTABLE verdict produced by the out-of-module step (17) of
+   * [analyzeTypeStabilityInternal], or `null` when the verdict came from somewhere else and the
+   * caller should fall back to the generic property-analysis reason.
+   *
+   * The guard repeats step 17's, so a type carrying `@StabilityInferred` — which falls through to
+   * normal property analysis — is not claimed here. Value classes are excluded because step 12
+   * resolves them from their underlying type first; enums cannot reach this point at all, since
+   * step 13 always returns STABLE. Step 14 (`@Parcelize`) can also return UNSTABLE before step 17,
+   * in which case both descriptions apply and this one wins — a labelling choice, not an error.
+   *
+   * Reason strings must not contain parentheses: `StabilityCheckTask` round-trips the `.stability`
+   * baseline with `substringBefore(" (")` / `substringAfter(" (").substringBefore(")")`.
    */
-  private fun isFromDifferentModule(clazz: IrClass): Boolean {
-    return try {
-      val classFqName = clazz.kotlinFqName.asString()
-
-      // Check 1: External library classes (from compiled JARs/AARs)
-      val origin = clazz.origin
-      if (origin == OriginCompat.IR_EXTERNAL_DECLARATION_STUB ||
-        origin == OriginCompat.IR_EXTERNAL_JAVA_DECLARATION_STUB
-      ) {
-        return true
-      }
-
-      // Check 2: Multi-module project dependencies (via package matching)
-      if (projectDependencies.isNotEmpty()) {
-        for (dependencyModule in projectDependencies) {
-          if (classFqName.startsWith("$dependencyModule.")) {
-            return true
-          }
-        }
-      }
-
-      false
-    } catch (e: Exception) {
-      false
+  private fun outOfModuleUnstableReason(type: IrType): String? {
+    val clazz = type.classOrNull?.owner ?: return null
+    if (clazz.isValueClass()) return null
+    if (!isFromDifferentModule(clazz)) return null
+    if (type.hasStableAnnotation() || type.hasStabilityInferredAnnotation()) return null
+    // A Java class gets IR_EXTERNAL_JAVA_DECLARATION_STUB even when it lives in this Gradle
+    // module's own `src/main/java`, so it must not be described as cross-module.
+    return if (clazz.origin == OriginCompat.IR_EXTERNAL_JAVA_DECLARATION_STUB) {
+      "Java class; stability cannot be inferred"
+    } else {
+      "cross-module type without @Stable/@Immutable"
     }
+  }
+
+  /**
+   * Checks if a class is declared outside the compilation unit being compiled — another Gradle
+   * module, a published library, an AAR/klib, or a Java source root.
+   *
+   * `FirClass.irOrigin()` assigns `IR_EXTERNAL_DECLARATION_STUB` to every class that has no
+   * container `FirFile` in this module, so a sibling Gradle module's types (which always arrive as
+   * compiled binaries on the compile classpath) are covered by the origin alone. This is the same
+   * signal `androidx.compose.compiler…StabilityInferencer` uses; no package-name matching or
+   * Gradle-side project scanning is involved (issue #107).
+   */
+  private fun isFromDifferentModule(clazz: IrClass): Boolean = try {
+    val origin = clazz.origin
+    origin == OriginCompat.IR_EXTERNAL_DECLARATION_STUB ||
+      origin == OriginCompat.IR_EXTERNAL_JAVA_DECLARATION_STUB
+  } catch (e: Exception) {
+    false
   }
 }
