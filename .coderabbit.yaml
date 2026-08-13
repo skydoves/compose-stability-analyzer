@@ -221,10 +221,15 @@ reviews:
         it must stay consistent with gradle.properties VERSION_NAME and the Gradle plugin's
         VERSION constant.
 
-    - path: "buildSrc/**"
+    - path: "build-logic/**"
       instructions: >-
-        Shared build conventions. Changes here fan out to every module; check for
-        configuration-time side effects and Gradle 9 compatibility.
+        Shared build conventions, applied by every module as the
+        `compose-stability.conventions` plugin. Changes here fan out to every module; check for
+        configuration-time side effects and Gradle 9 compatibility. This is an included build
+        rather than buildSrc so its dependencies stay isolated — adding the Kotlin Gradle plugin
+        to a buildSrc classpath breaks the main build's version-carrying plugin aliases. Cross-project
+        access (rootProject, allprojects, subprojects) must not come back: it breaks Isolated
+        Projects, which is why this build exists (#107).
 
     # ===== CI =====
     - path: ".github/workflows/**"

@@ -16,6 +16,6 @@ apiValidation {
 }
 
 // Shared Kotlin/Spotless configuration lives in the `compose-stability.conventions` convention
-// plugin (buildSrc), which each module applies to itself. It used to be a `subprojects { }` block
+// plugin (build-logic), which each module applies to itself. It used to be a `subprojects { }` block
 // here, which Gradle's Isolated Projects feature rejects — a project may not configure its
 // children (issue #107).
