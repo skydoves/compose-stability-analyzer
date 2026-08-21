@@ -135,7 +135,7 @@ composeStabilityAnalyzer {
         // (see https://developer.android.com/develop/ui/compose/performance/stability/fix#configuration-file)
         // DEPRECATED: use stabilityConfigurationFiles in top-level composeStabilityAnalyzer block
         stabilityConfigurationFiles.add(
-            rootProject.layout.projectDirectory.file("stability_config.conf")
+            isolated.rootProject.projectDirectory.file("stability_config.conf")
         )
     }
 }
@@ -197,7 +197,7 @@ You can provide stability configuration files to tell `stabilityCheck` which typ
 composeStabilityAnalyzer {
     stabilityValidation {
         stabilityConfigurationFiles.add(
-            rootProject.layout.projectDirectory.file("stability_config.conf")
+            isolated.rootProject.projectDirectory.file("stability_config.conf")
         )
     }
 }

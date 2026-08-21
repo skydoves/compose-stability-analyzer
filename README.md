@@ -1041,7 +1041,7 @@ composeStabilityAnalyzer {
         // Add stability configuration file
         // Matches compose's identical property 
         // (see https://developer.android.com/develop/ui/compose/performance/stability/fix#configuration-file)
-        stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
+        stabilityConfigurationFiles.add(isolated.rootProject.projectDirectory.file("stability_config.conf"))
     }
 }
 ```
@@ -1093,7 +1093,7 @@ composeStabilityAnalyzer {
     stabilityValidation {
         // Use the same stability configuration file as the Compose compiler
         stabilityConfigurationFiles.add(
-            rootProject.layout.projectDirectory.file("stability_config.conf")
+            isolated.rootProject.projectDirectory.file("stability_config.conf")
         )
     }
 }

@@ -161,7 +161,7 @@ The `@StabilityInferred` annotation helps resolve this. When a class is compiled
 
 This mechanism is transparent: you don't need to add the annotation manually. It's added automatically by the Compose compiler during compilation. However, it only works for modules that are compiled with the Compose compiler; modules compiled with plain `kotlinc` won't have this annotation.
 
-The analyzer identifies a type as coming from outside the module being compiled by its **IR declaration origin** — the same signal the Compose compiler uses. Anything without a source file in the current compilation (another Gradle module, a published library, an AAR or klib) arrives as `IR_EXTERNAL_DECLARATION_STUB`, so no package-name configuration is involved. Such a type is reported as `UNSTABLE (cross-module type without @Stable/@Immutable)` unless it carries `@Stable`, `@Immutable`, or `@StabilityInferred`.
+The analyzer identifies a type as coming from outside the module being compiled by its **IR declaration origin** — the same signal the Compose compiler uses. Anything without a source file in the current compilation (another Gradle module, a published library, an AAR or klib) arrives as `IR_EXTERNAL_DECLARATION_STUB`, or as `IR_EXTERNAL_JAVA_DECLARATION_STUB` when it is a Java class, so no package-name configuration is involved. Such a type is reported as `UNSTABLE (cross-module type without @Stable/@Immutable)` — or `UNSTABLE (Java class; stability cannot be inferred)` for the Java case — unless it carries `@Stable`, `@Immutable`, or `@StabilityInferred`.
 
 ## Strong Skipping Mode
 
