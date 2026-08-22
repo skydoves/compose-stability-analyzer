@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 plugins {
-  // Built with Kotlin 2.4.0 to match the main project. Context receivers (removed in 2.3.20)
+  // Built with Kotlin 2.4.10 to match the main project. Context receivers (removed in 2.3.20)
   // were migrated to context parameters. This module is built separately from the main project.
-  kotlin("jvm") version "2.4.0"
+  kotlin("jvm") version "2.4.10"
   id("org.jetbrains.intellij.platform") version "2.10.1"
   id("com.diffplug.spotless") version "6.21.0"
 }

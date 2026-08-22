@@ -1,6 +1,6 @@
 [versions]
 junit = "4.13.2"
-kotlin = "2.4.0"
+kotlin = "2.4.10"
 dokka = "2.2.0"
 jvmTarget = "17"
 kotlinxCollectionsImmutable = "0.4.0"

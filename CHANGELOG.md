@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Bumped Kotlin to 2.4.10** (from 2.4.0). Use the same Kotlin version as this library. The compiler plugin, runtime, Gradle plugin, Lint rules and IntelliJ plugin all build against 2.4.10, and every published target still compiles. **No stability verdicts change**: the Compose compiler's `analysis/Stability.kt` is byte-identical between 2.4.0 and 2.4.10, and re-running `stabilityDump` on the sample app produced no diff, so committed `.stability` baselines do not need refreshing for this bump alone.
+
+  2.4.10's one Compose compiler fix, [b/522127447](https://issuetracker.google.com/issues/522127447) ("classes previously inferred `stable` now reported `runtime`/`Uncertain`"), is in `ComposableFunctionBodyTransformer`, not in stability inference. It restores the *cast target* type's stability when an argument is passed through a `CAST`/`IMPLICIT_CAST`, which affects the `$changed` metadata Compose computes per call-site argument. This analyzer reports the stability of a parameter's *declared type*, so the fix is orthogonal to what `stabilityDump` and the IDE surface.
+
 ### Fixed
 - **Gradle Isolated Projects compatibility** (#107): the plugin no longer performs any cross-project access at configuration time, so builds using `--isolated-projects` / `org.gradle.isolated-projects=true` (incubating since Gradle 9.7) configure and compile cleanly. Two violations are gone:
   - `collectProjectDependencies()` walked `rootProject.allprojects` and read every sibling project's `group`, `projectDir` and `path` — including a filesystem scan of each sibling's sources — on every Kotlin compile-task configuration.
