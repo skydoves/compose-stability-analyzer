@@ -6,6 +6,7 @@ It is **strongly recommended to use the exact same Kotlin version** as this libr
 
 | Stability Analyzer | Kotlin |
 |--------------------|--------|
+| 0.13.0             | 2.4.10 |
 | 0.12.0             | 2.4.0  |
 | 0.11.1             | 2.4.0  |
 | 0.11.0             | 2.4.0  |

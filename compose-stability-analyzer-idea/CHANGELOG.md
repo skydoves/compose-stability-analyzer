@@ -2,6 +2,14 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.13.0] - 2026-08-22
+
+### Fixed
+- **Editor verdicts and `stabilityDump` now agree on same-module types.** The IDE was already correct here; the compiler plugin was not. It marked a module's own types unstable whenever a sibling Gradle module's `group` happened to be a package prefix, and it honoured `@StabilityInferred` on source classes, where the annotation is present only depending on compiler-plugin ordering. Both are fixed in library 0.13.0, so gutter icons, tooltips and the Stability Explorer no longer disagree with the generated `.stability` report.
+
+### Changed
+- **Updated to Kotlin 2.4.10.** Stability inference is unchanged: 2.4.10's Compose compiler fix ([b/522127447](https://issuetracker.google.com/issues/522127447)) affects the per-call-site argument metadata Compose computes for casts, not the declared-type inference this plugin displays.
+
 ## [0.12.0] - 2026-07-28
 
 ### Changed

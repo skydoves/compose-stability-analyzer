@@ -26,7 +26,7 @@ kotlin {
 }
 
 group = "com.github.skydoves"
-version = "0.12.0"
+version = "0.13.0"
 
 repositories {
   mavenLocal()
@@ -38,7 +38,7 @@ repositories {
 }
 
 dependencies {
-  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.12.0")
+  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.13.0")
 
   intellijPlatform {
     intellijIdeaCommunity("2025.2")
@@ -79,6 +79,11 @@ intellijPlatform {
             </ul>
         """.trimIndent()
     changeNotes = """
+            <b>0.13.0</b>
+            <ul>
+                <li><b>Editor verdicts and stabilityDump now agree on same-module types</b> - the compiler plugin used to mark a module's own types unstable whenever a sibling Gradle module's group happened to be a package prefix, and it honoured @StabilityInferred on source classes, where the annotation is only present depending on compiler-plugin ordering. Both are fixed in library 0.13.0, so gutter icons, tooltips and the Stability Explorer no longer disagree with the generated .stability report.</li>
+                <li><b>Updated to Kotlin 2.4.10.</b> Stability inference is unchanged - the Compose compiler fix in 2.4.10 affects per-call-site argument metadata, not the declared-type inference this plugin shows.</li>
+            </ul>
             <b>0.12.0</b>
             <ul>
                 <li><b>Kotlin Multiplatform recomposition data</b> - @TraceRecomposition was a silent no-op outside Android and JVM, so the Heatmap, Reality Check and Doctor received nothing from iOS, macOS, Linux, Windows, JS and Wasm targets. Those targets now log recompositions with real durations (library 0.12.0).</li>
