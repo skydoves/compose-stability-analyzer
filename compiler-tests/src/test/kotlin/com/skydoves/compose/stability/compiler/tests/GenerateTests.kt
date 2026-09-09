@@ -45,7 +45,7 @@ fun main() {
         model("dump/fir")
       }
 
-      // IR dump tests - dumps backend IR to .ir.kt.txt files
+      // IR dump tests - dumps backend IR to .kt.txt files
       testClass<AbstractIrDumpTest> {
         model("dump/ir")
       }

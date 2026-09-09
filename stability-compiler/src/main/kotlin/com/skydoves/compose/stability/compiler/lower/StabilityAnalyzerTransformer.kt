@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.ir.types.isPrimitiveType
 import org.jetbrains.kotlin.ir.types.isString
 import org.jetbrains.kotlin.ir.types.isUnit
 import org.jetbrains.kotlin.ir.types.makeNotNull
+import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
 import org.jetbrains.kotlin.ir.util.isNullable
@@ -43,6 +44,7 @@ import org.jetbrains.kotlin.ir.util.isSuspendFunctionTypeOrSubtype
 import org.jetbrains.kotlin.ir.util.kotlinFqName
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 public class StabilityAnalyzerTransformer(
   private val pluginContext: IrPluginContext,
@@ -68,6 +70,14 @@ public class StabilityAnalyzerTransformer(
     FqName("androidx.compose.runtime.ReadOnlyComposable")
   private val explicitGroupsComposableFqName =
     FqName("androidx.compose.runtime.ExplicitGroupsComposable")
+
+  // Annotation argument names. Kotlin 2.4.20 deprecated IrAnnotation.symbol in favour of the
+  // classSymbol/argumentMapping pair (KT-74200), so arguments are read by name instead of by
+  // position in the annotation constructor.
+  private val tagArgumentName = Name.identifier("tag")
+  private val thresholdArgumentName = Name.identifier("threshold")
+  private val traceStatesArgumentName = Name.identifier("traceStates")
+  private val parametersArgumentName = Name.identifier("parameters")
 
   private val irBuilder = RecompositionIrBuilder(pluginContext)
   private var irBuilderInitialized = false
@@ -172,43 +182,28 @@ public class StabilityAnalyzerTransformer(
     // If @TraceRecomposition is present, inject tracking code automatically.
     // Otherwise, trace-all mode auto-instruments every eligible restartable composable.
     if (hasTraceRecomposition) {
-      // Extract annotation parameters
-      val annotation = declaration.annotations.find { annot ->
-        val annotationClass = annot.symbol.owner.parent as? IrClass
-        annotationClass?.kotlinFqName == traceRecompositionFqName
-      }
+      // Extract annotation parameters. An argument absent from the mapping was not written at the
+      // call site, so the annotation's own default stands.
+      val annotation = declaration.getAnnotation(traceRecompositionFqName)
 
       var tag = ""
       var threshold = 1
       var traceStates = false
 
-      annotation?.let { annot ->
-        val annotationClass = annot.symbol.owner
-        val paramNameToIndex = annotationClass.parameters
-          .mapIndexed { index, param ->
-            param.name.asString() to index
-          }
-          .toMap()
-
+      annotation?.argumentMapping?.let { arguments ->
         // Cover tag
-        paramNameToIndex["tag"]?.let { index ->
-          annot.arguments.getOrNull(index)?.let { value ->
-            tag = extractConstStringValue(value) ?: ""
-          }
+        arguments[tagArgumentName]?.let { value ->
+          tag = extractConstStringValue(value) ?: ""
         }
 
         // Cover threshold
-        paramNameToIndex["threshold"]?.let { index ->
-          annot.arguments.getOrNull(index)?.let { value ->
-            threshold = extractConstIntValue(value) ?: 1
-          }
+        arguments[thresholdArgumentName]?.let { value ->
+          threshold = extractConstIntValue(value) ?: 1
         }
 
         // Cover traceStates
-        paramNameToIndex["traceStates"]?.let { index ->
-          annot.arguments.getOrNull(index)?.let { value ->
-            traceStates = extractConstBooleanValue(value) ?: false
-          }
+        arguments[traceStatesArgumentName]?.let { value ->
+          traceStates = extractConstBooleanValue(value) ?: false
         }
       }
 
@@ -891,23 +886,16 @@ public class StabilityAnalyzerTransformer(
     val stabilityInferredFqName =
       FqName("androidx.compose.runtime.internal.StabilityInferred")
 
-    val annotation = clazz.annotations.find { annot ->
-      try {
-        val annotationClass = annot.symbol.owner.parent as? IrClass
-        annotationClass?.kotlinFqName == stabilityInferredFqName
-      } catch (e: Exception) {
-        false
-      }
-    } ?: return null
-
-    val annotationClass = annotation.symbol.owner
-    val paramNameToIndex = annotationClass.parameters
-      .mapIndexed { index, param -> param.name.asString() to index }
-      .toMap()
-
-    val parametersIndex = paramNameToIndex["parameters"] ?: return null
-    val value = annotation.arguments.getOrNull(parametersIndex) ?: return null
-    return extractConstIntValue(value)
+    // @StabilityInferred is only ever read off classes compiled outside this module, whose IR is
+    // deserialized rather than built from source, so keep resolution failures non-fatal and fall
+    // back to inferring the stability ourselves.
+    return try {
+      val annotation = clazz.getAnnotation(stabilityInferredFqName) ?: return null
+      val value = annotation.argumentMapping[parametersArgumentName] ?: return null
+      extractConstIntValue(value)
+    } catch (e: Exception) {
+      null
+    }
   }
 
   private fun IrType.isCollection(): Boolean {

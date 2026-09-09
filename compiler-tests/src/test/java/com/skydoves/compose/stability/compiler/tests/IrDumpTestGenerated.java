@@ -73,6 +73,12 @@ public class IrDumpTestGenerated extends AbstractIrDumpTest {
   }
 
   @Test
+  @TestMetadata("StabilityInferredCrossModule.kt")
+  public void testStabilityInferredCrossModule() {
+    run("StabilityInferredCrossModule.kt");
+  }
+
+  @Test
   @TestMetadata("StabilityInferredIsBinaryOnly.kt")
   public void testStabilityInferredIsBinaryOnly() {
     run("StabilityInferredIsBinaryOnly.kt");

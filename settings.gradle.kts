@@ -30,7 +30,8 @@ include(
   ":app-model",
 )
 
-// The IDE plugin is excluded from the main build because it requires Kotlin 2.3.0
-// (the K2 Analysis API uses context receivers, which are removed in Kotlin 2.3.20).
+// The IDE plugin is excluded from the main build because it is an IntelliJ Platform build:
+// it resolves the IDE distribution and the bundled Kotlin plugin, and consumes the runtime from
+// its published coordinate rather than from this build. It tracks the same Kotlin version.
 // Build it separately: ./gradlew -p compose-stability-analyzer-idea buildPlugin
 // include(":compose-stability-analyzer-idea")

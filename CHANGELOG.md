@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Bumped Kotlin to 2.4.20** (from 2.4.10). Use the same Kotlin version as this library. The compiler plugin, runtime, Gradle plugin, Lint rules and IntelliJ plugin all build against 2.4.20, and all twelve published runtime targets still compile. **No stability verdicts change**: `stabilityDump` on the sample app produces no diff and `stabilityCheck` passes against the committed baselines, so `.stability` files do not need refreshing for this bump alone.
+
+  Unlike the 2.4.10 bump, the Compose compiler's `analysis/Stability.kt` is *not* byte-identical this time. Its one semantic addition is a branch for [KEEP-0454](https://github.com/Kotlin/KEEP/blob/main/proposals/KEEP-0454-better-immutability-value-classes-MFVC.md) "full value classes" (a `value class` *without* `@JvmInline`), which now report `Stable` when marked `@Stable`/`@Immutable`, `Unstable` when abstract, and otherwise the combined stability of their underlying properties. The language feature behind them, `FullValueClasses` ([KT-84904](https://youtrack.jetbrains.com/issue/KT-84904)), is not enabled in any released language version and forces pre-release binaries when switched on, and `-Xvalue-classes` was removed from the JVM compiler in 2.4.20 — so no code you can ship today reaches that branch.
+- **The compiler plugin no longer reads `IrAnnotation.symbol`**, which 2.4.20 deprecates in favour of `classSymbol` + `argumentMapping` ([KT-74200](https://youtrack.jetbrains.com/issue/KT-74200)). `@TraceRecomposition`'s arguments and `@StabilityInferred(parameters = ...)` are now looked up by name through `argumentMapping` rather than by position in the annotation constructor — the same move the Compose compiler made for its own `@StabilityInferred` read in this release. The annotation itself is found with `IrAnnotationContainer.getAnnotation`, which is the predicate the surrounding `hasAnnotation` guards already used, so a guard and its reader can no longer disagree about which annotation matched.
+
+### Note for contributors
+
+The `compiler-tests` golden IR dumps moved from `<name>.fir.kt.txt` to `<name>.kt.txt`. Kotlin's test framework used to prefix `fir.` to tell K1 dumps apart from K2 ones; K1 is gone in 2.4.20, so the qualifier went with it. The file *contents* are unchanged, which is the evidence that the IR this plugin generates is identical between 2.4.10 and 2.4.20.
+
 ## [0.13.0] - 2026-08-22
 
 ### Changed

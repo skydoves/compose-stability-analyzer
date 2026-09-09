@@ -31,7 +31,7 @@ import org.jetbrains.kotlin.test.services.KotlinStandardLibrariesPathProvider
  * Base class for IR dump tests.
  *
  * IR dump tests generate a text representation of the backend IR (Intermediate Representation)
- * for inspection and comparison. The output is saved to `.txt` or `.ir.kt.txt` files.
+ * for inspection and comparison. The output is saved to `.kt.txt` files.
  *
  * These tests are useful for:
  * - Verifying IR transformations by the compiler plugin
@@ -52,7 +52,7 @@ import org.jetbrains.kotlin.test.services.KotlinStandardLibrariesPathProvider
  * }
  * ```
  *
- * This will generate a `.ir.kt.txt` file with the IR representation showing:
+ * This will generate a `.kt.txt` file with the IR representation showing:
  * - Function declarations
  * - Property access
  * - Call sites

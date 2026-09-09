@@ -1,0 +1,17 @@
+// FILE: main.kt
+
+@TraceRecomposition(threshold = 1)
+@Composable
+fun ShowInferred(stable: InferredStable, runtime: InferredRuntime) {
+  val _tracker: RecompositionTracker = rememberRecompositionTracker(composableName = "ShowInferred", tag = "", threshold = 1, fqName = "ShowInferred", isAutoTraced = false)
+  _tracker.trackParameter(name = "stable", type = "lib.InferredStable", value = stable, isStable = true)
+  _tracker.trackParameter(name = "runtime", type = "lib.InferredRuntime", value = runtime, isStable = false)
+  val _startTime: Long = recompositionNanoTime()
+  try // COMPOSITE {
+  println(message = stable.<get-names>().<get-size>().plus(other = runtime.<get-names>().<get-size>()))
+  // }
+  finally // COMPOSITE {
+  _tracker.recordDuration(startTimeNanos = _startTime)
+  _tracker.logIfThresholdMet()
+  // }
+}

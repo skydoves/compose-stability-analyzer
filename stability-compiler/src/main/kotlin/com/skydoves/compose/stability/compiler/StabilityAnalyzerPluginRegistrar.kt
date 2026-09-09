@@ -16,15 +16,15 @@
 package com.skydoves.compose.stability.compiler
 
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.compiler.plugin.registerExtension
-import org.jetbrains.kotlin.config.CommonConfigurationKeys
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.MessageCollectorAccess
+import org.jetbrains.kotlin.config.messageCollector
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 
-@OptIn(ExperimentalCompilerApi::class)
+@OptIn(ExperimentalCompilerApi::class, MessageCollectorAccess::class)
 public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
 
   override val supportsK2: Boolean = true
@@ -57,8 +57,11 @@ public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
       StabilityAnalyzerConfigurationKeys.KEY_STABILITY_CONFIGURATION_FILES,
     )
 
-    val messageCollector = configuration.get(CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY)
-      ?: MessageCollector.NONE
+    // Kotlin 2.4.20 put MESSAGE_COLLECTOR_KEY behind @MessageCollectorAccess, steering callers to
+    // CompilerConfiguration.report. That path goes through `diagnosticsCollector`, which throws when
+    // the collector isn't installed, whereas these are best-effort configuration warnings that must
+    // never fail a build; the message collector degrades to MessageCollector.NONE instead.
+    val messageCollector = configuration.messageCollector
 
     // Register FIR extensions for frontend analysis (K2).
     // Kotlin 2.4.0 (KT-83341) moved K2 extension registration off the IntelliJ

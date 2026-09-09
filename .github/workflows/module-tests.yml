@@ -151,7 +151,7 @@ jobs:
       - name: Publish stability-runtime to Maven Local
         run: ./gradlew :stability-runtime:publishToMavenLocal -x test --no-daemon --stacktrace -PRELEASE_SIGNING_ENABLED=false
 
-      - name: Build IDE plugin (standalone with Kotlin 2.3.0)
+      - name: Build IDE plugin (standalone IntelliJ Platform build)
         working-directory: compose-stability-analyzer-idea
         run: ../gradlew clean buildPlugin --no-daemon --stacktrace
 
