@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 The `compiler-tests` golden IR dumps moved from `<name>.fir.kt.txt` to `<name>.kt.txt`. Kotlin's test framework used to prefix `fir.` to tell K1 dumps apart from K2 ones; K1 is gone in 2.4.20, so the qualifier went with it. The file *contents* are unchanged, which is the evidence that the IR this plugin generates is identical between 2.4.10 and 2.4.20.
 
+`kotlin-js-store/yarn.lock` was regenerated with `./gradlew kotlinUpgradeYarnLock`, since a Kotlin bump moves the JS toolchain's npm dependencies and `:stability-runtime:build` fails on `:kotlinStoreYarnLock` otherwise.
+
 ## [0.13.0] - 2026-08-22
 
 ### Changed
