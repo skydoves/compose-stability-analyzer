@@ -73,7 +73,7 @@ internal fun compareStability(
     }
 
     // Check restartability change. A composable that loses its restart group (restartable
-    // true -> false, e.g. by gaining @NonRestartableComposable / @ReadOnlyComposable /
+    // true -> false, e.g. by gaining @NonRestartableComposable / the `open` modifier /
     // @ExplicitGroupsComposable / inline / a non-Unit return type) can no longer be skipped and
     // re-runs whenever its parent recomposes, so it is a regression worth surfacing. Restartability
     // is structural, so the stability configuration cannot rescue it (issue #184).

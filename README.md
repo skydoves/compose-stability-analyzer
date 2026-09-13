@@ -824,7 +824,7 @@ public fun com.example.rememberUserState(user: com.example.User): com.example.Us
     - user: STABLE (marked @Stable or @Immutable)
 ```
 
-**Skippable vs. restartable.** A composable is `restartable` only when the Compose compiler wraps it in a restart group. It does not for `@NonRestartableComposable`, `@ReadOnlyComposable`, or `@ExplicitGroupsComposable` composables, `inline` functions, or composables that return a non-`Unit` value (such as `rememberUserState` above). A non-restartable composable can never be `skippable`, regardless of how stable its parameters are. `@NonSkippableComposable` is the exception that stays restartable but opts out of skipping (`skippable: false`, `restartable: true`). In `stabilityCheck`, both a `skippable` and a `restartable` `true → false` transition are reported as regressions.
+**Skippable vs. restartable.** A composable is `restartable` only when the Compose compiler wraps it in a restart group. It does not for `@NonRestartableComposable` or `@ExplicitGroupsComposable` composables, `inline` functions, composables that return a non-`Unit` value (such as `rememberUserState` above), `open` members of non-final classes (including interface methods with a body), abstract declarations, and local composables. Note `@ReadOnlyComposable` is *not* in that list: the annotation alone does not remove the restart group, and the familiar read-only composables are non-restartable because they return a value. A non-restartable composable can never be `skippable`, regardless of how stable its parameters are. `@NonSkippableComposable` is the exception that stays restartable but opts out of skipping (`skippable: false`, `restartable: true`). In `stabilityCheck`, both a `skippable` and a `restartable` `true → false` transition are reported as regressions.
 
 Each parameter is reported with one of four stability values, matching the Compose compiler:
 
@@ -833,6 +833,8 @@ Each parameter is reported with one of four stability values, matching the Compo
 | `STABLE` | Known stable at compile time (skippable). |
 | `UNSTABLE` | Known unstable (e.g. has mutable `var` properties). |
 | `RUNTIME` | Stability depends on a runtime value (e.g. generic type parameters, standard collections). |
+> **Note on cross-file types.** On JVM the Compose compiler reports any public or internal class declared in a *different file* as `RUNTIME`, deferring to the class's runtime `$stable` field rather than deciding statically. This analyzer deliberately reports the stability of the parameter's **declared type** instead, so a cross-file class with `var` properties still reads `UNSTABLE` rather than `RUNTIME`. That is the actionable signal the gutter icons, inline hints and Stability Doctor are built on, and it does not affect `skippable`, which follows the compiler exactly.
+
 | `UNKNOWN` | Cannot be determined statically because the concrete type is unknown — an **interface** or a **non-final (open/abstract) class**. Mirrors Compose 2.4.0, which infers `Unknown` for these by default. Like `RUNTIME`/`UNSTABLE`, a parameter with this value does not make a composable statically skippable. In `stabilityCheck`, a `STABLE → UNKNOWN` transition is reported as a regression. |
 
 This file is your **stability contract**. It says "these are all my composables, and this is how stable they should be."
@@ -1013,6 +1015,14 @@ You can customize what gets tracked and where files are stored in your Gradle fi
 ```kotlin
 // In your build.gradle.kts
 composeStabilityAnalyzer {
+
+    // Report skippability using Compose's strong skipping semantics (default: true, matching the
+    // Compose compiler, whose StrongSkipping feature flag is on by default). With strong skipping
+    // on, an unstable parameter no longer prevents a restartable composable from skipping, because
+    // Compose compares such parameters by instance identity instead. Set this to false ONLY in a
+    // build that also disables Compose's own flag, otherwise the reported verdicts will not match
+    // the code the compiler generates.
+    strongSkipping.set(true)
 
     stabilityValidation {
         enabled.set(true) // Enable or disable stability validation
