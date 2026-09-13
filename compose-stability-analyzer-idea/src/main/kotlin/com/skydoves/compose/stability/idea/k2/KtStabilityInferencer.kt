@@ -31,7 +31,6 @@ import org.jetbrains.kotlin.analysis.api.symbols.KaPropertyGetterSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaPropertySymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaSymbolModality
 import org.jetbrains.kotlin.analysis.api.types.KaType
-import org.jetbrains.kotlin.analysis.api.types.KaTypeNullability
 
 /**
  * K2 Analysis API-based stability inferencer.
@@ -111,9 +110,12 @@ internal class KtStabilityInferencer(
     val expandedType = type.fullyExpandedType
 
     // 1. Nullable types - MUST be checked first to strip nullability
-    // Use KaTypeNullability enum for compatibility with Android Studio AI-243
+    // The boolean overload is the non-deprecated one and has existed since well before the oldest
+    // IDE we support. The KaTypeNullability enum this used to pass is deprecated at HIDDEN level in
+    // the Kotlin 2.5 Analysis API, which makes it an unresolved reference that @Suppress cannot
+    // reach, so the plugin would stop compiling against IDEs bundling that version.
     val nonNullableType = if (expandedType.isMarkedNullable) {
-      expandedType.withNullability(KaTypeNullability.NON_NULLABLE)
+      expandedType.withNullability(isMarkedNullable = false)
     } else {
       expandedType
     }

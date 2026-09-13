@@ -215,19 +215,16 @@ internal object StabilityAnalyzer {
    * Whether a @Composable is restartable — i.e. the compiler wraps it in a restart group. A
    * non-restartable composable has no restart group, so it can never be skipped and its parameter
    * stability is moot. Mirrors the compiler's StabilityAnalyzerTransformer.isRestartable and the K2
-   * analyzer so every path agrees (issue #184): `@NonRestartableComposable`, `@ReadOnlyComposable`,
-   * `@ExplicitGroupsComposable`, `inline`, and a non-`Unit` return type each make a composable
-   * non-restartable.
+   * analyzer so every path agrees (issue #184). The structural half lives in
+   * [RestartabilityRules]; `@ReadOnlyComposable` is deliberately not one of the rules, because the
+   * Compose compiler does not consult it here.
    *
    * The return-type check is best-effort on the PSI path: only an explicit non-`Unit` return type is
    * detected (an inferred expression-body type cannot be resolved without the K2 API, which the K2
    * analyzer handles).
    */
   private fun isRestartableComposable(function: KtNamedFunction): Boolean {
-    if (function.hasAnnotation(StabilityConstants.Strings.NON_RESTARTABLE_COMPOSABLE)) return false
-    if (function.hasAnnotation(StabilityConstants.Strings.READ_ONLY_COMPOSABLE)) return false
-    if (function.hasAnnotation(StabilityConstants.Strings.EXPLICIT_GROUPS_COMPOSABLE)) return false
-    if (function.hasModifier(org.jetbrains.kotlin.lexer.KtTokens.INLINE_KEYWORD)) return false
+    if (RestartabilityRules.isStructurallyNonRestartable(function)) return false
     if (function.hasNonUnitReturnType()) return false
     return true
   }

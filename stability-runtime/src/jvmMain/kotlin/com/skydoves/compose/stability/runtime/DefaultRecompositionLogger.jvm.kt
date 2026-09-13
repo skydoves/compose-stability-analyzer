@@ -15,6 +15,8 @@
  */
 package com.skydoves.compose.stability.runtime
 
+import java.util.Locale
+
 /**
  * JVM implementation of DefaultRecompositionLogger that uses System.out.
  *
@@ -33,7 +35,12 @@ public actual class DefaultRecompositionLogger : RecompositionLogger {
   actual override fun log(event: RecompositionEvent) {
     val tagSuffix = if (event.tag.isNotEmpty()) " (tag: ${event.tag})" else ""
     val durationStr = if (event.durationNanos > 0) {
-      " (%.2fms)".format(event.durationNanos / 1_000_000.0)
+      // Locale.ROOT keeps the decimal separator a dot. The log line is a wire protocol parsed by
+      // the IDE plugin, whose duration group only matches digits and a dot, so a default locale
+      // that formats 1.20 as "1,20" made every duration read back as 0.0 (heatmap tooltips lost
+      // the timing line and the Doctor fell back to its 1ms waste floor). The native, js and
+      // wasmJs actuals build this string arithmetically and were never affected.
+      " (%.2fms)".format(Locale.ROOT, event.durationNanos / 1_000_000.0)
     } else {
       ""
     }

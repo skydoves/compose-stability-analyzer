@@ -16,6 +16,7 @@
 package com.skydoves.compose.stability.idea.k2
 
 import com.intellij.openapi.roots.ProjectFileIndex
+import com.skydoves.compose.stability.idea.RestartabilityRules
 import com.skydoves.compose.stability.idea.StabilityConstants
 import com.skydoves.compose.stability.idea.hasAnnotation
 import com.skydoves.compose.stability.idea.settings.StabilitySettingsState
@@ -25,6 +26,9 @@ import com.skydoves.compose.stability.runtime.ParameterStabilityInfo
 import com.skydoves.compose.stability.runtime.ReceiverKind
 import com.skydoves.compose.stability.runtime.ReceiverStabilityInfo
 import org.jetbrains.kotlin.analysis.api.KaSession
+// Kotlin 2.5 deprecates this in favour of org.jetbrains.kotlin.analysis.api.session.analyze,
+// but that package is absent from the Kotlin plugin bundled with the IDEs we compile against,
+// so the move has to wait until the minimum supported IDE ships it.
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.symbols.KaCallableSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaFunctionSymbol
@@ -176,18 +180,15 @@ internal object StabilityAnalyzerK2 {
    * Whether a @Composable is restartable — i.e. the compiler wraps it in a restart group. A
    * non-restartable composable has no restart group, so it can never be skipped and its parameter
    * stability is moot. Mirrors the compiler's StabilityAnalyzerTransformer.isRestartable so the IDE
-   * verdict and the `stabilityDump` output stay in sync (issue #184):
-   * `@NonRestartableComposable`, `@ReadOnlyComposable`, `@ExplicitGroupsComposable`, `inline`, and a
-   * non-`Unit` return type each make a composable non-restartable.
+   * verdict and the `stabilityDump` output stay in sync (issue #184). The structural half lives in
+   * [RestartabilityRules]; `@ReadOnlyComposable` is deliberately not one of the rules, because the
+   * Compose compiler does not consult it here.
    */
   private fun KaSession.isRestartableComposable(
     function: KtNamedFunction,
     functionSymbol: KaFunctionSymbol,
   ): Boolean {
-    if (function.hasAnnotation(StabilityConstants.Strings.NON_RESTARTABLE_COMPOSABLE)) return false
-    if (function.hasAnnotation(StabilityConstants.Strings.READ_ONLY_COMPOSABLE)) return false
-    if (function.hasAnnotation(StabilityConstants.Strings.EXPLICIT_GROUPS_COMPOSABLE)) return false
-    if (function.hasModifier(KtTokens.INLINE_KEYWORD)) return false
+    if (RestartabilityRules.isStructurallyNonRestartable(function)) return false
     val returnTypeFqName =
       functionSymbol.returnType.expandedSymbol?.classId?.asSingleFqName()?.asString()
     if (returnTypeFqName != "kotlin.Unit") return false

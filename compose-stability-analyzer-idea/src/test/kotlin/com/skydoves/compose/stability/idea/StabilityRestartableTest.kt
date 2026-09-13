@@ -27,10 +27,14 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 
 /**
  * Issue #184: a composable is only `restartable` when the Compose compiler wraps it in a restart
- * group. `@NonRestartableComposable`, `@ReadOnlyComposable`, `@ExplicitGroupsComposable`, `inline`
- * functions, and composables that return a non-`Unit` value get no restart group, so they are
- * neither restartable nor skippable. `@NonSkippableComposable` keeps its restart group (restartable)
- * but opts out of skipping.
+ * group. `@NonRestartableComposable`, `@ExplicitGroupsComposable`, `inline` functions, composables
+ * returning a non-`Unit` value, `open` members of non-final classes, and local composables get no
+ * restart group, so they are neither restartable nor skippable. `@NonSkippableComposable` keeps its
+ * restart group (restartable) but opts out of skipping.
+ *
+ * `@ReadOnlyComposable` is NOT one of the rules: verified against the Compose compiler's own
+ * metrics, a `Unit`-returning read-only composable is `restartable skippable`. The familiar
+ * read-only composables are non-restartable because they return a value.
  *
  * These verdicts must match the compiler's `stabilityDump`, so the tests assert on both analyzer
  * paths the IDE uses:
@@ -85,7 +89,7 @@ class StabilityRestartableTest : BasePlatformTestCase() {
 
     @Composable
     @ReadOnlyComposable
-    fun ReadOnly() { }
+    fun ReadOnlyUnit() { }
 
     @Composable
     @ExplicitGroupsComposable
@@ -99,11 +103,35 @@ class StabilityRestartableTest : BasePlatformTestCase() {
 
     @Composable
     inline fun InlineWrapper(content: @Composable () -> Unit) { content() }
+
+    open class Host {
+      @Composable
+      open fun OpenMember(text: String) { }
+
+      @Composable
+      fun FinalMember(text: String) { }
+    }
+
+    interface Screen {
+      @Composable
+      fun Content(text: String) { }
+    }
+
+    abstract class AbstractHost {
+      @Composable
+      abstract fun AbstractMember(text: String)
+    }
     """.trimIndent(),
   ) as KtFile
 
   private fun KtFile.function(name: String): KtNamedFunction =
     declarations.filterIsInstance<KtNamedFunction>().single { it.name == name }
+
+  private fun KtFile.member(className: String, name: String): KtNamedFunction {
+    val klass = declarations.filterIsInstance<org.jetbrains.kotlin.psi.KtClass>()
+      .single { it.name == className }
+    return klass.declarations.filterIsInstance<KtNamedFunction>().single { it.name == name }
+  }
 
   private fun assertVerdicts(analyze: (KtNamedFunction) -> ComposableStabilityInfo) {
     val file = configureFixture()
@@ -121,9 +149,11 @@ class StabilityRestartableTest : BasePlatformTestCase() {
     assertTrue("@NonSkippableComposable keeps its restart group", nonSkippable.isRestartable)
     assertFalse("@NonSkippableComposable opts out of skipping", nonSkippable.isSkippable)
 
-    val readOnly = analyze(file.function("ReadOnly"))
-    assertFalse("@ReadOnlyComposable is not restartable", readOnly.isRestartable)
-    assertFalse("a read-only composable can never be skipped", readOnly.isSkippable)
+    // Verified against the Compose compiler's metrics: a Unit-returning read-only composable is
+    // reported `restartable skippable`, so the annotation alone must not clear restartability.
+    val readOnlyUnit = analyze(file.function("ReadOnlyUnit"))
+    assertTrue("a Unit-returning @ReadOnlyComposable is restartable", readOnlyUnit.isRestartable)
+    assertTrue("a Unit-returning @ReadOnlyComposable is skippable", readOnlyUnit.isSkippable)
 
     val explicitGroups = analyze(file.function("ExplicitGroups"))
     assertFalse("@ExplicitGroupsComposable is not restartable", explicitGroups.isRestartable)
@@ -136,6 +166,26 @@ class StabilityRestartableTest : BasePlatformTestCase() {
     val inlineWrapper = analyze(file.function("InlineWrapper"))
     assertFalse("an inline composable is not restartable", inlineWrapper.isRestartable)
     assertFalse("an inline composable can never be skipped", inlineWrapper.isSkippable)
+
+    // Restart logic makes a virtual call, so open members of a non-final class get no restart
+    // group (b/329477544), while a final member of the same class keeps one.
+    val openMember = analyze(file.member("Host", "OpenMember"))
+    assertFalse("an open member composable is not restartable", openMember.isRestartable)
+    assertFalse("an open member composable can never be skipped", openMember.isSkippable)
+
+    // setUp() runs this class with strong skipping OFF, where skippability also depends on the
+    // dispatch receiver (`Host` is open, so it is not STABLE). Restartability is the property under
+    // test here; strong-skipping behaviour is covered by testStrongSkippingDoesNotRescueNonRestartable.
+    val finalMember = analyze(file.member("Host", "FinalMember"))
+    assertTrue("a final member of an open class is restartable", finalMember.isRestartable)
+
+    val interfaceContent = analyze(file.member("Screen", "Content"))
+    assertFalse("an interface method with a body is open, so not restartable", interfaceContent.isRestartable)
+    assertFalse("an interface method with a body can never be skipped", interfaceContent.isSkippable)
+
+    val abstractMember = analyze(file.member("AbstractHost", "AbstractMember"))
+    assertFalse("an abstract composable has no body and is not restartable", abstractMember.isRestartable)
+    assertFalse("an abstract composable can never be skipped", abstractMember.isSkippable)
   }
 
   /**
@@ -200,8 +250,8 @@ class StabilityRestartableTest : BasePlatformTestCase() {
     for (analyze in paths) {
       assertFalse("non-restartable stays non-skippable", analyze(file.function("NonRestartable")).isSkippable)
       assertFalse("@NonSkippableComposable stays non-skippable", analyze(file.function("NonSkippable")).isSkippable)
-      assertFalse("read-only stays non-skippable", analyze(file.function("ReadOnly")).isSkippable)
       assertFalse("inline stays non-skippable", analyze(file.function("InlineWrapper")).isSkippable)
+      assertFalse("an open member stays non-skippable", analyze(file.member("Host", "OpenMember")).isSkippable)
       assertTrue("strong skipping makes a normal composable skippable", analyze(file.function("Normal")).isSkippable)
     }
   }

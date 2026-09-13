@@ -44,6 +44,31 @@ class LogcatParserTest : TestCase() {
     assertFalse(event.isAutoTraced)
   }
 
+  /**
+   * Runtimes before the Locale.ROOT fix formatted the duration with the default locale, so a
+   * comma-decimal device emitted `(1,20ms)`. That used to fall out of the optional duration group
+   * and read back as 0.0, which silently emptied heatmap timings and the Doctor's measured waste.
+   */
+  fun testHeader_legacyCommaDecimalDuration() {
+    val events = parse("[Recomposition #2] UserProfile (1,20ms)")
+
+    assertEquals(1, events.size)
+    assertEquals(1.20, events[0].durationMs)
+  }
+
+  fun testHeader_commaDecimalDurationWithAllTrailingTokens() {
+    val events = parse(
+      "[Recomposition #7] UserProfile (tag: t) (12,34ms) (fq: com.example.UserProfile) (auto)",
+    )
+
+    assertEquals(1, events.size)
+    val event = events[0]
+    assertEquals(12.34, event.durationMs)
+    assertEquals("t", event.tag)
+    assertEquals("com.example.UserProfile", event.fqName)
+    assertTrue(event.isAutoTraced)
+  }
+
   fun testHeader_withFqToken() {
     val events = parse(
       "[Recomposition #5] UserProfile (tag: t) (1.20ms) (fq: com.example.profile.UserProfile)",

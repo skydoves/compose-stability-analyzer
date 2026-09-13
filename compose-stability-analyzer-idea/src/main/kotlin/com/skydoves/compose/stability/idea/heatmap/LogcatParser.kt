@@ -43,7 +43,9 @@ internal class LogcatParser(
     /** Header: `[Recomposition #N] Name (tag: t) (2.30ms) (fq: com.example.Name) (auto)` */
     val HEADER_REGEX =
       (
-        """\[Recomposition #(\d+)] (\S+)(?:\s+\(tag:\s+(.+?)\))?(?:\s+\((\d+\.?\d*)ms\))?""" +
+        // The decimal separator is a dot: the runtime formats it with Locale.ROOT. A comma is
+        // still accepted so logs from runtimes older than that fix keep parsing.
+        """\[Recomposition #(\d+)] (\S+)(?:\s+\(tag:\s+(.+?)\))?(?:\s+\((\d+[.,]?\d*)ms\))?""" +
           """(?:\s+\(fq:\s+(\S+)\))?(?:\s+\((auto)\))?"""
         ).toRegex()
 
@@ -94,7 +96,7 @@ internal class LogcatParser(
       currentName = headerMatch.groupValues[2]
       currentTag = headerMatch.groupValues[3]
       currentDurationMs =
-        headerMatch.groupValues[4].toDoubleOrNull() ?: 0.0
+        headerMatch.groupValues[4].replace(',', '.').toDoubleOrNull() ?: 0.0
       currentFqName = headerMatch.groupValues[5]
       currentIsAutoTraced = headerMatch.groupValues[6].isNotEmpty()
       currentParams = mutableListOf()
