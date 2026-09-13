@@ -53,6 +53,13 @@ public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
       2,
     )
 
+    // Defaults to true to match the Compose compiler, whose StrongSkipping feature flag is on
+    // by default. A build that turns strong skipping off must pass the same value here.
+    val strongSkipping = configuration.get(
+      StabilityAnalyzerConfigurationKeys.KEY_STRONG_SKIPPING,
+      true,
+    )
+
     val stabilityConfigurationFiles = configuration.getList(
       StabilityAnalyzerConfigurationKeys.KEY_STABILITY_CONFIGURATION_FILES,
     )
@@ -77,6 +84,7 @@ public class StabilityAnalyzerPluginRegistrar : CompilerPluginRegistrar() {
         stabilityOutputDir = stabilityOutputDir,
         traceAll = traceAll,
         traceAllThreshold = traceAllThreshold,
+        strongSkipping = strongSkipping,
         stabilityConfigurationFiles = stabilityConfigurationFiles,
         messageCollector = messageCollector,
       ),

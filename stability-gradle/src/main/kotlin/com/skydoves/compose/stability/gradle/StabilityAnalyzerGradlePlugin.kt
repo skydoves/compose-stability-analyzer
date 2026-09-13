@@ -53,6 +53,7 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     private const val OPTION_STABILITY_OUTPUT_DIR = "stabilityOutputDir"
     private const val OPTION_TRACE_ALL = "traceAll"
     private const val OPTION_TRACE_ALL_THRESHOLD = "traceAllThreshold"
+    private const val OPTION_STRONG_SKIPPING = "strongSkipping"
     private const val OPTION_STABILITY_CONFIGURATION_FILE = "stabilityConfigurationFile"
 
     /** Maven coordinate of the runtime this plugin version pairs with. */
@@ -166,6 +167,8 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
           extension.traceAll.variants.get(),
         )
 
+      val strongSkipping = extension.strongSkipping.get()
+
       val stabilityConfigurationFiles = extension
         .stabilityConfigurationFiles
         .getOrElse(emptyList())
@@ -186,6 +189,10 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
         SubpluginOption(
           key = OPTION_TRACE_ALL_THRESHOLD,
           value = extension.traceAll.threshold.get().toString(),
+        ),
+        SubpluginOption(
+          key = OPTION_STRONG_SKIPPING,
+          value = strongSkipping.toString(),
         ),
       ) + stabilityConfigurationFiles.map { file ->
         // FilesSubpluginOption (one per file, so each option value is a single path) registers the

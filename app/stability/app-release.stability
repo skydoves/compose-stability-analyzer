@@ -53,7 +53,7 @@ public fun com.skydoves.myapplication.CounterDisplay(count: com.skydoves.myappli
 
 @Composable
 public fun com.skydoves.myapplication.GenericDisplay(item: T of com.skydoves.myapplication.GenericDisplay, fontWeight4: androidx.compose.ui.text.font.FontWeight, mySealed: com.skydoves.myapplication.MySealed, child2: com.skydoves.myapplication.MySealed.Child2, child3: com.skydoves.myapplication.MySealed.Child3, child4: com.skydoves.myapplication.MySealed.Child4, child: com.skydoves.myapplication.MySealed.Child, fontWeight: androidx.compose.ui.text.font.FontWeight, fontWeight2: androidx.compose.ui.text.font.FontWeight?, values: kotlin.String, value: kotlin.Int?, testValueClass: com.skydoves.myapplication.TestValueClass, textAlign: androidx.compose.ui.text.style.TextAlign, textAlign2: androidx.compose.ui.text.style.TextAlign?, displayText: kotlin.Function1<T of com.skydoves.myapplication.GenericDisplay, kotlin.String>): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - item: RUNTIME (requires runtime check)
@@ -74,14 +74,14 @@ public fun com.skydoves.myapplication.GenericDisplay(item: T of com.skydoves.mya
 
 @Composable
 public fun com.skydoves.myapplication.Icon(title: kotlin.String, painter: androidx.compose.ui.graphics.painter.Painter, users: kotlin.collections.List<com.skydoves.myapplication.models.StableUser>, normalSealedClass: com.skydoves.myapplication.models.NormalSealedClass.Normal, stableSealedClass: com.skydoves.myapplication.models.StableSealedClass.Stable, elevation: androidx.compose.material3.CardElevation, unstableUser: com.skydoves.myapplication.models.UnstableUser): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - title: STABLE (String is immutable)
     - painter: UNKNOWN (interface or non-final class; concrete implementation unknown)
     - users: RUNTIME (requires runtime check)
     - normalSealedClass: RUNTIME (requires runtime check)
-    - stableSealedClass: STABLE (class with no mutable properties)
+    - stableSealedClass: STABLE (marked @Stable or @Immutable)
     - elevation: STABLE (marked @Stable or @Immutable)
     - unstableUser: UNSTABLE (has mutable properties or unstable members)
 
@@ -100,6 +100,20 @@ public fun com.skydoves.myapplication.InlineWrapperDemo(content: @[Composable] a
     - content: STABLE (composable function type)
 
 @Composable
+public fun com.skydoves.myapplication.LocalFunctionHostDemo(text: kotlin.String): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - text: STABLE (String is immutable)
+
+@Composable
+public fun com.skydoves.myapplication.LocalFunctionHostDemo.LocalContent(inner: kotlin.String): kotlin.Unit
+  skippable: false
+  restartable: false
+  params:
+    - inner: STABLE (String is immutable)
+
+@Composable
 public fun com.skydoves.myapplication.MainScreen(): kotlin.Unit
   skippable: true
   restartable: true
@@ -107,7 +121,7 @@ public fun com.skydoves.myapplication.MainScreen(): kotlin.Unit
 
 @Composable
 public fun com.skydoves.myapplication.MixedStabilityDisplay(title: kotlin.String, count: kotlin.Int, items: kotlin.collections.List<kotlin.String>, items2: kotlin.collections.MutableList<kotlin.String>, items3: com.skydoves.myapplication.models.UnstableUser, modifier: androidx.compose.ui.Modifier): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - title: STABLE (String is immutable)
@@ -119,14 +133,14 @@ public fun com.skydoves.myapplication.MixedStabilityDisplay(title: kotlin.String
 
 @Composable
 public fun com.skydoves.myapplication.MutableListDisplay(items: kotlin.collections.MutableList<kotlin.String>): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - items: UNSTABLE (mutable collection)
 
 @Composable
 public fun com.skydoves.myapplication.MyComposable(uiResult: com.skydoves.myapplication.UiResult<kotlin.Unit>, uiResult2: com.skydoves.myapplication.UiResult<com.skydoves.myapplication.models.UnstableUser>, uiResult4: com.skydoves.myapplication.UiResult<kotlin.collections.List<kotlin.String>>): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - uiResult: RUNTIME (requires runtime check)
@@ -148,6 +162,27 @@ public fun com.skydoves.myapplication.NonSkippableDemo(text: kotlin.String): kot
     - text: STABLE (String is immutable)
 
 @Composable
+public fun com.skydoves.myapplication.OpenRestartabilityDemo.FinalMemberDemo(text: kotlin.String): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - text: STABLE (String is immutable)
+
+@Composable
+public fun com.skydoves.myapplication.OpenRestartabilityDemo.OpenMemberDemo(text: kotlin.String): kotlin.Unit
+  skippable: false
+  restartable: false
+  params:
+    - text: STABLE (String is immutable)
+
+@Composable
+public fun com.skydoves.myapplication.ReadOnlyUnitDemo(text: kotlin.String): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - text: STABLE (String is immutable)
+
+@Composable
 public fun com.skydoves.myapplication.RealityCheckExample(tick: kotlin.Int): kotlin.Unit
   skippable: true
   restartable: true
@@ -156,7 +191,7 @@ public fun com.skydoves.myapplication.RealityCheckExample(tick: kotlin.Int): kot
 
 @Composable
 public fun com.skydoves.myapplication.RealityFalseAlarmCard(user: com.skydoves.myapplication.models.UnstableUser, tick: kotlin.Int): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - user: UNSTABLE (has mutable properties or unstable members)
@@ -164,7 +199,7 @@ public fun com.skydoves.myapplication.RealityFalseAlarmCard(user: com.skydoves.m
 
 @Composable
 public fun com.skydoves.myapplication.RealitySilentWasteCard(user: com.skydoves.myapplication.models.UnstableUser): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - user: UNSTABLE (has mutable properties or unstable members)
@@ -182,6 +217,20 @@ public fun com.skydoves.myapplication.RecompositionTrackingExample(): kotlin.Uni
   params:
 
 @Composable
+public fun com.skydoves.myapplication.RestartabilityScreen.Content(text: kotlin.String): kotlin.Unit
+  skippable: false
+  restartable: false
+  params:
+    - text: STABLE (String is immutable)
+
+@Composable
+public fun com.skydoves.myapplication.StablePairDisplay(pair: kotlin.Pair<kotlin.String, kotlin.Int>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - pair: STABLE (known stable type)
+
+@Composable
 public fun com.skydoves.myapplication.StableUserCard(user: com.skydoves.myapplication.models.StableUser): kotlin.Unit
   skippable: true
   restartable: true
@@ -197,7 +246,7 @@ public fun com.skydoves.myapplication.Test(stableUser2: com.skydoves.myapplicati
 
 @Composable
 public fun com.skydoves.myapplication.Test(myClass2: com.skydoves.myapplication.models.MyClass2, normalClass: com.skydoves.myapplication.models.NormalClass, immutableList: kotlinx.collections.immutable.ImmutableList<kotlin.String>): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - myClass2: UNSTABLE (has mutable properties or unstable members)
@@ -214,28 +263,28 @@ public fun com.skydoves.myapplication.Test(name: kotlin.String, king: kotlin.Flo
 
 @Composable
 public fun com.skydoves.myapplication.Test2(myClass2: kotlin.collections.List<kotlin.String>): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - myClass2: RUNTIME (requires runtime check)
 
 @Composable
 public fun com.skydoves.myapplication.Test3(myClass2: java.lang.StringBuilder): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - myClass2: UNSTABLE (mutable Java class)
 
 @Composable
 public fun com.skydoves.myapplication.Test4(count: androidx.lifecycle.ViewModel): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - count: UNKNOWN (interface or non-final class; concrete implementation unknown)
 
 @Composable
 public fun com.skydoves.myapplication.Test6(count: kotlin.collections.Set<kotlin.String>): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - count: RUNTIME (requires runtime check)
@@ -256,7 +305,7 @@ public fun com.skydoves.myapplication.Test8(items: kotlinx.collections.immutable
 
 @Composable
 public fun com.skydoves.myapplication.ThirdPartyCard(thirdPartyModel: com.skydoves.myapplication.model.ThirdPartyModel, thirdPartyModelStable: com.skydoves.myapplication.model.ThirdPartyModelStable): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - thirdPartyModel: UNSTABLE (cross-module type without @Stable/@Immutable)
@@ -289,7 +338,7 @@ public fun com.skydoves.myapplication.TrackedMixedParameters(title: kotlin.Strin
 
 @Composable
 public fun com.skydoves.myapplication.TrackedUnstableUserCard(user: com.skydoves.myapplication.models.UnstableUser): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - user: UNSTABLE (has mutable properties or unstable members)
@@ -302,8 +351,15 @@ public fun com.skydoves.myapplication.TrackedUserProfile(user: com.skydoves.myap
     - user: STABLE (class with no mutable properties)
 
 @Composable
+public fun com.skydoves.myapplication.UnstablePairDisplay(pair: kotlin.Pair<kotlin.String, com.skydoves.myapplication.models.UnstableUser>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - pair: UNSTABLE (cross-module type without @Stable/@Immutable)
+
+@Composable
 public fun com.skydoves.myapplication.UnstableUserCard(user: com.skydoves.myapplication.models.UnstableUser): kotlin.Unit
-  skippable: false
+  skippable: true
   restartable: true
   params:
     - user: UNSTABLE (has mutable properties or unstable members)

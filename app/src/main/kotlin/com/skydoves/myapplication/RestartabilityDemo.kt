@@ -43,7 +43,7 @@ fun NonSkippableDemo(text: String) {
   Text(text)
 }
 
-/** `@ReadOnlyComposable` is not restartable, so it can never be skipped. */
+/** Non-restartable because it returns a `String`, not because of `@ReadOnlyComposable`. */
 @Composable
 @ReadOnlyComposable
 fun readOnlyDemo(): String = "read-only"
@@ -56,4 +56,49 @@ fun nonUnitReturnDemo(): Int = 42
 @Composable
 inline fun InlineWrapperDemo(content: @Composable () -> Unit) {
   content()
+}
+
+/**
+ * A `@ReadOnlyComposable` that returns `Unit`. The annotation alone does not remove the restart
+ * group; [readOnlyDemo] above is non-restartable because of its return type, not its annotation.
+ */
+@Composable
+@ReadOnlyComposable
+fun ReadOnlyUnitDemo(text: String) {
+  println(text)
+}
+
+/**
+ * An `open` member composable. Restart logic makes a virtual call, so the Compose compiler does not
+ * give these a restart group (b/329477544) even though the function itself looks ordinary.
+ */
+open class OpenRestartabilityDemo {
+  @Composable
+  open fun OpenMemberDemo(text: String) {
+    Text(text)
+  }
+
+  /** A `final` member of the same open class keeps its restart group. */
+  @Composable
+  fun FinalMemberDemo(text: String) {
+    Text(text)
+  }
+}
+
+/** An interface method with a default body is open by definition, so it is not restartable. */
+interface RestartabilityScreen {
+  @Composable
+  fun Content(text: String) {
+    Text(text)
+  }
+}
+
+/** A local composable declared inside another function is not restartable. */
+@Composable
+fun LocalFunctionHostDemo(text: String) {
+  @Composable
+  fun LocalContent(inner: String) {
+    Text(inner)
+  }
+  LocalContent(text)
 }

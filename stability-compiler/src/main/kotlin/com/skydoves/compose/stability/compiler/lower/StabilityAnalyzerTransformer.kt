@@ -22,12 +22,19 @@ import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
+import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.IrReturn
+import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -36,13 +43,20 @@ import org.jetbrains.kotlin.ir.types.isPrimitiveType
 import org.jetbrains.kotlin.ir.types.isString
 import org.jetbrains.kotlin.ir.types.isUnit
 import org.jetbrains.kotlin.ir.types.makeNotNull
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isFinalClass
 import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
+import org.jetbrains.kotlin.ir.util.isLocal
 import org.jetbrains.kotlin.ir.util.isNullable
 import org.jetbrains.kotlin.ir.util.isSuspendFunctionTypeOrSubtype
 import org.jetbrains.kotlin.ir.util.kotlinFqName
+import org.jetbrains.kotlin.ir.util.parentClassOrNull
 import org.jetbrains.kotlin.ir.util.render
+import org.jetbrains.kotlin.ir.visitors.IrVisitorVoid
+import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
+import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -51,6 +65,7 @@ public class StabilityAnalyzerTransformer(
   private val stabilityCollector: StabilityInfoCollector? = null,
   private val traceAll: Boolean = false,
   private val traceAllThreshold: Int = 2,
+  private val strongSkipping: Boolean = true,
   private val stabilityConfigurationMatchers: List<FqNameMatcher> = emptyList(),
 ) : IrElementTransformerVoidWithContext() {
 
@@ -70,6 +85,7 @@ public class StabilityAnalyzerTransformer(
     FqName("androidx.compose.runtime.ReadOnlyComposable")
   private val explicitGroupsComposableFqName =
     FqName("androidx.compose.runtime.ExplicitGroupsComposable")
+  private val stableMarkerFqName = FqName("androidx.compose.runtime.StableMarker")
 
   // Annotation argument names. Kotlin 2.4.20 deprecated IrAnnotation.symbol in favour of the
   // classSymbol/argumentMapping pair (KT-74200), so arguments are read by name instead of by
@@ -133,11 +149,12 @@ public class StabilityAnalyzerTransformer(
           else -> "public"
         }
 
-        val parameters = declaration.parameters
-          .filter {
-            val name = it.name.asString()
-            !name.startsWith("$") && name != "<this>"
-          }
+        val trackedParams = declaration.parameters.filter {
+          val name = it.name.asString()
+          !name.startsWith("$") && name != "<this>"
+        }
+
+        val parameters = trackedParams
           .map { param ->
             val renderedType = param.type.render()
 
@@ -170,7 +187,13 @@ public class StabilityAnalyzerTransformer(
             qualifiedName = fqName,
             simpleName = functionName,
             visibility = visibility,
-            skippable = isSkippable(declaration, parameters),
+            skippable = isSkippable(
+              declaration = declaration,
+              trackedParams = trackedParams,
+              parameters = parameters,
+              willBeInstrumented = hasTraceRecomposition ||
+                (traceAll && isAutoTraceable(declaration, rawFunctionName)),
+            ),
             restartable = isRestartable(declaration),
             returnType = declaration.returnType.render(),
             parameters = parameters,
@@ -337,15 +360,15 @@ public class StabilityAnalyzerTransformer(
     "androidx.compose.runtime.MutableFloatState",
     "androidx.compose.runtime.MutableDoubleState",
     "androidx.compose.runtime.State",
-    "androidx.compose.runtime.MutableTransitionState",
+    "androidx.compose.animation.core.MutableTransitionState",
     "androidx.compose.runtime.snapshots.SnapshotStateList",
     "androidx.compose.runtime.snapshots.SnapshotStateMap",
   )
 
-  // FqNames for derived state types
-  private val derivedStateTypeFqNames = setOf(
-    "androidx.compose.runtime.DerivedState",
-  )
+  // `androidx.compose.runtime.DerivedState` is internal to the Compose runtime and never appears as
+  // a declared type, so it is not listed here. `derivedStateOf` returns the public `State`, which
+  // the set above already covers, and so does the newer `computedStateOf`.
+  private val derivedStateTypeFqNames = emptySet<String>()
 
   /**
    * Detects state variable declarations in the function body's top-level statements.
@@ -861,10 +884,44 @@ public class StabilityAnalyzerTransformer(
     return ParameterStability.RUNTIME
   }
 
+  /**
+   * Whether the type is marked stable. `@Stable` and `@Immutable` are not special-cased in the
+   * Compose compiler: both simply carry `@StableMarker`, and `Stability.hasStableMarkedDescendant`
+   * accepts *any* annotation whose own class carries it, walking supertypes. That lets a project
+   * define its own marker (`@StableMarker annotation class MyImmutable`) and have Compose honour
+   * it, so we honour it too. The direct FqName checks stay as a fast path for the common case and
+   * as a fallback when the annotation class cannot be resolved.
+   */
   private fun IrType.hasStableAnnotation(): Boolean {
-    val classSymbol = this.classOrNull ?: return false
-    val clazz = classSymbol.owner
-    return clazz.hasAnnotation(stableFqName) || clazz.hasAnnotation(immutableFqName)
+    val clazz = this.classOrNull?.owner ?: return false
+    if (clazz.hasAnnotation(stableFqName) || clazz.hasAnnotation(immutableFqName)) return true
+    return clazz.hasStableMarkedDescendant(mutableSetOf())
+  }
+
+  /** Mirrors `Stability.hasStableMarkedDescendant`: the marker may sit on a supertype. */
+  private fun IrClass.hasStableMarkedDescendant(visited: MutableSet<IrClass>): Boolean {
+    if (!visited.add(this)) return false
+    if (hasStableMarker()) return true
+    return superTypes.any { superType ->
+      superType.classFqName?.asString() != "kotlin.Any" &&
+        superType.classOrNull?.owner?.hasStableMarkedDescendant(visited) == true
+    }
+  }
+
+  /**
+   * Whether any annotation on this declaration is itself annotated `@StableMarker`, or is one of
+   * the external markers the Compose compiler hardcodes (`KnownStableConstructs.stableMarkers`).
+   * The annotation class is reached through the annotation's *type*, which stays safe when the
+   * annotation constructor symbol is unbound.
+   */
+  private fun IrClass.hasStableMarker(): Boolean = annotations.any { annotation ->
+    val annotationClass = try {
+      annotation.type.classOrNull?.owner
+    } catch (e: Exception) {
+      null
+    } ?: return@any false
+    annotationClass.hasAnnotation(stableMarkerFqName) ||
+      annotationClass.kotlinFqName.asString() in EXTERNAL_STABLE_MARKERS
   }
 
   private fun IrType.hasStabilityInferredAnnotation(): Boolean {
@@ -930,9 +987,34 @@ public class StabilityAnalyzerTransformer(
     return hasNoConstructors && this.modality == org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
   }
 
+  /**
+   * Whether the type is one of the types known to be stable outside Compose's annotations.
+   *
+   * For a generic type the verdict depends on its type arguments. The Compose compiler pairs each
+   * entry in `KnownStableConstructs.stableTypes` with a bitmask: a bit set at position *n* means
+   * the construct is only stable when type argument *n* is stable (`Stability.applyTypeParameterMask`).
+   * `Pair<String, MutableUser>` is therefore unstable even though `Pair` itself is listed. Ignoring
+   * the mask reported such a type as STABLE.
+   */
   private fun isKnownStableType(type: IrType): Boolean {
     val fqName = type.classFqName?.asString() ?: return false
+    val mask = KNOWN_STABLE_GENERIC_MASKS[fqName]
+    if (mask != null) return maskedTypeArgumentsAreStable(type, mask)
     return fqName in KNOWN_STABLE_TYPES
+  }
+
+  /** Every type argument selected by [mask] must itself be stable. */
+  private fun maskedTypeArgumentsAreStable(type: IrType, mask: Int): Boolean {
+    if (mask == 0) return true
+    val arguments = (type as? IrSimpleType)?.arguments ?: return false
+    arguments.forEachIndexed { index, argument ->
+      if ((mask shr index) and 1 == 1) {
+        // A star projection hides the argument, so the construct cannot be proven stable.
+        val argumentType = argument.typeOrNull ?: return false
+        if (analyzeTypeStability(argumentType) != ParameterStability.STABLE) return false
+      }
+    }
+    return true
   }
 
   private fun isStabilityConfigurationFileType(type: IrType): Boolean {
@@ -1114,36 +1196,113 @@ public class StabilityAnalyzerTransformer(
 
   /**
    * Determine if a composable function is restartable, i.e. whether the Compose compiler generates
-   * a restart group for it. It does not for `@NonRestartableComposable`, `@ReadOnlyComposable`, or
-   * `@ExplicitGroupsComposable` composables, `inline` functions, or composables that return a
-   * non-`Unit` value (e.g. `@Composable fun rememberFoo(): Foo`). These are the restart-group-relevant
-   * subset of the conditions in [isAutoTraceable] (which additionally filters out non-block bodies,
-   * property getters, `suspend`, `@IgnoreStabilityReport`, and `@Preview`) (issue #184).
+   * a restart group for it. It does not for `@NonRestartableComposable` or
+   * `@ExplicitGroupsComposable` composables, `inline` functions, composables that return a
+   * non-`Unit` value, `open` members (restart logic makes a virtual call, b/329477544), local
+   * composables, abstract declarations, and composable delegated property accessors.
+   *
+   * Mirrors `AbstractComposeLowering.shouldBeRestartable()`. Note `@ReadOnlyComposable` is
+   * deliberately absent: the Compose compiler does not consult it here, so a `Unit`-returning
+   * read-only composable IS restartable. The common read-only composables are non-restartable
+   * because they return a value, not because of the annotation (issue #184).
+   *
+   * One clause is not modelled: `isVirtualFunctionWithDefaultParam()`, which depends on an IR
+   * attribute the Compose plugin sets during its own lowering and which we therefore cannot read.
+   * The `open` clause below already covers every virtual composable except an `override` inside a
+   * final class, so the residual gap is narrow and approximating it would risk new wrong verdicts.
    */
   private fun isRestartable(declaration: IrFunction): Boolean {
-    if (declaration.hasAnnotation(nonRestartableComposableFqName)) return false
-    if (declaration.hasAnnotation(readOnlyComposableFqName)) return false
-    if (declaration.hasAnnotation(explicitGroupsComposableFqName)) return false
+    if (declaration !is IrSimpleFunction) return false
+    // Abstract declarations and other bodiless functions get no restart group.
+    if (declaration.body == null) return false
+    if (declaration.isLocal &&
+      declaration.parentClassOrNull?.origin != IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
+    ) {
+      return false
+    }
     if (declaration.isInline) return false
+    if (declaration.hasAnnotation(nonRestartableComposableFqName)) return false
+    if (declaration.hasAnnotation(explicitGroupsComposableFqName)) return false
     if (!declaration.returnType.isUnit()) return false
-    return true
+    if (declaration.isComposableDelegatedAccessor()) return false
+    if (declaration.modality == org.jetbrains.kotlin.descriptors.Modality.OPEN &&
+      declaration.parentClassOrNull?.isFinalClass != true
+    ) {
+      return false
+    }
+    return declaration.origin != IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
   }
 
   /**
-   * Determine if a composable function is skippable. A non-restartable composable (see
-   * [isRestartable]) can never be skipped, and `@NonSkippableComposable` opts out of skipping
-   * explicitly; otherwise a function is skippable if all parameters are stable.
+   * A delegated property accessor whose body is a single `return <composable call>`. The Compose
+   * compiler routes the restart group to the delegate instead of the accessor.
+   */
+  private fun IrFunction.isComposableDelegatedAccessor(): Boolean {
+    if (origin != IrDeclarationOrigin.DELEGATED_PROPERTY_ACCESSOR) return false
+    val statements = (body as? IrBlockBody)?.statements ?: return false
+    val target = ((statements.singleOrNull() as? IrReturn)?.value as? IrCall)?.symbol?.owner
+    return target?.hasAnnotation(composableFqName) == true
+  }
+
+  /**
+   * Determine if a composable function is skippable, mirroring the Compose compiler's
+   * `ComposableFunctionBodyTransformer`: skippability starts at `!hasNonSkippableAnnotation` and is
+   * only ever cleared by the guard
+   * `!FeatureFlag.StrongSkipping.enabled && isUsed && isUnstable && isRequired`.
+   *
+   * Strong skipping is on by default in the Compose compiler, and then an unstable parameter no
+   * longer blocks skipping at all: Compose compares such parameters by instance identity instead.
+   * With it off, a *known* unstable parameter with no default value prevents skipping. `RUNTIME`
+   * and `UNKNOWN` are explicitly not "known unstable" (`Stability.knownUnstable()` returns false
+   * for both), so they never block either.
+   *
+   * Compose also exempts a parameter its body never reads (`isUsed`). That has to account for this
+   * plugin's own instrumentation: our IR pass runs before the Compose plugin's in a consumer build,
+   * so when we inject recomposition tracking every tracked parameter is read by the generated
+   * `trackParameter` call and Compose sees it as used. Measured on the sample app, the release
+   * variant (no tracing) reports 47 `unused` parameters where the debug variant (trace-all) reports
+   * 5. [willBeInstrumented] therefore forces every parameter to count as used.
    */
   private fun isSkippable(
     declaration: IrFunction,
+    trackedParams: List<IrValueParameter>,
     parameters: List<com.skydoves.compose.stability.compiler.ParameterStabilityInfo>,
+    willBeInstrumented: Boolean,
   ): Boolean {
     // Skipping requires a restart group, so a non-restartable composable is never skippable.
     if (!isRestartable(declaration)) return false
     // @NonSkippableComposable is restartable but opts out of skipping (issue #184).
     if (declaration.hasAnnotation(nonSkippableComposableFqName)) return false
-    // Otherwise a function is skippable only if all parameters are stable.
-    return parameters.all { it.stability == "STABLE" }
+    if (strongSkipping) return true
+
+    val readParams = if (willBeInstrumented) emptySet() else collectReadValueSymbols(declaration)
+    return trackedParams.withIndex().none { (index, param) ->
+      parameters.getOrNull(index)?.stability == "UNSTABLE" &&
+        param.defaultValue == null &&
+        (willBeInstrumented || param.symbol in readParams)
+    }
+  }
+
+  /**
+   * Value symbols read anywhere in [declaration]'s body, reproducing the Compose compiler's
+   * `isUsed`. Only consulted when the composable is left uninstrumented; see [isSkippable].
+   */
+  private fun collectReadValueSymbols(declaration: IrFunction): Set<IrValueSymbol> {
+    val body = declaration.body ?: return emptySet()
+    val read = mutableSetOf<IrValueSymbol>()
+    body.acceptVoid(
+      object : IrVisitorVoid() {
+        override fun visitElement(element: org.jetbrains.kotlin.ir.IrElement) {
+          element.acceptChildrenVoid(this)
+        }
+
+        override fun visitGetValue(expression: IrGetValue) {
+          read += expression.symbol
+          expression.acceptChildrenVoid(this)
+        }
+      },
+    )
+    return read
   }
 
   public companion object {
@@ -1151,6 +1310,50 @@ public class StabilityAnalyzerTransformer(
      * Set of known stable types from Compose and standard library.
      * Must match StabilityAnalysisConstants.KNOWN_STABLE_TYPES in IDEA plugin.
      */
+    /**
+     * Annotation classes the Compose compiler treats as stable markers even though they cannot
+     * carry `@StableMarker` (`KnownStableConstructs.stableMarkers`).
+     */
+    private val EXTERNAL_STABLE_MARKERS: Set<String> = setOf(
+      "com.google.errorprone.annotations.Immutable",
+    )
+
+    /**
+     * Generic types whose stability depends on their type arguments, mirroring the bitmasks in the
+     * Compose compiler's `KnownStableConstructs.stableTypes`. Bit *n* set means type argument *n*
+     * must itself be stable. Entries with a mask of 0 are unconditionally stable and live in
+     * [KNOWN_STABLE_TYPES] instead.
+     *
+     * `kotlin.Result` is deliberately absent: it is a `@JvmInline value class`, and Compose unwraps
+     * inline classes to their underlying type before this lookup ever runs, so its entry in
+     * `stableTypes` is unreachable. Leaving it out sends it to our value-class analysis, which is
+     * the equivalent path.
+     */
+    private val KNOWN_STABLE_GENERIC_MASKS: Map<String, Int> = mapOf(
+      "kotlin.Pair" to 0b11,
+      "kotlin.Triple" to 0b111,
+      "java.util.Comparator" to 0b1,
+      "kotlin.ranges.ClosedRange" to 0b1,
+      "kotlin.ranges.ClosedFloatingPointRange" to 0b1,
+      // Guava
+      "com.google.common.collect.ImmutableList" to 0b1,
+      "com.google.common.collect.ImmutableEnumMap" to 0b11,
+      "com.google.common.collect.ImmutableMap" to 0b11,
+      "com.google.common.collect.ImmutableEnumSet" to 0b1,
+      "com.google.common.collect.ImmutableSet" to 0b1,
+      // Kotlinx immutable collections
+      "kotlinx.collections.immutable.ImmutableCollection" to 0b1,
+      "kotlinx.collections.immutable.ImmutableList" to 0b1,
+      "kotlinx.collections.immutable.ImmutableSet" to 0b1,
+      "kotlinx.collections.immutable.ImmutableMap" to 0b11,
+      "kotlinx.collections.immutable.PersistentCollection" to 0b1,
+      "kotlinx.collections.immutable.PersistentList" to 0b1,
+      "kotlinx.collections.immutable.PersistentSet" to 0b1,
+      "kotlinx.collections.immutable.PersistentMap" to 0b11,
+      // Dagger
+      "dagger.Lazy" to 0b1,
+    )
+
     private val KNOWN_STABLE_TYPES: Set<String> = setOf(
       // Compose UI types
       "androidx.compose.ui.Modifier",
@@ -1204,13 +1407,10 @@ public class StabilityAnalyzerTransformer(
       "androidx.compose.ui.graphics.drawscope.DrawStyle",
 
       // Kotlin standard types
-      "kotlin.Pair",
-      "kotlin.Triple",
-      "kotlin.Result",
       "kotlin.time.Duration",
-      "kotlin.ranges.IntRange",
-      "kotlin.ranges.LongRange",
-      "kotlin.ranges.CharRange",
+
+      // Coroutines
+      "kotlin.coroutines.EmptyCoroutineContext",
 
       // Java types
       "java.math.BigInteger",
@@ -1218,9 +1418,6 @@ public class StabilityAnalyzerTransformer(
       "java.util.Locale",
 
       // Kotlinx immutable collections
-      "kotlinx.collections.immutable.ImmutableList",
-      "kotlinx.collections.immutable.ImmutableSet",
-      "kotlinx.collections.immutable.ImmutableMap",
       "kotlinx.collections.immutable.PersistentList",
       "kotlinx.collections.immutable.PersistentSet",
       "kotlinx.collections.immutable.PersistentMap",

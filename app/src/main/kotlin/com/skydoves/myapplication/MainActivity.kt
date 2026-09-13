@@ -268,6 +268,19 @@ fun Test7(onClick: () -> Unit) {
 fun Test8(items: ImmutableList<String>) {
 }
 
+/**
+ * Generic-argument masks. The Compose compiler pairs each entry in `KnownStableConstructs` with a
+ * bitmask saying which type arguments must themselves be stable, so `Pair` is only stable when both
+ * of its arguments are. These two lock that in: the first stays stable, the second must not.
+ */
+@Composable
+fun StablePairDisplay(pair: Pair<String, Int>) {
+}
+
+@Composable
+fun UnstablePairDisplay(pair: Pair<String, UnstableUser>) {
+}
+
 @Composable
 fun MutableListDisplay(items: MutableList<String>) {
   Card {

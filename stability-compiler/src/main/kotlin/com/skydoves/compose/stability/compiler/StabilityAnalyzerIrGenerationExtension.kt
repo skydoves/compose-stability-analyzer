@@ -28,6 +28,7 @@ public class StabilityAnalyzerIrGenerationExtension(
   private val stabilityOutputDir: String,
   private val traceAll: Boolean = false,
   private val traceAllThreshold: Int = 2,
+  private val strongSkipping: Boolean = true,
   private val stabilityConfigurationFiles: List<File> = emptyList(),
   private val messageCollector: MessageCollector = MessageCollector.NONE,
 ) : IrGenerationExtension {
@@ -71,6 +72,7 @@ public class StabilityAnalyzerIrGenerationExtension(
       stabilityCollector = collector,
       traceAll = traceAll,
       traceAllThreshold = traceAllThreshold,
+      strongSkipping = strongSkipping,
       stabilityConfigurationMatchers = stabilityConfigurationMatchers,
     )
 

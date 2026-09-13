@@ -41,6 +41,20 @@ public abstract class StabilityAnalyzerExtension @Inject constructor(
     objects.property(Boolean::class.javaObjectType).convention(true)
 
   /**
+   * Whether skippability is reported using Compose's strong skipping semantics.
+   *
+   * The Compose compiler enables its `StrongSkipping` feature flag by default, and with it on an
+   * unstable parameter no longer prevents a restartable composable from skipping. Keep this in sync
+   * with the Compose compiler: set it to false only in a build that also turns strong skipping off
+   * (`kotlin.compose.StrongSkipping=false` / the `composeCompiler { featureFlags }` DSL), otherwise
+   * the reported `skippable` verdicts will not match the code the compiler actually generates.
+   *
+   * Default: true
+   */
+  public val strongSkipping: Property<Boolean> =
+    objects.property(Boolean::class.javaObjectType).convention(true)
+
+  /**
    * Configuration for stability validation (dump and check).
    */
   public val stabilityValidation: StabilityValidationConfig =
