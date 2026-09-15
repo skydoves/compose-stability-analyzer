@@ -612,7 +612,14 @@ public class StabilityAnalyzerTransformer(
     }
 
     // 10. Check for kotlinx immutable collections (always stable)
-    if (fqName != null && fqName.startsWith("kotlinx.collections.immutable.")) {
+    // Only for names the mask table does not already cover: those were decided above by
+    // isKnownStableType, and a mask that rejected an unstable type argument must not be overridden
+    // here. Without the guard PersistentList<MutableUser> fell through to this blanket rule and was
+    // reported STABLE.
+    if (fqName != null &&
+      fqName.startsWith("kotlinx.collections.immutable.") &&
+      fqName !in KNOWN_STABLE_GENERIC_MASKS
+    ) {
       if (fqName.contains("Immutable") || fqName.contains("Persistent")) {
         return ParameterStability.STABLE
       }

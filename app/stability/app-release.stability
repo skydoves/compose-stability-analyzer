@@ -176,6 +176,13 @@ public fun com.skydoves.myapplication.OpenRestartabilityDemo.OpenMemberDemo(text
     - text: STABLE (String is immutable)
 
 @Composable
+public fun com.skydoves.myapplication.PersistentListOfUnstableDisplay(items: kotlinx.collections.immutable.PersistentList<com.skydoves.myapplication.models.UnstableUser>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - items: UNKNOWN (interface or non-final class; concrete implementation unknown)
+
+@Composable
 public fun com.skydoves.myapplication.ReadOnlyUnitDemo(text: kotlin.String): kotlin.Unit
   skippable: true
   restartable: true

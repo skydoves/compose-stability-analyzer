@@ -17,6 +17,7 @@ package com.skydoves.compose.stability.compiler
 
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
+import org.jetbrains.kotlin.compiler.plugin.CliOptionProcessingException
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
@@ -145,7 +146,7 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
     when (option) {
       OPTION_ENABLED -> configuration.put(
         StabilityAnalyzerConfigurationKeys.KEY_ENABLED,
-        value.toBoolean(),
+        value.toBooleanOrFail("enabled"),
       )
 
       OPTION_STABILITY_OUTPUT_DIR -> configuration.put(
@@ -158,7 +159,7 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
 
       OPTION_TRACE_ALL -> configuration.put(
         StabilityAnalyzerConfigurationKeys.KEY_TRACE_ALL,
-        value.toBoolean(),
+        value.toBooleanOrFail("traceAll"),
       )
 
       OPTION_TRACE_ALL_THRESHOLD -> configuration.put(
@@ -168,7 +169,7 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
 
       OPTION_STRONG_SKIPPING -> configuration.put(
         StabilityAnalyzerConfigurationKeys.KEY_STRONG_SKIPPING,
-        value.toBoolean(),
+        value.toBooleanOrFail("strongSkipping"),
       )
 
       OPTION_STABILITY_CONFIGURATION_FILE -> configuration.appendList(
@@ -177,4 +178,15 @@ public class StabilityAnalyzerCommandLineProcessor : CommandLineProcessor {
       )
     }
   }
+
+  /**
+   * `String.toBoolean()` maps every value that is not "true" to `false`, so a typo such as
+   * `strongSkipping=treu` would silently invert the option and produce a report that disagrees with
+   * the code the Compose compiler generates. Fail loudly instead; the Gradle plugin always passes a
+   * real `Boolean.toString()`, so only a hand-written compiler argument can reach this.
+   */
+  private fun String.toBooleanOrFail(optionName: String): Boolean =
+    toBooleanStrictOrNull() ?: throw CliOptionProcessingException(
+      "Invalid value for '$optionName': '$this'. Expected 'true' or 'false'.",
+    )
 }

@@ -57,6 +57,7 @@ import com.skydoves.myapplication.models.StableSealedClass
 import com.skydoves.myapplication.models.StableUser
 import com.skydoves.myapplication.models.UnstableUser
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.PersistentList
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -279,6 +280,15 @@ fun StablePairDisplay(pair: Pair<String, Int>) {
 
 @Composable
 fun UnstablePairDisplay(pair: Pair<String, UnstableUser>) {
+}
+
+/**
+ * A kotlinx immutable collection is only stable when its element type is. The generic-argument mask
+ * says so, but a blanket `kotlinx.collections.immutable.*` fallback used to override it and report
+ * this STABLE.
+ */
+@Composable
+fun PersistentListOfUnstableDisplay(items: PersistentList<UnstableUser>) {
 }
 
 @Composable
