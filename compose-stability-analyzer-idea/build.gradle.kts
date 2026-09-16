@@ -27,7 +27,7 @@ kotlin {
 }
 
 group = "com.github.skydoves"
-version = "0.13.0"
+version = "0.14.0"
 
 repositories {
   mavenLocal()
@@ -39,7 +39,7 @@ repositories {
 }
 
 dependencies {
-  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.13.0")
+  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.14.0")
 
   intellijPlatform {
     intellijIdeaCommunity("2025.2")
@@ -80,6 +80,14 @@ intellijPlatform {
             </ul>
         """.trimIndent()
     changeNotes = """
+            <b>0.14.0</b>
+            <ul>
+                <li><b>Gutter icons and stabilityDump now agree on skippability</b> - the IDE already modelled Compose's strong skipping, which is on by default in the compiler, but the report side did not. Measured against the Compose compiler's own metrics, 38% of composables carried the wrong skippable verdict in the generated .stability file. Fixed in library 0.14.0.</li>
+                <li><b>Restartability matches the compiler</b> - open members of non-final classes (including interface methods with a body), abstract declarations and local composables now show as non-restartable, and @ReadOnlyComposable no longer does: a Unit-returning read-only composable really is restartable.</li>
+                <li><b>Heatmap durations no longer read as 0.00ms</b> on devices whose locale uses a comma decimal separator (de, fr, pt-BR, ru, tr, id). The Stability Doctor's measured waste was affected too.</li>
+                <li><b>Generic type arguments are honoured</b> - Pair&lt;String, MutableUser&gt; and immutable collections with an unstable element type are no longer reported stable.</li>
+                <li><b>Updated to Kotlin 2.4.20.</b></li>
+            </ul>
             <b>0.13.0</b>
             <ul>
                 <li><b>Editor verdicts and stabilityDump now agree on same-module types</b> - the compiler plugin used to mark a module's own types unstable whenever a sibling Gradle module's group happened to be a package prefix, and it honoured @StabilityInferred on source classes, where the annotation is only present depending on compiler-plugin ordering. Both are fixed in library 0.13.0, so gutter icons, tooltips and the Stability Explorer no longer disagree with the generated .stability report.</li>

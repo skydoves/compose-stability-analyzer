@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.14.0] - 2026-09-16
 
 ### Changed
 - **Bumped Kotlin to 2.4.20** (from 2.4.10). Use the same Kotlin version as this library. The compiler plugin, runtime, Gradle plugin, Lint rules and IntelliJ plugin all build against 2.4.20, and all twelve published runtime targets still compile. **No stability verdicts change**: `stabilityDump` on the sample app produces no diff and `stabilityCheck` passes against the committed baselines, so `.stability` files do not need refreshing for this bump alone.
@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Generic type arguments are honoured for known-stable types.** `Pair`, `Triple`, `Comparator`, `ClosedRange`, the Guava and kotlinx immutable collections and `dagger.Lazy` carry a bitmask saying which type arguments must themselves be stable. Ignoring it reported `Pair<String, MutableUser>` as `STABLE`.
 - **`@StableMarker` is resolved as a rule rather than hardcoded.** Any annotation whose own class carries `@StableMarker` now marks a type stable, walking supertypes, so a project's own marker annotation works as it does in the Compose compiler. `com.google.errorprone.annotations.Immutable` is recognised too.
 - The IDE plugin no longer uses `KaTypeNullability`, which the Kotlin 2.5 Analysis API deprecates at `HIDDEN` level (an unresolved reference that `@Suppress` cannot reach).
+- **A blanket fallback no longer overrides the generic-argument masks.** `isKnownStableType` correctly rejected `PersistentList<MutableUser>`, but a `kotlinx.collections.immutable.*` rule further down the chain then reported it `STABLE` anyway. The fallback now skips names the mask table already owns.
+- **Boolean compiler options are parsed strictly.** `String.toBoolean()` maps every value that is not `true` to `false`, so `strongSkipping=treu` silently inverted the option and produced verdicts that disagree with the compiler. `enabled` and `traceAll` had the same hole; all three now fail on anything other than `true` or `false`.
 
 ### Migration
 

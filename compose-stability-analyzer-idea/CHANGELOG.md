@@ -2,6 +2,17 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.14.0] - 2026-09-16
+
+### Fixed
+- **Gutter icons and `stabilityDump` now agree on skippability.** The IDE already modelled Compose's strong skipping, which is on by default in the compiler, but the compiler plugin and the Gradle tasks still applied the strong-skipping-off rule. Measured against the Compose compiler's own metrics, 38% of composables in the sample app carried the wrong `skippable` verdict in the generated report. Library 0.14.0 fixes the report side, so the editor and the `.stability` file finally say the same thing.
+- **Restartability matches the compiler.** `open` members of non-final classes (including interface methods with a body), abstract declarations and local composables are now shown as non-restartable, and `@ReadOnlyComposable` no longer is: a `Unit`-returning read-only composable really is restartable. Both IDE analysis paths share one set of rules so the PSI and K2 paths cannot drift apart.
+- **Heatmap durations no longer read as 0.00ms on comma-decimal devices.** The runtime formatted the recomposition duration with the device locale, so a `de`, `fr`, `pt-BR`, `ru`, `tr` or `id` device emitted `(1,20ms)`, which the log parser dropped. Timings disappeared from heatmap tooltips and the Stability Doctor's measured waste fell back to its 1ms floor. Fixed in library 0.14.0; the parser also accepts the old comma form so older runtimes keep working.
+- **Generic type arguments are honoured.** `Pair<String, MutableUser>` and the kotlinx immutable collections with an unstable element type are no longer reported stable.
+
+### Changed
+- **Updated to Kotlin 2.4.20.** Also removes the use of `KaTypeNullability`, which the Kotlin 2.5 Analysis API deprecates at `HIDDEN` level, so the plugin keeps compiling against IDEs that bundle it.
+
 ## [0.13.0] - 2026-08-22
 
 ### Fixed

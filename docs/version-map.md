@@ -6,6 +6,7 @@ It is **strongly recommended to use the exact same Kotlin version** as this libr
 
 | Stability Analyzer | Kotlin |
 |--------------------|--------|
+| 0.14.0             | 2.4.20 |
 | 0.13.0             | 2.4.10 |
 | 0.12.0             | 2.4.0  |
 | 0.11.1             | 2.4.0  |
@@ -33,12 +34,8 @@ It is **strongly recommended to use the exact same Kotlin version** as this libr
 
 The Compose Stability Analyzer works alongside the Compose compiler. Ensure your Compose compiler version is compatible with your Kotlin version:
 
-| Kotlin | Compose Compiler |
-|--------|-----------------|
-| 2.3.21 | Bundled with Kotlin |
-| 2.3.20 | Bundled with Kotlin |
-| 2.3.0  | Bundled with Kotlin |
-| 2.2.21 | Bundled with Kotlin |
+Every Kotlin version in the table above bundles its own Compose compiler, so there is no separate
+version to choose: matching the Kotlin version is sufficient.
 
 !!! note "Compose Compiler bundled with Kotlin"
 
