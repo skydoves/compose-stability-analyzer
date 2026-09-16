@@ -257,41 +257,62 @@ intellijPlatform {
 
 tasks {
   /**
-   * Fails on any binary incompatibility the Plugin Verifier reports that is not in [acceptedSymbols].
+   * Fails on any compatibility problem the Plugin Verifier reports that is not in the allowlist.
    *
    * 0.14.0 shipped a real one: a direct call to `KaSession.withNullability(KaType, Boolean)`, an
    * overload absent from the Kotlin plugin bundled with IDEs 242, 243 and 251. The verifier caught
    * it, but `failureLevel` excluded COMPATIBILITY_PROBLEMS wholesale, so CI stayed green and the
    * problem only surfaced on the Marketplace. Every K2 symbol that legitimately varies across the
-   * supported range is now accessed reflectively instead, so the allowlist should shrink, never grow.
+   * supported range is accessed reflectively instead, so the allowlist should shrink, never grow.
+   *
+   * Problems are matched as whole entries rather than by extracting a symbol from a known phrasing:
+   * the verifier emits several categories ("unresolved method", "attempt to invoke an abstract
+   * method", "illegal access", ...) and keying off one of them would let the others through
+   * silently. The entry count is cross-checked against the verdict line so a parsing drift fails
+   * loudly instead of quietly passing.
    */
   val checkNoNewCompatibilityProblems by registering {
     val reports = layout.buildDirectory.dir("reports/pluginVerifier")
     inputs.dir(reports).optional(true)
     doLast {
-      val acceptedSymbols = listOf(
+      val acceptedProblems = listOf(
         // Falls back to the PSI analyzer on a linkage error.
         "KaSessionProvider.handleAnalysisException",
         "KaReceiverParameterSymbol.getReturnType",
         // Settings UI helper added after 2024.2; only reached when a user opens the settings panel.
         "Row.textFieldWithBrowseButton",
       )
-      val unexpected = reports.get().asFile.walkTopDown()
-        .filter { it.name == "compatibility-problems.txt" }
-        .flatMap { report ->
-          val ide = report.toPath().toString().substringAfter("pluginVerifier/").substringBefore("/")
-          Regex("""unresolved \w+ (\S+)""").findAll(report.readText())
-            .map { ide to it.groupValues[1] }
-        }
-        .filterNot { (_, symbol) -> acceptedSymbols.any { symbol.contains(it) } }
-        .toList()
+      val failures = mutableListOf<String>()
 
-      if (unexpected.isNotEmpty()) {
+      reports.get().asFile.walkTopDown()
+        .filter { it.name == "verification-verdict.txt" }
+        .forEach { verdict ->
+          val ide = verdict.toPath().toString()
+            .substringAfter("pluginVerifier/").substringBefore("/")
+          val reported = Regex("""(\d+) compatibility problems?""")
+            .find(verdict.readText())?.groupValues?.get(1)?.toInt() ?: 0
+
+          val problemsFile = verdict.resolveSibling("compatibility-problems.txt")
+          // A problem starts at column 0; indented lines and the "The method might have been
+          // declared ..." tail belong to the entry above it.
+          val entries = problemsFile.takeIf { it.exists() }?.readLines().orEmpty()
+            .filter { it.isNotBlank() && !it.startsWith(" ") }
+            .filterNot { it.startsWith("The method might have been declared") }
+
+          if (entries.size != reported) {
+            failures += "$ide: parsed ${entries.size} problems but the verdict reports $reported; " +
+              "the report format changed and this check can no longer be trusted"
+          }
+          entries.filterNot { entry -> acceptedProblems.any { entry.contains(it) } }
+            .forEach { failures += "$ide: ${it.take(200)}" }
+        }
+
+      if (failures.isNotEmpty()) {
         error(
           "New binary incompatibilities reported by the Plugin Verifier:\n" +
-            unexpected.joinToString("\n") { (ide, symbol) -> "  $ide: $symbol" } +
+            failures.joinToString("\n") { "  $it" } +
             "\n\nAccess the symbol reflectively (see withoutNullabilityReflective) or, if the " +
-            "problem is genuinely acceptable, add it to acceptedSymbols with a justification.",
+            "problem is genuinely acceptable, add it to acceptedProblems with a justification.",
         )
       }
     }
