@@ -22,8 +22,8 @@ public fun com.skydoves.myapplication.Card(modifier: androidx.compose.ui.Modifie
     - colors: STABLE (marked @Stable or @Immutable)
     - elevation: STABLE (marked @Stable or @Immutable)
     - func: STABLE (composable function type)
-    - func2: STABLE (function type)
-    - func3: STABLE (function type)
+    - func2: UNKNOWN (interface or non-final class; concrete implementation unknown)
+    - func3: UNKNOWN (interface or non-final class; concrete implementation unknown)
     - content: STABLE (composable function type)
 
 @Composable
@@ -49,7 +49,14 @@ public fun com.skydoves.myapplication.CounterDisplay(count: com.skydoves.myappli
   skippable: true
   restartable: true
   params:
-    - count: STABLE (class with no mutable properties)
+    - count: UNSTABLE (has mutable properties or unstable members)
+
+@Composable
+public fun com.skydoves.myapplication.DelegatedStateHolderDisplay(holder: com.skydoves.myapplication.DelegatedStateHolder): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - holder: STABLE (class with no mutable properties)
 
 @Composable
 public fun com.skydoves.myapplication.GenericDisplay(item: T of com.skydoves.myapplication.GenericDisplay, fontWeight4: androidx.compose.ui.text.font.FontWeight, mySealed: com.skydoves.myapplication.MySealed, child2: com.skydoves.myapplication.MySealed.Child2, child3: com.skydoves.myapplication.MySealed.Child3, child4: com.skydoves.myapplication.MySealed.Child4, child: com.skydoves.myapplication.MySealed.Child, fontWeight: androidx.compose.ui.text.font.FontWeight, fontWeight2: androidx.compose.ui.text.font.FontWeight?, values: kotlin.String, value: kotlin.Int?, testValueClass: com.skydoves.myapplication.TestValueClass, textAlign: androidx.compose.ui.text.style.TextAlign, textAlign2: androidx.compose.ui.text.style.TextAlign?, displayText: kotlin.Function1<T of com.skydoves.myapplication.GenericDisplay, kotlin.String>): kotlin.Unit
@@ -58,7 +65,7 @@ public fun com.skydoves.myapplication.GenericDisplay(item: T of com.skydoves.mya
   params:
     - item: RUNTIME (requires runtime check)
     - fontWeight4: STABLE (marked @Stable or @Immutable)
-    - mySealed: STABLE (class with no mutable properties)
+    - mySealed: UNKNOWN (interface or non-final class; concrete implementation unknown)
     - child2: STABLE (class with no mutable properties)
     - child3: STABLE (class with no mutable properties)
     - child4: UNSTABLE (has mutable properties or unstable members)
@@ -183,6 +190,13 @@ public fun com.skydoves.myapplication.PersistentListOfUnstableDisplay(items: kot
     - items: UNKNOWN (interface or non-final class; concrete implementation unknown)
 
 @Composable
+public fun com.skydoves.myapplication.PlainMutableHolderDisplay(holder: com.skydoves.myapplication.PlainMutableHolder): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - holder: UNSTABLE (has mutable properties or unstable members)
+
+@Composable
 public fun com.skydoves.myapplication.ReadOnlyUnitDemo(text: kotlin.String): kotlin.Unit
   skippable: true
   restartable: true
@@ -287,7 +301,7 @@ public fun com.skydoves.myapplication.Test4(count: androidx.lifecycle.ViewModel)
   skippable: true
   restartable: true
   params:
-    - count: UNKNOWN (interface or non-final class; concrete implementation unknown)
+    - count: UNSTABLE (cross-module type without @Stable/@Immutable)
 
 @Composable
 public fun com.skydoves.myapplication.Test6(count: kotlin.collections.Set<kotlin.String>): kotlin.Unit
@@ -370,6 +384,13 @@ public fun com.skydoves.myapplication.UnstableUserCard(user: com.skydoves.myappl
   restartable: true
   params:
     - user: UNSTABLE (has mutable properties or unstable members)
+
+@Composable
+public fun com.skydoves.myapplication.ViewModelWithValueDisplay(vm: com.skydoves.myapplication.ViewModelWithValue): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - vm: UNSTABLE (has mutable properties or unstable members)
 
 @Composable
 public fun com.skydoves.myapplication.nonUnitReturnDemo(): kotlin.Int

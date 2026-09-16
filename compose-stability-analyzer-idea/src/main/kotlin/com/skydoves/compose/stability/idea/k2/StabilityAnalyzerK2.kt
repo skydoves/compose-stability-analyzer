@@ -120,13 +120,14 @@ internal object StabilityAnalyzerK2 {
 
     // Analyze value parameters
     val parameters = functionSymbol.valueParameters.map { param ->
-      // A vararg parameter is treated as an array to match a real Array<T> parameter (issue #175).
+      // A vararg is scored by its ELEMENT type, matching the Compose compiler
+      // (`param.varargElementType ?: param.type`) and the compiler plugin. Treating it as a bare
+      // array made every vararg RUNTIME regardless of what it holds, which contradicted the
+      // `.stability` report (issue #175 assumed the array; the compiler proves otherwise: Compose
+      // reports `stable values: IntArray` for `vararg values: Int`).
       val isVararg = param.name.asString() in varargParameterNames
       val stability = if (isVararg) {
-        KtStability.Runtime(
-          className = "kotlin.Array",
-          reason = "vararg parameter (compiles to an array)",
-        )
+        varargElementStability(param.returnType, inferencer)
       } else {
         with(inferencer) { ktStabilityOf(param.returnType) }
       }
@@ -193,6 +194,35 @@ internal object StabilityAnalyzerK2 {
       functionSymbol.returnType.expandedSymbol?.classId?.asSingleFqName()?.asString()
     if (returnTypeFqName != "kotlin.Unit") return false
     return true
+  }
+
+  /**
+   * Stability of a vararg parameter's element type.
+   *
+   * The symbol's declared type is the synthesized array (`Array<out T>`, or a primitive array such
+   * as `IntArray`). The single type argument is the element for the boxed form; a primitive array
+   * has none, and its element is a primitive, which is stable.
+   */
+  private fun KaSession.varargElementStability(
+    arrayType: KaType,
+    inferencer: KtStabilityInferencer,
+  ): KtStability {
+    val elementType = runCatching {
+      (arrayType::class.members.find { it.name == "typeArguments" }?.call(arrayType) as? List<*>)
+        ?.firstOrNull()
+        ?.let { arg -> arg::class.members.find { it.name == "type" }?.call(arg) as? KaType }
+    }.getOrNull()
+    if (elementType != null) {
+      return with(inferencer) { ktStabilityOf(elementType) }
+    }
+    // No type argument. Either the symbol already exposes the element type, or this is a primitive
+    // array (`IntArray` and friends), whose element is a primitive and therefore stable — which is
+    // what Compose reports (`stable values: IntArray`).
+    val rendered = arrayType.renderAsString()
+    if (rendered.startsWith("kotlin.") && rendered.endsWith("Array")) {
+      return KtStability.Certain(stable = true, reason = "vararg of a primitive type")
+    }
+    return with(inferencer) { ktStabilityOf(arrayType) }
   }
 
   /**

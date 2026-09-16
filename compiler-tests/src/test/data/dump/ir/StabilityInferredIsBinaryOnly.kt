@@ -10,8 +10,9 @@
 // authoritative for source classes, so the annotation is ignored on them.
 //
 // `LoweredLocal` below stands in for a class the Compose plugin has already lowered in this module:
-// property analysis yields RUNTIME (a standard collection), and the annotation claims
-// `parameters = 0`, which used to be promoted to STABLE.
+// property analysis yields RUNTIME (a standard collection), and the annotation's sentinel bit is
+// set (`parameters = 1` on a class with no type parameters means "known stable"), which would be
+// promoted to STABLE if the annotation were honoured here.
 //
 // Regression guard via the injected trackParameter(..., isStable = ...) calls:
 //   - lowered -> isStable = false (source class; the annotation must not promote it to STABLE)
@@ -21,7 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.internal.StabilityInferred
 import com.skydoves.compose.stability.runtime.TraceRecomposition
 
-@StabilityInferred(parameters = 0)
+@StabilityInferred(parameters = 1)
 data class LoweredLocal(val names: List<String>)
 
 data class PlainLocal(val names: List<String>)

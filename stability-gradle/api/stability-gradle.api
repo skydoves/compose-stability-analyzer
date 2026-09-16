@@ -9,6 +9,10 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityAnalyzerExt
 	public final fun traceAll (Lorg/gradle/api/Action;)V
 }
 
+public final class com/skydoves/compose/stability/gradle/StabilityAnalyzerExtensionKt {
+	public static final fun resolvedStabilityConfigurationFiles (Lcom/skydoves/compose/stability/gradle/StabilityAnalyzerExtension;)Ljava/util/List;
+}
+
 public final class com/skydoves/compose/stability/gradle/StabilityAnalyzerGradlePlugin : org/jetbrains/kotlin/gradle/plugin/KotlinCompilerPluginSupportPlugin {
 	public static final field Companion Lcom/skydoves/compose/stability/gradle/StabilityAnalyzerGradlePlugin$Companion;
 	public fun <init> ()V

@@ -1,4 +1,4 @@
-@StabilityInferred(parameters = 0)
+@StabilityInferred(parameters = 1)
 data class LoweredLocal {
   val names: List<String>
     field = names
@@ -100,3 +100,4 @@ fun ShowLocals(lowered: LoweredLocal, plain: PlainLocal) {
   _tracker.logIfThresholdMet()
   // }
 }
+
