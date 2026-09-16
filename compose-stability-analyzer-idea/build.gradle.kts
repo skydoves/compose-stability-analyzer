@@ -243,9 +243,11 @@ intellijPlatform {
     ides {
       recommended()
     }
-    // Pre-existing K2 API issues (KaSessionProvider.handleAnalysisException) in 242-251
-    // cause false positives — the plugin gracefully falls back to PSI on older IDEs.
-    // 261 (2026.1 EAP) uses the unified "idea" artifact which the verifier cannot resolve yet.
+    // COMPATIBILITY_PROBLEMS is deliberately absent: older supported IDEs report a handful of
+    // reviewed, accepted problems (see checkNoNewCompatibilityProblems, which fails on anything
+    // outside that allowlist). Enabling it here would fail on those too, and the verifier's own
+    // ignored-problems file cannot express them because its grammar rejects a description
+    // containing a colon, which every method signature has.
     failureLevel = listOf(
       org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.INVALID_PLUGIN,
       org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.NOT_DYNAMIC,
@@ -254,6 +256,49 @@ intellijPlatform {
 }
 
 tasks {
+  /**
+   * Fails on any binary incompatibility the Plugin Verifier reports that is not in [acceptedSymbols].
+   *
+   * 0.14.0 shipped a real one: a direct call to `KaSession.withNullability(KaType, Boolean)`, an
+   * overload absent from the Kotlin plugin bundled with IDEs 242, 243 and 251. The verifier caught
+   * it, but `failureLevel` excluded COMPATIBILITY_PROBLEMS wholesale, so CI stayed green and the
+   * problem only surfaced on the Marketplace. Every K2 symbol that legitimately varies across the
+   * supported range is now accessed reflectively instead, so the allowlist should shrink, never grow.
+   */
+  val checkNoNewCompatibilityProblems by registering {
+    val reports = layout.buildDirectory.dir("reports/pluginVerifier")
+    inputs.dir(reports).optional(true)
+    doLast {
+      val acceptedSymbols = listOf(
+        // Falls back to the PSI analyzer on a linkage error.
+        "KaSessionProvider.handleAnalysisException",
+        "KaReceiverParameterSymbol.getReturnType",
+        // Settings UI helper added after 2024.2; only reached when a user opens the settings panel.
+        "Row.textFieldWithBrowseButton",
+      )
+      val unexpected = reports.get().asFile.walkTopDown()
+        .filter { it.name == "compatibility-problems.txt" }
+        .flatMap { report ->
+          val ide = report.toPath().toString().substringAfter("pluginVerifier/").substringBefore("/")
+          Regex("""unresolved \w+ (\S+)""").findAll(report.readText())
+            .map { ide to it.groupValues[1] }
+        }
+        .filterNot { (_, symbol) -> acceptedSymbols.any { symbol.contains(it) } }
+        .toList()
+
+      if (unexpected.isNotEmpty()) {
+        error(
+          "New binary incompatibilities reported by the Plugin Verifier:\n" +
+            unexpected.joinToString("\n") { (ide, symbol) -> "  $ide: $symbol" } +
+            "\n\nAccess the symbol reflectively (see withoutNullabilityReflective) or, if the " +
+            "problem is genuinely acceptable, add it to acceptedSymbols with a justification.",
+        )
+      }
+    }
+  }
+
+  named("verifyPlugin") { finalizedBy(checkNoNewCompatibilityProblems) }
+
   withType<JavaCompile> {
     sourceCompatibility = "17"
     targetCompatibility = "17"
