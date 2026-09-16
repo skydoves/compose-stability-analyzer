@@ -20,6 +20,7 @@ import com.skydoves.compose.stability.compiler.StabilityInfoCollector
 import com.skydoves.compose.stability.runtime.ParameterStability
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
@@ -156,7 +157,10 @@ public class StabilityAnalyzerTransformer(
 
         val parameters = trackedParams
           .map { param ->
-            val renderedType = param.type.render()
+            // A vararg is scored by its element type, not the synthesized `Array<out T>`, which is
+            // a stdlib stub and would make every vararg parameter UNSTABLE.
+            val analyzedType = param.varargElementType ?: param.type
+            val renderedType = analyzedType.render()
 
             // If rendered type contains @[Composable], it's a composable function - STABLE
             val isComposableFunction =
@@ -165,13 +169,13 @@ public class StabilityAnalyzerTransformer(
             val stability = if (isComposableFunction) {
               "STABLE"
             } else {
-              analyzeParameterStability(param.type)
+              analyzeParameterStability(analyzedType)
             }
 
             val reason = if (isComposableFunction) {
               "composable function type"
             } else {
-              getStabilityReason(param.type, stability)
+              getStabilityReason(analyzedType, stability)
             }
 
             com.skydoves.compose.stability.compiler.ParameterStabilityInfo(
@@ -312,7 +316,10 @@ public class StabilityAnalyzerTransformer(
         !name.startsWith("$") && name != "<this>"
       }
       .map { param ->
-        val renderedType = param.type.render()
+        // Same vararg rule as the report path: the logcat line this feeds is a wire protocol read
+        // by the IDE, and the two must not disagree about a parameter's type or stability.
+        val analyzedType = param.varargElementType ?: param.type
+        val renderedType = analyzedType.render()
 
         // If rendered type contains @[Composable], it's a composable function - STABLE
         val isComposableFunction =
@@ -321,7 +328,7 @@ public class StabilityAnalyzerTransformer(
         val stability = if (isComposableFunction) {
           ParameterStability.STABLE
         } else {
-          analyzeTypeStability(param.type)
+          analyzeTypeStability(analyzedType)
         }
 
         RecompositionIrBuilder.ParameterStabilityData(
@@ -525,17 +532,10 @@ public class StabilityAnalyzerTransformer(
       return ParameterStability.RUNTIME
     }
 
-    // Check for suspend functions using multiple methods
-    val typeString = type.render()
-    val isSuspend = type.isSuspendFunctionTypeOrSubtype() ||
-      (fqName?.startsWith("kotlin.coroutines.SuspendFunction") == true) ||
-      (fqName?.contains("SuspendFunction") == true) ||
-      typeString.startsWith("suspend ") ||
-      typeString.contains("SuspendFunction")
-
-    if (isSuspend) {
-      return ParameterStability.STABLE
-    }
+    // Suspend function types are deliberately NOT short-circuited to stable. Compose's shortcut
+    // covers `isFunctionOrKFunction()` and `isSyntheticComposableFunction()` only; a
+    // `kotlin.coroutines.SuspendFunctionN` is neither, so it is analysed as the interface it is and
+    // comes out Unknown. Claiming STABLE here was a stronger promise than the compiler makes.
 
     val typeId = fqName ?: classSymbol?.owner?.name?.asString() ?: type.render()
     val currentlyAnalyzing = analyzingTypes.get()
@@ -640,24 +640,38 @@ public class StabilityAnalyzerTransformer(
       return ParameterStability.STABLE
     }
 
+    // 13b. Objects are always stable (Stability.kt: `if (declaration.isObject) return Stable`).
+    // A singleton's identity never changes, so its properties cannot destabilize a parameter.
+    if (clazz.kind == ClassKind.OBJECT) {
+      return ParameterStability.STABLE
+    }
+
     // 14. @Parcelize data classes - check only properties, ignore Parcelable interface
     if (clazz.hasAnnotation(FqName("kotlinx.parcelize.Parcelize"))) {
       val properties = clazz.declarations
         .filterIsInstance<org.jetbrains.kotlin.ir.declarations.IrProperty>()
         .filter { it.representsStoredState() }
 
+      // A @Parcelize class may be open or sealed, so it seeds exactly like the general path.
+      val parcelizeSeed =
+        if (clazz.modality != org.jetbrains.kotlin.descriptors.Modality.FINAL) {
+          ParameterStability.UNKNOWN
+        } else {
+          ParameterStability.STABLE
+        }
+
       if (properties.isEmpty()) {
-        return ParameterStability.STABLE
+        return parcelizeSeed
       }
 
-      // Check for var properties
-      if (properties.any { it.isVar }) {
+      // Check for var properties (a delegated var is exempt, see destabilizesItsClass)
+      if (properties.any { it.destabilizesItsClass() }) {
         return ParameterStability.UNSTABLE
       }
 
       // Check property type stability
       val propertyStabilities = properties.mapNotNull { property ->
-        property.getter?.returnType?.let { analyzeTypeStability(it) }
+        property.stabilityRelevantType()?.let { analyzeTypeStability(it) }
       }
 
       if (propertyStabilities.any { it == ParameterStability.UNSTABLE }) {
@@ -665,7 +679,7 @@ public class StabilityAnalyzerTransformer(
       }
 
       if (propertyStabilities.all { it == ParameterStability.STABLE }) {
-        return ParameterStability.STABLE
+        return parcelizeSeed
       }
       // If properties have mixed stability, fall through to interface check
     }
@@ -675,36 +689,13 @@ public class StabilityAnalyzerTransformer(
       return ParameterStability.UNKNOWN
     }
 
-    // 16. Abstract classes - concrete implementation unknown (Compose 2.4.0: Unknown)
-    //     EXCEPT: sealed classes with @Stable/@Immutable annotations
-    //     Issue #31: @Immutable sealed classes should be trusted as stable
-    if (clazz.modality == org.jetbrains.kotlin.descriptors.Modality.ABSTRACT) {
-      // Check if this is a sealed class (sealed classes are abstract but stable if annotated)
-      val isSealed = try {
-        clazz.sealedSubclasses.isNotEmpty()
-      } catch (e: Exception) {
-        false
-      }
-
-      // Check if it has @Stable or @Immutable annotation
-      val hasStabilityAnnotation = clazz.hasAnnotation(stableFqName) ||
-        clazz.hasAnnotation(immutableFqName)
-
-      // Only mark as UNKNOWN if it's NOT a sealed class AND doesn't have stability annotation
-      if (!isSealed && !hasStabilityAnnotation) {
-        return ParameterStability.UNKNOWN
-      }
-      // Sealed classes and annotated abstract classes continue to property analysis
-    }
-
-    // 16b. Non-final (open) classes - concrete subtype unknown (Compose 2.4.0: Unknown)
-    //      EXCEPT: classes explicitly trusted via @Stable/@Immutable.
-    if (clazz.modality == org.jetbrains.kotlin.descriptors.Modality.OPEN &&
-      !clazz.hasAnnotation(stableFqName) &&
-      !clazz.hasAnnotation(immutableFqName)
-    ) {
-      return ParameterStability.UNKNOWN
-    }
+    // 16. Non-final classes do NOT exit early. The Compose compiler has no such rule: its
+    //     `modality == FINAL ? Stable : Unknown` is the *seed* of the member loop, so an
+    //     open/abstract/sealed class still becomes UNSTABLE when it holds a non-delegated `var` or
+    //     an unstable member, and still reaches the cross-module rule below. Returning UNKNOWN here
+    //     skipped all of that: `androidx.lifecycle.ViewModel` reported UNKNOWN where the compiler
+    //     says unstable, and a sealed class with no stored properties reported STABLE where the
+    //     compiler says uncertain. The seed is applied in [analyzeClassProperties] instead.
 
     // 17. Cross-module types require explicit @Stable/@Immutable/@StabilityInferred
     if (isFromDifferentModule(clazz) &&
@@ -722,7 +713,15 @@ public class StabilityAnalyzerTransformer(
       ParameterStability.UNSTABLE -> return ParameterStability.UNSTABLE
       ParameterStability.UNKNOWN -> return ParameterStability.UNKNOWN
       ParameterStability.RUNTIME -> {
-        // 19. Refine with @StabilityInferred: parameters=0 means stable, else runtime.
+        // 19. Refine with @StabilityInferred.
+        //
+        // The `parameters` bitmask is NOT "0 means stable". Per ClassStabilityTransformer, bits
+        // 0..n-1 mark which of the n type parameters the class's stability depends on, and the bit
+        // at index n is a "known stable" sentinel; for a class with no type parameters that is
+        // simply bit 0, so `parameters = 1` means stable and `parameters = 0` means not stable.
+        // Reading it as `== 0 -> STABLE` therefore reported the exact opposite, which is the one
+        // direction that misleads: a cross-module class the compiler marked unstable came back
+        // STABLE. Verified against real bytecode (StableUser = 1, UnstableUser = 0).
         //
         // Only for declarations outside this compilation unit, where the annotation is baked into
         // the binary and is the intended cross-module channel. For a class in the module being
@@ -735,12 +734,13 @@ public class StabilityAnalyzerTransformer(
         if (!isFromDifferentModule(clazz)) {
           return ParameterStability.RUNTIME
         }
-        val stabilityInferredParams = type.getStabilityInferredParameters()
-        return if (stabilityInferredParams == 0) {
-          ParameterStability.STABLE
-        } else {
-          ParameterStability.RUNTIME
-        }
+        val bitmask = type.getStabilityInferredParameters() ?: return ParameterStability.RUNTIME
+        val typeParameterCount = clazz.typeParameters.size
+        // Compose only writes the sentinel when the count is below 32, and a Kotlin shift masks its
+        // operand to 5 bits, so anything at or above 32 has no sentinel to read.
+        val knownStable = typeParameterCount < 32 &&
+          ((bitmask shr typeParameterCount) and 1) == 1
+        return if (knownStable) ParameterStability.STABLE else ParameterStability.RUNTIME
       }
     }
   }
@@ -749,7 +749,18 @@ public class StabilityAnalyzerTransformer(
    * Analyzes class properties to determine overall stability.
    * Matches K2 implementation logic.
    */
+  /**
+   * Scores a class from its stored state, seeded the way the Compose compiler seeds its member
+   * loop: `Stable` for a final class, `Unknown` otherwise. The seed only ever *weakens* the result
+   * — a non-delegated `var` or an unstable member still yields UNSTABLE — which is why a non-final
+   * class must not short-circuit to UNKNOWN before reaching here.
+   */
   private fun analyzeClassProperties(clazz: IrClass, fqName: String?): ParameterStability {
+    val nonFinalSeed =
+      clazz.modality != org.jetbrains.kotlin.descriptors.Modality.FINAL &&
+        !clazz.hasAnnotation(stableFqName) &&
+        !clazz.hasAnnotation(immutableFqName)
+
     // Issue #31: Check if parent sealed class has @Immutable/@Stable
     val parentHasStabilityAnnotation = clazz.superTypes.any { superType ->
       val superClassSymbol = superType.classOrNull
@@ -780,39 +791,37 @@ public class StabilityAnalyzerTransformer(
       .filterIsInstance<org.jetbrains.kotlin.ir.declarations.IrProperty>()
       .filter { it.representsStoredState() }
 
-    // If there are no state-storing properties, defer to the superclass. A bare-UNKNOWN
-    // superclass (an abstract/open base with no destabilizing state) must NOT taint a concrete
-    // subclass — matching the Compose compiler, which drops an `Unknown` superclass. Genuine
-    // inherited stored state never reaches here: it survives the filter above as a resolved
-    // fake-override, keeping the list non-empty. So only a truly unstable/runtime base
-    // propagates (issue #178). This also keeps sealed classes with no properties STABLE.
-    if (properties.isEmpty()) {
-      return when (superClassStability) {
-        ParameterStability.UNSTABLE -> ParameterStability.UNSTABLE
-        ParameterStability.RUNTIME -> ParameterStability.RUNTIME
-        else -> ParameterStability.STABLE
-      }
-    }
-
-    val hasMutableProperty = properties.any { it.isVar }
-    if (hasMutableProperty) {
+    if (properties.any { it.destabilizesItsClass() }) {
       return ParameterStability.UNSTABLE
     }
 
     val propertyStabilities = properties.mapNotNull { property ->
-      property.getter?.returnType?.let { analyzeTypeStability(it) }
+      property.stabilityRelevantType()?.let { analyzeTypeStability(it) }
     }
 
-    if (propertyStabilities.any { it == ParameterStability.UNSTABLE }) {
-      return ParameterStability.UNSTABLE
-    }
+    // The superclass contributes unconditionally, not only when the class declares no state of its
+    // own. Compose folds `declaration.superClass` into the accumulator after the member loop, so a
+    // class extending an unstable base is unstable no matter how stable its own properties are.
+    // Consulting it only for property-less classes made `class Foo : ViewModel() { val a = "" }`
+    // report STABLE while the compiler reported unstable.
+    return combineStability(
+      listOfNotNull(
+        if (nonFinalSeed) ParameterStability.UNKNOWN else ParameterStability.STABLE,
+        superClassStability,
+      ) + propertyStabilities,
+    )
+  }
 
-    if (propertyStabilities.all { it == ParameterStability.STABLE }) {
-      return ParameterStability.STABLE
-    }
-
-    // Mixed stability (some RUNTIME) - class needs runtime check
-    return ParameterStability.RUNTIME
+  /**
+   * Folds member and superclass verdicts the way Compose's `Stability.plus` does: a known-unstable
+   * element is absorbing, a known-stable one is the identity, and anything else leaves the result
+   * merely not-known-stable. `UNKNOWN` outranks `RUNTIME` so the weaker claim survives.
+   */
+  private fun combineStability(parts: List<ParameterStability>): ParameterStability = when {
+    parts.any { it == ParameterStability.UNSTABLE } -> ParameterStability.UNSTABLE
+    parts.any { it == ParameterStability.UNKNOWN } -> ParameterStability.UNKNOWN
+    parts.any { it == ParameterStability.RUNTIME } -> ParameterStability.RUNTIME
+    else -> ParameterStability.STABLE
   }
 
   /**
@@ -821,22 +830,20 @@ public class StabilityAnalyzerTransformer(
    * Matches IDE plugin's analyzeSuperclassStability logic.
    */
   private fun analyzeSuperclassStability(clazz: IrClass): ParameterStability? {
-    val superTypes = clazz.superTypes.filter { superType ->
-      // Filter out kotlin.Any and other common base types
-      val fqName = superType.classFqName?.asString()
-      fqName != "kotlin.Any" && fqName != null
-    }
+    // Compose folds in `declaration.superClass` only: the single non-interface supertype. Scanning
+    // every supertype and returning the first non-STABLE made the verdict depend on the order the
+    // supertypes were written, so `class A : Marker, ViewModel()` and `class A : ViewModel(), Marker`
+    // disagreed.
+    val superClass = clazz.superTypes.firstOrNull { superType ->
+      val owner = superType.classOrNull?.owner
+      owner != null &&
+        owner.kind != ClassKind.INTERFACE &&
+        superType.classFqName?.asString() != "kotlin.Any"
+    } ?: return null
 
-    for (superType in superTypes) {
-      val stability = analyzeTypeStability(superType)
-
-      // If superclass is unstable or runtime, propagate that
-      if (stability != ParameterStability.STABLE) {
-        return stability
-      }
-    }
-
-    return null // All superclasses are stable or no superclasses
+    // An `Unknown` base says nothing about the subclass, so Compose drops it rather than
+    // propagating it.
+    return analyzeTypeStability(superClass).takeIf { it != ParameterStability.UNKNOWN }
   }
 
   /**
@@ -850,6 +857,33 @@ public class StabilityAnalyzerTransformer(
    * type) never makes a class runtime/unstable. Inherited stored `var`/unstable fields still
    * count, because they resolve through the override chain to a backed declaration (issue #178).
    */
+  /**
+   * Whether this property makes its class unstable on its own.
+   *
+   * Compose's rule is `if (member.isVar && !member.isDelegated) return Unstable`
+   * (`analysis/Stability.kt`). A **delegated** `var` is exempt: it has no mutable field of its own,
+   * and its delegate is scored instead. That exemption is what keeps the canonical Compose state
+   * holder stable:
+   *
+   * ```
+   * class UiState { var text by mutableStateOf("") }   // Stable: the field is @Stable MutableState
+   * ```
+   *
+   * Without it every such class was reported UNSTABLE, telling users that correctly written state
+   * holders were broken.
+   */
+  private fun org.jetbrains.kotlin.ir.declarations.IrProperty.destabilizesItsClass(): Boolean =
+    isVar && !isDelegated
+
+  /**
+   * The type Compose scores for a property: the backing field's type, which for a delegated
+   * property is the delegate (e.g. `MutableState<T>`) rather than the value type the getter
+   * exposes. Falls back to the getter's return type for resolved fake overrides that carry no
+   * field of their own.
+   */
+  private fun org.jetbrains.kotlin.ir.declarations.IrProperty.stabilityRelevantType() =
+    backingField?.type ?: getter?.returnType
+
   private fun org.jetbrains.kotlin.ir.declarations.IrProperty.representsStoredState(): Boolean {
     if (backingField != null) return true
     return resolvesToBackedProperty(this, HashSet())

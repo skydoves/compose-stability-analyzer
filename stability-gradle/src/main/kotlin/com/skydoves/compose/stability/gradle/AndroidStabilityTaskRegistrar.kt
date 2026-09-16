@@ -70,7 +70,11 @@ internal class AndroidStabilityTaskRegistrar : StabilityTaskRegistrar() {
         ignoredPackages.set(extension.stabilityValidation.ignoredPackages)
         ignoredClasses.set(extension.stabilityValidation.ignoredClasses)
         stabilityFileSuffix.set(variant.name)
-        stabilityConfigurationFiles.set(extension.stabilityValidation.stabilityConfigurationFiles)
+        stabilityConfigurationFiles.set(
+          project.provider {
+            extension.resolvedStabilityConfigurationFiles()
+          },
+        )
         unstableOnly.set(extension.stabilityValidation.unstableOnly)
       }
 
@@ -91,7 +95,11 @@ internal class AndroidStabilityTaskRegistrar : StabilityTaskRegistrar() {
         stabilityFileSuffix.set(variant.name)
         ignoreNonRegressiveChanges.set(extension.stabilityValidation.ignoreNonRegressiveChanges)
         allowMissingBaseline.set(extension.stabilityValidation.allowMissingBaseline)
-        stabilityConfigurationFiles.set(extension.stabilityValidation.stabilityConfigurationFiles)
+        stabilityConfigurationFiles.set(
+          project.provider {
+            extension.resolvedStabilityConfigurationFiles()
+          },
+        )
       }
 
       aggregateDumpTask.configure {

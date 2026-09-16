@@ -121,10 +121,17 @@ class StabilityKindsTest : BasePlatformTestCase() {
   }
 
   /**
-   * Issue #175: a vararg parameter compiles to an array, so it must not be reported as its
-   * (often stable) element type. It is treated as an array, which is never stable.
+   * A vararg parameter is scored by its ELEMENT type, matching the Compose compiler
+   * (`param.varargElementType ?: param.type`) and this project's compiler plugin.
+   *
+   * Issue #175 originally assumed the opposite, that the synthesized array should be reported. The
+   * compiler settles it: Compose's own metrics print `stable values: IntArray` for
+   * `vararg values: Int`. Treating it as a bare array made every vararg RUNTIME regardless of what
+   * it held, which contradicted the generated `.stability` report.
+   *
+   * Runs off the EDT so the K2 path is exercised rather than the PSI fallback.
    */
-  fun testVarargParameterIsTreatedAsArray() {
+  fun testVarargParameterIsScoredByElementType() {
     val file = myFixture.configureByText(
       "VarargStability.kt",
       """
@@ -134,6 +141,11 @@ class StabilityKindsTest : BasePlatformTestCase() {
 
       @Composable
       fun VarargScreen(vararg values: Int, plain: Int) { }
+
+      @Composable
+      fun UnstableVarargScreen(vararg holders: Holder) { }
+
+      class Holder(var name: String)
       """.trimIndent(),
     ) as KtFile
     myFixture.doHighlighting()
@@ -144,8 +156,22 @@ class StabilityKindsTest : BasePlatformTestCase() {
     val future = ApplicationManager.getApplication()
       .executeOnPooledThread(Callable { runReadAction { StabilityAnalyzer.analyze(fn) } })
     val params = PlatformTestUtil.waitForFuture(future).parameters.associate { it.name to it.stability }
-    assertEquals("vararg parameter must be treated as an array", ParameterStability.RUNTIME, params["values"])
+    // Scored by the ELEMENT type, matching the Compose compiler, which reports
+    // `stable values: IntArray` for `vararg values: Int`.
+    assertEquals("vararg of a stable element", ParameterStability.STABLE, params["values"])
     assertEquals("plain Int parameter", ParameterStability.STABLE, params["plain"])
+
+    val unstableFn = file.declarations.filterIsInstance<KtNamedFunction>()
+      .single { it.name == "UnstableVarargScreen" }
+    val unstableFuture = ApplicationManager.getApplication()
+      .executeOnPooledThread(Callable { runReadAction { StabilityAnalyzer.analyze(unstableFn) } })
+    val unstableParams = PlatformTestUtil.waitForFuture(unstableFuture)
+      .parameters.associate { it.name to it.stability }
+    assertEquals(
+      "vararg of an unstable element",
+      ParameterStability.UNSTABLE,
+      unstableParams["holders"],
+    )
   }
 
   /**

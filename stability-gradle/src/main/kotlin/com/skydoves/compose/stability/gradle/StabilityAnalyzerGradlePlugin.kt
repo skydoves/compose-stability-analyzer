@@ -169,9 +169,11 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
       val strongSkipping = extension.strongSkipping.get()
 
-      val stabilityConfigurationFiles = extension
-        .stabilityConfigurationFiles
-        .getOrElse(emptyList())
+      // Both the top-level property and the deprecated nested one, because the dump/check tasks
+      // read the nested one and the README still documents it. Reading only the top-level property
+      // meant a configuration written the documented way was honoured by stabilityCheck but
+      // silently ignored by the compiler's own inference, so the editor and the report disagreed.
+      val stabilityConfigurationFiles = extension.resolvedStabilityConfigurationFiles()
 
       listOf(
         SubpluginOption(

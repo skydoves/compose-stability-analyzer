@@ -94,6 +94,20 @@ public abstract class StabilityAnalyzerExtension @Inject constructor(
 }
 
 /**
+ * Every stability configuration file the build declares, from the top-level property and from the
+ * deprecated nested one, de-duplicated by path.
+ *
+ * Both the compiler plugin and the dump/check tasks must see the same set. They previously read one
+ * property each, so a configuration written the way the README documents reached `stabilityCheck`
+ * but never reached the compiler's inference.
+ */
+@Suppress("DEPRECATION")
+public fun StabilityAnalyzerExtension.resolvedStabilityConfigurationFiles(): List<RegularFile> = (
+  stabilityConfigurationFiles.getOrElse(emptyList()) +
+    stabilityValidation.stabilityConfigurationFiles.getOrElse(emptyList())
+  ).distinctBy { it.asFile.absolutePath }
+
+/**
  * Configuration for trace-all auto-instrumentation.
  *
  * When enabled, the compiler plugin instruments every restartable composable in the module for

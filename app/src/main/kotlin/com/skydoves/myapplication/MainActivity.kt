@@ -270,6 +270,45 @@ fun Test8(items: ImmutableList<String>) {
 }
 
 /**
+ * The canonical Compose state holder. A delegated `var` has no mutable field of its own, so it does
+ * not make the class unstable; the Compose compiler scores the delegate, and `MutableState` is
+ * `@Stable`. Declared in this file on purpose, so Compose's cross-file rule does not mask the
+ * verdict in its metrics report.
+ */
+class DelegatedStateHolder {
+  var text by mutableStateOf("")
+}
+
+/**
+ * A class extending an unstable base is unstable no matter how stable its own properties are. The
+ * superclass verdict used to be consulted only when the subclass declared no state of its own, so
+ * this reported STABLE.
+ */
+class ViewModelWithValue : ViewModel() {
+  val title: String = ""
+}
+
+@Composable
+fun ViewModelWithValueDisplay(vm: ViewModelWithValue) {
+  Text(vm.title)
+}
+
+/** The same shape without delegation really is unstable. */
+class PlainMutableHolder {
+  var text: String = ""
+}
+
+@Composable
+fun DelegatedStateHolderDisplay(holder: DelegatedStateHolder) {
+  Text(holder.text)
+}
+
+@Composable
+fun PlainMutableHolderDisplay(holder: PlainMutableHolder) {
+  Text(holder.text)
+}
+
+/**
  * Generic-argument masks. The Compose compiler pairs each entry in `KnownStableConstructs` with a
  * bitmask saying which type arguments must themselves be stable, so `Pair` is only stable when both
  * of its arguments are. These two lock that in: the first stays stable, the second must not.

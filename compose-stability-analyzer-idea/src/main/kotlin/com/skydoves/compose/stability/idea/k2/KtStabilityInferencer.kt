@@ -243,6 +243,43 @@ internal class KtStabilityInferencer(
   }
 
   /**
+   * `KaPropertySymbol.isDelegatedProperty`, read reflectively.
+   *
+   * The property is not on every Analysis API surface the supported IDEs bundle, and binding to one
+   * directly is what made 0.14.0 binary incompatible with 242, 243 and 251. When it cannot be read,
+   * report false so a `var` still counts as destabilizing, which is the conservative direction.
+   */
+  private fun KaPropertySymbol.isDelegatedPropertyCompat(): Boolean = runCatching {
+    javaClass.getMethod("isDelegatedProperty").invoke(this) as? Boolean ?: false
+  }.getOrDefault(false)
+
+  /**
+   * Whether an `@StabilityInferred` bitmask says the class is known stable.
+   *
+   * Bits 0..n-1 mark which of the n type parameters the stability depends on; the bit at index n is
+   * the "known stable" sentinel. With no type parameters that is bit 0, so 1 means stable and 0
+   * means not stable. Compose only writes the sentinel when n is below 32, and a Kotlin shift masks
+   * its operand to 5 bits, so a larger count has no sentinel to read.
+   */
+  private fun isKnownStableBitmask(symbol: KaClassSymbol, bitmask: Int): Boolean {
+    val typeParameterCount = typeParameterCountReflective(symbol) ?: return false
+    return typeParameterCount < 32 && ((bitmask shr typeParameterCount) and 1) == 1
+  }
+
+  /**
+   * The number of type parameters on [symbol], or null when it cannot be determined.
+   *
+   * `KaClassSymbol.typeParameters` is not on the symbol's own interface in every Analysis API the
+   * supported IDEs bundle, and binding to it directly is exactly what made 0.14.0 binary
+   * incompatible with 242, 243 and 251. Read it reflectively, matching [analyzeTypeArguments], and
+   * return null on failure so the caller can fall back to the conservative verdict rather than
+   * mis-decode a bitmask.
+   */
+  private fun typeParameterCountReflective(symbol: KaClassSymbol): Int? = runCatching {
+    (symbol::class.members.find { it.name == "typeParameters" }?.call(symbol) as? List<*>)?.size
+  }.getOrNull()
+
+  /**
    * Analyzes type arguments of a generic type.
    * Returns empty list if type has no type arguments.
    */
@@ -415,6 +452,14 @@ internal class KtStabilityInferencer(
       return KtStability.Certain(stable = true, reason = StabilityConstants.Messages.ENUM_STABLE)
     }
 
+    // An object is a singleton, so its identity never changes and its properties cannot
+    // destabilize a parameter of its type (Stability.kt: `if (declaration.isObject) return Stable`).
+    if (classSymbol.classKind == KaClassKind.OBJECT ||
+      classSymbol.classKind == KaClassKind.COMPANION_OBJECT
+    ) {
+      return KtStability.Certain(stable = true, reason = "Object declarations are stable")
+    }
+
     // 17. @Parcelize data classes - check only properties, ignore Parcelable interface
     val hasParcelize = classSymbol.annotations.any { annotation ->
       annotation.classId?.asSingleFqName()?.asString() == "kotlinx.parcelize.Parcelize"
@@ -428,7 +473,7 @@ internal class KtStabilityInferencer(
         .toList()
 
       // Check for var properties
-      if (properties.any { !it.isVal }) {
+      if (properties.any { !it.isVal && !it.isDelegatedPropertyCompat() }) {
         return KtStability.Certain(
           stable = false,
           reason = "Has mutable (var) properties",
@@ -495,14 +540,18 @@ internal class KtStabilityInferencer(
           stable = false,
           reason = "External class without stability annotation",
         )
-      } else if (stabilityInferredParams > 0) {
-        // Has @StabilityInferred but with unstable parameters
+      }
+      // The bitmask is not "0 means stable". Bits 0..n-1 mark which of the n type parameters the
+      // stability depends on, and the bit at index n is a "known stable" sentinel; with no type
+      // parameters that is bit 0, so 1 means stable and 0 means not stable. Reading it the other
+      // way round reported cross-module unstable classes as stable.
+      if (!isKnownStableBitmask(classSymbol, stabilityInferredParams)) {
         return KtStability.Runtime(
           className = fqName ?: simpleName,
           reason = "External class with @StabilityInferred(parameters=$stabilityInferredParams)",
         )
       }
-      // If stabilityInferredParams == 0, continue to other checks
+      // Known stable per the sentinel bit: continue to other checks.
     }
 
     // 20. Regular classes (and sealed classes) - analyze properties first before checking @StabilityInferred
@@ -511,14 +560,17 @@ internal class KtStabilityInferencer(
     return when {
       propertyStability is KtStability.Certain -> propertyStability
       else -> {
-        // 20. Check @StabilityInferred: parameters=0 means stable, else runtime
+        // 20. Refine with @StabilityInferred, using the same sentinel rule as above. Only for
+        // classes from another module: on a source class the annotation exists only after the
+        // Compose plugin's own lowering, so reading it would make the verdict depend on plugin
+        // ordering (issue #107), and the IDE would then disagree with stabilityDump.
         val stabilityInferredParams = getStabilityInferredParameters(classSymbol)
         when {
-          stabilityInferredParams != null -> {
-            if (stabilityInferredParams == 0) {
+          stabilityInferredParams != null && isFromDifferentModule(classSymbol) -> {
+            if (isKnownStableBitmask(classSymbol, stabilityInferredParams)) {
               KtStability.Certain(
                 stable = true,
-                reason = "Annotated with @StabilityInferred(parameters=0)",
+                reason = "Annotated with @StabilityInferred(parameters=$stabilityInferredParams)",
               )
             } else {
               KtStability.Runtime(
@@ -587,8 +639,9 @@ internal class KtStabilityInferencer(
       }
     }
 
-    // First check for mutable properties
-    val mutableProperties = properties.filter { !it.isVal }
+    // A delegated `var` is exempt: it has no mutable field of its own, and the Compose compiler
+    // scores its delegate instead, which is what keeps `var x by mutableStateOf(...)` stable.
+    val mutableProperties = properties.filter { !it.isVal && !it.isDelegatedPropertyCompat() }
     if (mutableProperties.isNotEmpty()) {
       val count = mutableProperties.size
       return KtStability.Certain(
@@ -800,27 +853,63 @@ internal class KtStabilityInferencer(
   /**
    * Check if a class has @Stable or @Immutable annotation.
    */
-  private fun KaSession.hasStableAnnotation(symbol: KaClassSymbol): Boolean {
-    return symbol.annotations.any { annotation ->
+  private companion object {
+    const val STABLE_MARKER_FQ = "androidx.compose.runtime.StableMarker"
+  }
+
+  private fun KaSession.hasStableAnnotation(symbol: KaClassSymbol): Boolean =
+    hasStableMarkedDescendant(symbol, mutableSetOf())
+
+  /**
+   * Mirrors the Compose compiler's `hasStableMarkedDescendant`: the marker may sit on a supertype.
+   */
+  private fun KaSession.hasStableMarkedDescendant(
+    symbol: KaClassSymbol,
+    visited: MutableSet<KaClassSymbol>,
+  ): Boolean {
+    if (!visited.add(symbol)) return false
+    if (hasStableMarker(symbol)) return true
+    return symbol.superTypes.any { superType ->
+      superType.expandedSymbol?.classId?.asSingleFqName()?.asString() != "kotlin.Any" &&
+        (superType.expandedSymbol as? KaClassSymbol)
+          ?.let { hasStableMarkedDescendant(it, visited) } == true
+    }
+  }
+
+  /**
+   * Whether any annotation on [symbol] is itself annotated `@StableMarker`, or is one of the
+   * external markers the Compose compiler hardcodes.
+   *
+   * `@Stable` and `@Immutable` are not special-cased by the compiler: they simply carry
+   * `@StableMarker`. Resolving the rule rather than the two known outputs lets a project define its
+   * own marker, exactly as the compiler plugin does. The explicit FqNames stay as a fast path and
+   * as a fallback for when the annotation class cannot be resolved.
+   */
+  private fun KaSession.hasStableMarker(symbol: KaClassSymbol): Boolean =
+    symbol.annotations.any { annotation ->
       val fqName = annotation.classId?.asSingleFqName()?.asString()
-      fqName == StabilityConstants.Annotations.STABLE_FQ ||
+      if (fqName == StabilityConstants.Annotations.STABLE_FQ ||
         fqName == StabilityConstants.Annotations.IMMUTABLE_FQ ||
         fqName == StabilityConstants.Annotations.ERROR_PRONE_IMMUTABLE_FQ ||
         fqName == StabilityConstants.Annotations.STABLE_FOR_ANALYSIS
+      ) {
+        return@any true
+      }
+      val annotationClass = annotation.classId?.let { findClass(it) } ?: return@any false
+      annotationClass.annotations.any { meta ->
+        meta.classId?.asSingleFqName()?.asString() == STABLE_MARKER_FQ
+      }
     }
-  }
 
   /**
    * Reads the @StabilityInferred annotation's parameters field.
    *
    * @StabilityInferred is added by the Compose compiler to classes from other modules
    * to indicate their stability:
-   * - parameters = 0: Class is stable
-   * - parameters > 0: Class needs runtime stability check
-   * - null: Annotation not present
-   *
-   * This is crucial for cross-module stability: classes from other modules should be
-   * UNSTABLE unless annotated with @Stable/@Immutable or @StabilityInferred(parameters=0).
+   * The value is a bitmask, NOT a boolean. Bits 0..n-1 mark which of the n type parameters the
+   * class's stability depends on, and the bit at index n is a "known stable" sentinel; for a class
+   * with no type parameters that is bit 0. So `parameters = 1` means stable and `parameters = 0`
+   * means not stable, which is the opposite of what this was previously read as.
    */
   private fun KaSession.getStabilityInferredParameters(symbol: KaClassSymbol): Int? {
     val stabilityInferredFqName = "androidx.compose.runtime.internal.StabilityInferred"

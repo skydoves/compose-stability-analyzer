@@ -14,8 +14,15 @@
 // read when Kotlin 2.4.20 deprecated `IrAnnotation.symbol`.
 //
 // Regression guard via the injected trackParameter(..., isStable = ...) calls:
-//   - stable  -> isStable = true  (parameters = 0 promotes the RUNTIME property verdict to STABLE)
-//   - runtime -> isStable = false (a non-zero bitmask leaves the verdict at RUNTIME)
+// The `parameters` value is a bitmask, not a boolean. Bits 0..n-1 mark which of the n type
+// parameters the class's stability depends on, and the bit at index n is a "known stable" sentinel.
+// For a class with no type parameters that sentinel is bit 0, so `parameters = 1` means stable and
+// `parameters = 0` means NOT stable. This fixture previously asserted the opposite, which is how a
+// cross-module unstable class came back STABLE.
+//
+// Regression guard via the injected trackParameter(..., isStable = ...) calls:
+//   - stable  -> isStable = true  (sentinel bit set, promoting the RUNTIME property verdict)
+//   - runtime -> isStable = false (sentinel bit clear, leaving the verdict at RUNTIME)
 
 // MODULE: lib
 // SKIP_KT_DUMP
@@ -24,10 +31,10 @@ package lib
 
 import androidx.compose.runtime.internal.StabilityInferred
 
-@StabilityInferred(parameters = 0)
+@StabilityInferred(parameters = 1)
 data class InferredStable(val names: List<String>)
 
-@StabilityInferred(parameters = 1)
+@StabilityInferred(parameters = 0)
 data class InferredRuntime(val names: List<String>)
 
 // MODULE: main(lib)
