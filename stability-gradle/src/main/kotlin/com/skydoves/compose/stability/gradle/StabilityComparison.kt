@@ -146,6 +146,19 @@ private fun StabilityEntry.isStable(forceStableTypes: List<FqNameMatcher>): Bool
     )
 
 /**
+ * Whether the entry is a stability issue worth recording in an `unstableOnly` baseline: it either
+ * introduces an unstable parameter, or the compiler could not make it skippable or restartable.
+ *
+ * This is the union issue #128 asked for ("only baseline composables that are considered UNSTABLE,
+ * or not restartable or skippable"), and it is deliberately the same predicate `compareStability`
+ * uses to decide whether a *new* composable is a regression. Filtering the baseline by a narrower
+ * predicate than the check reports on makes `unstableOnly` unusable: an entry the dump drops but
+ * the check would flag comes back as a new unstable composable on every run.
+ */
+internal fun StabilityEntry.isStabilityIssue(forceStableTypes: List<FqNameMatcher>): Boolean =
+  hasUnstableParameter(forceStableTypes) || !skippable || !restartable
+
+/**
  * Whether the composable has at least one unstable parameter, i.e. it introduces instability. This
  * is the signal used to decide whether a *new* composable is a regression under
  * `ignoreNonRegressiveChanges`, independently of skippability/restartability: a composable whose

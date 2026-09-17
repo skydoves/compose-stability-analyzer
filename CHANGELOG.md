@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`unstableOnly` no longer drops composables that `stabilityCheck` then reports.** The baseline was filtered by `skippable` alone, while `compareStability` decides whether a *new* composable is a regression with `hasUnstableParameter` (#192). Those predicates disagree for any composable the compiler still marks skippable while a parameter is `UNSTABLE`, `RUNTIME` or `UNKNOWN` — under strong skipping, that is the common case. Such an entry was written out of the baseline and then reported as a new unstable composable on the very next `stabilityCheck`, with no way to accept it: `stabilityDump` just dropped it again. Paired with `ignoreNonRegressiveChanges`, which is how issue #128 describes using the option, `unstableOnly` therefore failed the build permanently. On one 54-module Compose Multiplatform project, 296 of 1,543 baseline entries were affected. The baseline is now filtered by the union issue #128 asked for — a composable is recorded when it has an unstable parameter, or is not skippable, or is not restartable — which is the same predicate the check reports on, so a dumped baseline can no longer report its own code.
+
 ## [0.14.0] - 2026-09-16
 
 ### Changed

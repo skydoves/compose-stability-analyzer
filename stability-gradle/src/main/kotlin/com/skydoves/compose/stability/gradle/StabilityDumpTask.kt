@@ -124,7 +124,7 @@ public abstract class StabilityDumpTask : DefaultTask() {
 
     val resolved = applyStabilityConfiguration(filtered, stableTypeMatchers)
     val finalEntries = if (unstableOnly.get()) {
-      resolved.filter { !it.skippable }
+      resolved.filter { it.isStabilityIssue(stableTypeMatchers) }
     } else {
       resolved
     }
