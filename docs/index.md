@@ -66,6 +66,8 @@ alias(libs.plugins.stability.analyzer)
 
 Working on a Kotlin Multiplatform project? See [Kotlin Multiplatform](gradle-plugin/kotlin-multiplatform.md) for the list of published targets and what each one supports.
 
+Not using Gradle? The compiler plugin also works with [Kotlin Toolchain](kotlin-toolchain/getting-started.md), with the Gradle tasks unavailable.
+
 ## Why Use This?
 
 Jetpack Compose's declarative paradigm brings hidden complexity: **understanding recomposition behavior**. When a composable recomposes unnecessarily, you pay a performance cost: CPU cycles spent re-rendering UI that didn't actually change.

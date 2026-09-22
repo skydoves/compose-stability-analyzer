@@ -310,6 +310,8 @@ alias(libs.plugins.stability.analyzer)
 ```
 Sync your project to complete the setup.
 
+> **Note**: not using Gradle? The compiler plugin also works with [Kotlin Toolchain](https://kotlin-toolchain.org/). You get stability analysis, the report file and `@TraceRecomposition`, but not the Gradle tasks. See [the Kotlin Toolchain guide](https://skydoves.github.io/compose-stability-analyzer/kotlin-toolchain/getting-started/).
+
 ### Kotlin Version Mapping
 
 It’s **strongly recommended to use the exact same Kotlin version** as this library. Using a different Kotlin version may lead to compilation errors during the build process.

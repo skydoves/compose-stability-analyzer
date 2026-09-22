@@ -1,0 +1,25 @@
+product: jvm/lib
+
+# Required because this sample uses @TraceRecomposition. Stability reporting alone does not need
+# the runtime, since it never resolves runtime symbols. Note that `traceAll: true` DOES need it and
+# fails silently without it, emitting no instrumentation and no warning.
+dependencies:
+  - com.github.skydoves:compose-stability-runtime:0.14.0
+
+settings:
+  compose:
+    enabled: true
+  kotlin:
+    # Kotlin Toolchain's default Kotlin version is not necessarily the one the analyzer is built
+    # against (0.14.0 needs 2.4.20, the CLI defaulted to 2.4.10). A compiler plugin is built against
+    # unstable compiler internals, so pin this deliberately.
+    version: 2.4.20
+    compilerPlugins:
+      - id: com.skydoves.compose.stability.compiler
+        dependency: com.github.skydoves:compose-stability-compiler:0.14.0
+        options:
+          enabled: true
+          # No path substitution exists, so this is a literal resolved against the compiler's
+          # working directory. Unset, the plugin writes no report and performs no analysis.
+          # This is also where the IDE Stability Explorer looks.
+          stabilityOutputDir: build/stability
