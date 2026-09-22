@@ -33,6 +33,10 @@ dependencies {
   compileOnly(kotlin("gradle-plugin", version = libs.versions.kotlin.get()))
   compileOnly(libs.android.gradleApi)
 
+  // KGP is compileOnly above, but the cache-key guard in StabilityOutputDirCacheKeyTest needs it at
+  // test runtime: it uses KGP's own CompilerPluginConfig to decide what becomes a task input,
+  // rather than reimplementing that rule and risking the two drifting apart (issue #212).
+  testImplementation(kotlin("gradle-plugin", version = libs.versions.kotlin.get()))
   testImplementation(kotlin("test"))
   testImplementation(kotlin("test-junit"))
 }
