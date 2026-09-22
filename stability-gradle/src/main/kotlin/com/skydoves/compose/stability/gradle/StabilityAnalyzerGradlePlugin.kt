@@ -22,7 +22,9 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon
 import java.io.File
 
 /**
@@ -78,13 +80,18 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       SubpluginOption(key = OPTION_ENABLED, value = enabled.toString()),
       // FilesSubpluginOption, not a plain SubpluginOption: KGP exposes every plain option through
       // `CompilerPluginConfig.getAsTaskInputArgs()`, which is annotated `@Input`, so an absolute
-      // path there becomes part of the build cache key of every Kotlin compilation. That made the
-      // checkout location a cache input and broke remote cache sharing between machines and
-      // worktrees (issue #212). Only `InternalSubpluginOption` and `FilesSubpluginOption` are
-      // excluded from those input args, and the latter still passes the absolute path to the
-      // compiler, which the plugin needs. The directory is already declared as a task output via
-      // `outputs.dir(stabilityDir)`, so a cache hit restores it. This mirrors how the Compose
-      // compiler plugin passes `reportsDestination`.
+      // path there becomes part of the build cache key. That made the checkout location a cache
+      // input and broke remote cache sharing between machines and worktrees (issue #212). Only
+      // `InternalSubpluginOption` and `FilesSubpluginOption` are excluded from those input args,
+      // and the latter still passes the absolute path to the compiler, which the plugin needs.
+      // The directory is declared as a task output in `apply`, so a cache hit restores it. This
+      // mirrors how the Compose compiler plugin passes `reportsDestination`.
+      //
+      // This only helps compilations that carry options as `@Nested pluginOptions`, meaning JVM,
+      // JS and metadata. `KotlinNativeCompile` instead declares `compilerPluginCommandLine`, which
+      // is `CompilerPluginOptions.arguments` and applies no subtype filtering at all, as a plain
+      // `@Input`. Native compilations therefore still carry the path in their cache key and no
+      // option subtype can change that.
       FilesSubpluginOption(
         key = OPTION_STABILITY_OUTPUT_DIR,
         files = listOf(stabilityOutputDir),
@@ -128,10 +135,26 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       }
     registrar.registerStabilityTasks(target, extension)
 
-    // Per-task output directory to avoid shared output conflicts with other plugins (Issue #153)
-    target.tasks.withType(KotlinCompile::class.java).configureEach {
-      val stabilityDir = target.layout.buildDirectory.dir("stability/$name")
-      outputs.dir(stabilityDir).optional(true)
+    // Per-task output directory to avoid shared output conflicts with other plugins (Issue #153).
+    //
+    // All three task types are covered, not just the JVM one. They are exactly the compilations
+    // that carry plugin options as KGP's `@Nested pluginOptions`, which is what issue #212 made
+    // relocatable. Declaring the output only for KotlinCompile left `compileKotlinJs` and the
+    // metadata compilation able to hit the cache with nothing restoring their report: measured on
+    // a relocated KMP checkout, compileKotlinJs came back FROM-CACHE with no stability-info.json
+    // while the JVM one was restored. KotlinNativeCompile is deliberately absent, because it
+    // exposes plugin options as an `@Input` command line that no option subtype can keep out of
+    // the cache key, so it never gets a cross-checkout hit in the first place.
+    val compileTaskTypes = listOf(
+      KotlinCompile::class.java,
+      Kotlin2JsCompile::class.java,
+      KotlinCompileCommon::class.java,
+    )
+    compileTaskTypes.forEach { taskType ->
+      target.tasks.withType(taskType).configureEach {
+        val stabilityDir = target.layout.buildDirectory.dir("stability/$name")
+        outputs.dir(stabilityDir).optional(true)
+      }
     }
 
     // Disable incremental compilation when this project's stability tasks are in the graph
