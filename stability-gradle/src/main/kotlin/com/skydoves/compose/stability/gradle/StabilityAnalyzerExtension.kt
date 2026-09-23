@@ -291,8 +291,14 @@ public abstract class StabilityValidationConfig @Inject constructor(
     objects.property(Boolean::class.javaObjectType).convention(false)
 
   /**
-   * When true, only unstable composables (not skippable) are included in the baseline file.
-   * This reduces baseline file size in large projects and lets you focus on fixing stability issues.
+   * When true, only composables with a stability issue are included in the baseline file: those
+   * with at least one unstable parameter, plus those the compiler could not make skippable or
+   * restartable. This reduces baseline file size in large projects and lets you focus on fixing
+   * stability issues.
+   *
+   * Pair this with [ignoreNonRegressiveChanges]. The entries dropped here are absent from the
+   * baseline, and without that option `stabilityCheck` reports every composable missing from the
+   * baseline as a new one.
    *
    * Default: false
    */

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`unstableOnly` no longer drops composables that `stabilityCheck` then reports.** The baseline was filtered by `skippable` alone, while `compareStability` decides whether a *new* composable is a regression with `hasUnstableParameter` (#192). Under strong skipping those disagree constantly: a composable stays skippable while a parameter is `UNSTABLE`, `RUNTIME` or `UNKNOWN`, so the entry was written out of the baseline and reported as a new unstable composable on the very next check, with no way to accept it because `stabilityDump` dropped it again. The baseline is now filtered by the union issue #128 asked for, recording a composable when it has an unstable parameter, or is not skippable, or is not restartable. That is a superset of the predicate the check reports new composables on, so a dumped baseline can no longer report its own code. On one 54-module project, 296 of 1,543 entries were affected.
+
 Stability inference is now checked rule-by-rule against the Compose compiler's own `analysis/Stability.kt`, and several rules were wrong. The sample app is verified against the compiler's own metrics output: **0 skippable and 0 restartable disagreements across 49 composables**.
 
 - **A delegated `var` no longer makes a class unstable.** Compose exempts it (`if (member.isVar && !member.isDelegated) return Unstable`) and scores the delegate instead, so the canonical state holder is stable:
