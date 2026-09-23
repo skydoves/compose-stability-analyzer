@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ '*' ]
 
+# Supersede obsolete runs instead of queueing them. Without this, every push to main left a
+# full macOS run queued behind the previous one, which is how three consecutive merges ended
+# up three deep. module-tests.yml has had this since it was written.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Spotless check

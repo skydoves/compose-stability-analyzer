@@ -4,6 +4,12 @@ on:
     branches:
       - main
 
+# Serialised, but deliberately NOT cancel-in-progress: this pushes to gh-pages, and killing a
+# deploy midway can leave the published site half written.
+concurrency:
+  group: publish-docs
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
