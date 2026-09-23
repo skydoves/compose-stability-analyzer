@@ -170,6 +170,29 @@ internal fun StabilityEntry.isStabilityIssue(forceStableTypes: List<FqNameMatche
   hasUnstableParameter(forceStableTypes) || !skippable || !restartable
 
 /**
+ * The warning `stabilityDump` prints when `unstableOnly` actually dropped entries while
+ * `ignoreNonRegressiveChanges` is off, or null when the combination is fine.
+ *
+ * [isStabilityIssue] fixes the case where the dump dropped an entry the check would report as a
+ * *new unstable* composable. It cannot fix the other door: with `ignoreNonRegressiveChanges` off,
+ * `compareStability` reports **every** entry missing from the reference, unstable or not, so any
+ * filtered baseline fails against the code it was dumped from and `stabilityDump` cannot accept
+ * the failure because it drops the same entries again.
+ *
+ * Nothing rejects that combination, because it is harmless when the filter happens to drop nothing,
+ * and failing the build would break those projects. So it warns only once entries were actually
+ * dropped, which is exactly when the next `stabilityCheck` will fail.
+ */
+internal fun unstableOnlyWarning(droppedCount: Int, ignoreNonRegressiveChanges: Boolean): String? {
+  if (droppedCount <= 0 || ignoreNonRegressiveChanges) return null
+  return "composeStabilityAnalyzer: unstableOnly left $droppedCount stable composable(s) out of " +
+    "the baseline, but ignoreNonRegressiveChanges is false, so stabilityCheck will report every " +
+    "one of them as a new composable and fail. Set " +
+    "stabilityValidation.ignoreNonRegressiveChanges.set(true) to use unstableOnly, or set " +
+    "unstableOnly.set(false) to write a complete baseline."
+}
+
+/**
  * Whether the composable has at least one unstable parameter, i.e. it introduces instability. This
  * is the signal used to decide whether a *new* composable is a regression under
  * `ignoreNonRegressiveChanges`, independently of skippability/restartability: a composable whose

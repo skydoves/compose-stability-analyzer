@@ -18,6 +18,8 @@ package com.skydoves.compose.stability.gradle
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -147,6 +149,28 @@ class StabilityDumpFilterTest {
 
     assertEquals(1, differences.size)
     assertTrue(differences[0] is StabilityDifference.NewFunction)
+  }
+
+  @Test
+  fun testWarning_firesOnlyWhenTheCombinationActuallyBreaks() {
+    // Dropping entries without ignoreNonRegressiveChanges is the other permanent-failure door:
+    // compareStability reports every entry missing from the reference, unstable or not.
+    assertNotNull(unstableOnlyWarning(droppedCount = 3, ignoreNonRegressiveChanges = false))
+
+    // Correctly paired, or nothing dropped, means nothing to warn about.
+    assertNull(unstableOnlyWarning(droppedCount = 3, ignoreNonRegressiveChanges = true))
+    assertNull(unstableOnlyWarning(droppedCount = 0, ignoreNonRegressiveChanges = false))
+    assertNull(unstableOnlyWarning(droppedCount = 0, ignoreNonRegressiveChanges = true))
+  }
+
+  @Test
+  fun testWarning_namesBothOptionsAndTheCount() {
+    val message = unstableOnlyWarning(droppedCount = 296, ignoreNonRegressiveChanges = false)
+    assertNotNull(message)
+    // A warning that does not name the remedy just tells the user their build is broken.
+    assertTrue(message.contains("296"), message)
+    assertTrue(message.contains("ignoreNonRegressiveChanges"), message)
+    assertTrue(message.contains("unstableOnly"), message)
   }
 
   private fun entry(

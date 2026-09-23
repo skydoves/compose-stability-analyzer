@@ -23,6 +23,7 @@ import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
@@ -80,10 +81,20 @@ public abstract class StabilityDumpTask : DefaultTask() {
   public abstract val stabilityConfigurationFiles: ListProperty<RegularFile>
 
   /**
-   * When true, only unstable composables (not skippable) are included in the baseline file.
+   * When true, only composables with a stability issue are included in the baseline file.
    */
   @get:Input
   public abstract val unstableOnly: Property<Boolean>
+
+  /**
+   * Mirrors `stabilityValidation.ignoreNonRegressiveChanges` so the dump can warn when
+   * [unstableOnly] drops entries that `stabilityCheck` would then report as new composables.
+   *
+   * `@Internal`, not `@Input`: it only decides whether a warning is printed and cannot change the
+   * baseline this task writes, so it must not make the task out of date.
+   */
+  @get:Internal
+  public abstract val ignoreNonRegressiveChanges: Property<Boolean>
 
   init {
     group = "verification"
@@ -129,6 +140,11 @@ public abstract class StabilityDumpTask : DefaultTask() {
       resolved
     }
     writeStabilityFile(outputFile, finalEntries)
+
+    unstableOnlyWarning(
+      droppedCount = resolved.size - finalEntries.size,
+      ignoreNonRegressiveChanges = ignoreNonRegressiveChanges.getOrElse(false),
+    )?.let { logger.warn(it) }
 
     logger.lifecycle("Stability file written to: ${outputFile.absolutePath}")
   }

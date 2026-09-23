@@ -46,6 +46,7 @@ public abstract class com/skydoves/compose/stability/gradle/StabilityCheckTask :
 public abstract class com/skydoves/compose/stability/gradle/StabilityDumpTask : org/gradle/api/DefaultTask {
 	public fun <init> ()V
 	public final fun dump ()V
+	public abstract fun getIgnoreNonRegressiveChanges ()Lorg/gradle/api/provider/Property;
 	public abstract fun getIgnoredClasses ()Lorg/gradle/api/provider/ListProperty;
 	public abstract fun getIgnoredPackages ()Lorg/gradle/api/provider/ListProperty;
 	public abstract fun getOutputDir ()Lorg/gradle/api/file/DirectoryProperty;

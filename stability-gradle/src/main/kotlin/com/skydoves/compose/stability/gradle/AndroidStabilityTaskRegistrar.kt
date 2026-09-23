@@ -76,6 +76,9 @@ internal class AndroidStabilityTaskRegistrar : StabilityTaskRegistrar() {
           },
         )
         unstableOnly.set(extension.stabilityValidation.unstableOnly)
+        ignoreNonRegressiveChanges.set(
+          extension.stabilityValidation.ignoreNonRegressiveChanges,
+        )
       }
 
       // Register stability check task

@@ -43,6 +43,9 @@ internal class JvmStabilityTaskRegistrar : StabilityTaskRegistrar() {
         },
       )
       unstableOnly.set(extension.stabilityValidation.unstableOnly)
+      ignoreNonRegressiveChanges.set(
+        extension.stabilityValidation.ignoreNonRegressiveChanges,
+      )
     }
 
     // Register stability check task
