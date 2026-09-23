@@ -13,7 +13,7 @@ instrumentation. You do not get the Gradle plugin, so `stabilityDump`, `stabilit
 
     Kotlin Toolchain is Alpha and its plugin API is documented as guaranteed to change. Everything
     here was verified against the CLI that the `v0.12.2` wrapper provisions (`0.12.0-dev-4289`)
-    with analyzer 0.14.0, on `jvm/lib`, `kmp/lib` and `js`. A working example lives in
+    with analyzer 0.15.0, on `jvm/lib`, `kmp/lib` and `js`. A working example lives in
     [`samples/kotlin-toolchain`](https://github.com/skydoves/compose-stability-analyzer/tree/main/samples/kotlin-toolchain).
 
 ## Setup
@@ -50,7 +50,7 @@ the compiler plugin registers, and a wrong value means the plugin is silently ne
 
 Kotlin Toolchain ships its own default Kotlin version, and it is not necessarily the one this
 analyzer is built against. At the time of writing the CLI defaults to Kotlin **2.4.10** while
-analyzer 0.14.0 requires **2.4.20**.
+analyzer 0.15.0 requires **2.4.20**.
 
 A Kotlin compiler plugin is compiled against unstable compiler internals, so a mismatch can fail
 the build or misbehave. Set it explicitly:

@@ -35,7 +35,7 @@ wrappers into its own examples, but those share its monorepo pin.
 ## Verified state
 
 Checked against the CLI that the `v0.12.2` wrapper provisions (`0.12.0-dev-4289`), analyzer
-`0.14.0`, Kotlin pinned to `2.4.20`, on macOS arm64:
+`0.15.0`, Kotlin pinned to `2.4.20`, on macOS arm64:
 
 - The report is written to `build/stability/stability-info.json`. Removing the `compilerPlugins`
   block produces no report at all, so the file is attributable to this plugin.

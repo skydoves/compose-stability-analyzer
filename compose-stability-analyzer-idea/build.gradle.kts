@@ -27,7 +27,7 @@ kotlin {
 }
 
 group = "com.github.skydoves"
-version = "0.14.0"
+version = "0.15.0"
 
 repositories {
   mavenLocal()
@@ -39,7 +39,7 @@ repositories {
 }
 
 dependencies {
-  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.14.0")
+  implementation("com.github.skydoves:compose-stability-runtime-jvm:0.15.0")
 
   intellijPlatform {
     intellijIdeaCommunity("2025.2")
@@ -80,6 +80,11 @@ intellijPlatform {
             </ul>
         """.trimIndent()
     changeNotes = """
+            <b>0.15.0</b>
+            <ul>
+                <li><b>The plugin loads again on 2024.2, 2024.3 and 2025.1</b> - 0.14.0 bound directly to a KaSession.withNullability overload those IDEs do not bundle, so it failed to load. It is now resolved reflectively, and the build gained a gate that fails on new binary compatibility problems.</li>
+                <li><b>Stability inference matches the Compose compiler, rule by rule</b> - a delegated var no longer makes a class unstable, @StabilityInferred is decoded as a bitmask rather than a boolean, object declarations are stable, vararg parameters are scored by their element type, and @StableMarker is resolved by walking supertypes.</li>
+            </ul>
             <b>0.14.0</b>
             <ul>
                 <li><b>Gutter icons and stabilityDump now agree on skippability</b> - the IDE already modelled Compose's strong skipping, which is on by default in the compiler, but the report side did not. Measured against the Compose compiler's own metrics, 38% of composables carried the wrong skippable verdict in the generated .stability file. Fixed in library 0.14.0.</li>

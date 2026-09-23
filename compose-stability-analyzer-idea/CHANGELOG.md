@@ -2,6 +2,18 @@
 
 All notable changes to the IntelliJ IDEA plugin will be documented in this file.
 
+## [0.15.0] - 2026-09-23
+
+### Fixed
+
+- **The plugin loads again on 2024.2, 2024.3 and 2025.1.** 0.14.0 called a `KaSession.withNullability(KaType, Boolean)` overload that those IDEs' bundled Kotlin does not have, so the plugin failed to load outright on them. It is now resolved reflectively, with a fallback, and the build gained a compatibility gate that fails on new binary problems rather than reporting them as warnings.
+- **Stability inference matches the Compose compiler, rule by rule.** The editor shared the compiler plugin's inference bugs, so gutter icons, tooltips and inline hints repeated them:
+  - a delegated `var` no longer makes a class unstable, so `class UiState { var text by mutableStateOf("") }` reads stable;
+  - `@StabilityInferred` is decoded as the bitmask it is rather than as a boolean, which had the promotion backwards;
+  - `object` declarations are stable, a rule that was missing entirely;
+  - `vararg` parameters are scored by their element type instead of the synthesized `Array<out T>`;
+  - `@StableMarker` is resolved as a rule, walking supertypes, so a project's own marker annotation works in the editor as it already did in the compiler.
+
 ## [0.14.0] - 2026-09-16
 
 ### Fixed
