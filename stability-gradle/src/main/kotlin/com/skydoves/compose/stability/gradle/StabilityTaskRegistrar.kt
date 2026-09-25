@@ -21,6 +21,7 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.Companion.COMMON_MAIN_SOURCE_SET_NAME
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetContainer
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool
 
 /**
  * Base class to register stability tasks.
@@ -71,13 +72,29 @@ internal abstract class StabilityTaskRegistrar {
   ) {
     val includeTestsProvider = extension.stabilityValidation.includeTests
 
-    // A live TaskCollection is the idiomatic lazy dependsOn value: `matching` re-evaluates its
-    // spec on every query, so `includeTests` is still read lazily and tasks registered later are
-    // still picked up — without capturing the Project inside a Provider.
-    val kotlinCompileTasks = project.tasks.matching { task ->
-      isKotlinTaskApplicable(task.name, includeTestsProvider.get()) &&
-        (filter == null || task.name.contains(filter))
-    }
+    // `withType` first, and only then `matching`. Both halves matter.
+    //
+    // A live TaskCollection is still the right dependsOn value: `matching` re-evaluates its spec on
+    // every query, so `includeTests` is read lazily and tasks registered later are picked up,
+    // without capturing the Project inside a Provider.
+    //
+    // But `matching` alone took a `Spec<Task>` over a *realized* task, so resolving these
+    // dependencies realized every task in the project just to test its name. Any third-party task
+    // whose creation action throws then failed the build from here, naming our task as the victim.
+    // AGP 9.5.0-alpha06 registers `generate<Variant>ComposePreviewRunfiles` for every Compose
+    // variant and has its creation action `error()` when unit tests are disabled, so a whole module
+    // became unaddressable (issue #217). `withType` filters on the registered type without
+    // realizing anything that does not match, so only Kotlin compile tasks are ever created here.
+    //
+    // KotlinCompileTool is the public KGP interface that `AbstractKotlinCompileTool` implements,
+    // and both the JVM/JS/metadata base and the native base extend that, so this covers every
+    // platform rather than just `KotlinCompile`.
+    val kotlinCompileTasks = project.tasks
+      .withType(KotlinCompileTool::class.java)
+      .matching { task ->
+        isKotlinTaskApplicable(task.name, includeTestsProvider.get()) &&
+          (filter == null || task.name.contains(filter))
+      }
 
     stabilityDumpTask.configure { dependsOn(kotlinCompileTasks) }
     stabilityCheckTask.configure { dependsOn(kotlinCompileTasks) }

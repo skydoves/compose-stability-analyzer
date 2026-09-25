@@ -37,6 +37,9 @@ dependencies {
   // test runtime: it uses KGP's own CompilerPluginConfig to decide what becomes a task input,
   // rather than reimplementing that rule and risking the two drifting apart (issue #212).
   testImplementation(kotlin("gradle-plugin", version = libs.versions.kotlin.get()))
+  // ProjectBuilder, for the guard that resolving stability task dependencies does not realize
+  // unrelated tasks (issue #217). In-process, so it needs no network and no fixture build.
+  testImplementation(gradleTestKit())
   testImplementation(kotlin("test"))
   testImplementation(kotlin("test-junit"))
 }
