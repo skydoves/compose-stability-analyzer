@@ -37,6 +37,10 @@ The sponsors listed below made it possible for this project to be released as op
 
 **[Firebender](https://firebender.com/?utm_source=skydoves)** is the most powerful AI coding agent in Android Studio. It can create entire compose UIs from Figma links, generate UML diagrams, and even understand your voice input.
 
+<a href="https://devtoolsacademy.link/Jaewoong"><picture><source media="(prefers-color-scheme: dark)" srcset="art/logo-switch-dark.svg"><img alt="Switch" src="art/logo-switch.svg" width="300"/></picture></a>
+
+**[Switch](https://devtoolsacademy.link/Jaewoong)**: Connect any AI agent to your team in Slack, Teams & Discord. Open-source and self-hostable.
+
 <a href="https://howcomposeworks.com/">
 <img src="https://github.com/user-attachments/assets/0f0f72fc-49ce-48b5-b3dd-f2c04e907f80" width="13%" align="right"/>
 </a>
