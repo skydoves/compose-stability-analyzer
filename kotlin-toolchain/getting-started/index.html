@@ -1,0 +1,1581 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Real-time analysis of Jetpack Compose composable functions stability directly within Android Studio or IntelliJ.">
+      
+      
+        <meta name="author" content="Jaewoong (skydoves)">
+      
+      
+        <link rel="canonical" href="https://github.com/skydoves/compose-stability-analyzer/kotlin-toolchain/getting-started/">
+      
+      
+        <link rel="prev" href="../../gradle-plugin/stability-configuration-files/">
+      
+      
+        <link rel="next" href="../../stability-concepts/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Kotlin Toolchain - Compose Stability Analyzer</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-1SBY14Q79E"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-1SBY14Q79E",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-1SBY14Q79E",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#kotlin-toolchain" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Compose Stability Analyzer" class="md-header__button md-logo" aria-label="Compose Stability Analyzer" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 12v7l-3 1-3-4.67c-.29-.44-1-.19-.92.34L14 23 4 18l.96-5.25C5.56 9.42 8.46 7 11.84 7H13l6-6-2 6h3l-1.58 2.37C19.36 9.88 20 10.86 20 12"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Compose Stability Analyzer
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Kotlin Toolchain
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/skydoves/compose-stability-analyzer" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Compose Stability Analyzer
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Compose Stability Analyzer" class="md-nav__button md-logo" aria-label="Compose Stability Analyzer" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 12v7l-3 1-3-4.67c-.29-.44-1-.19-.92.34L14 23 4 18l.96-5.25C5.56 9.42 8.46 7 11.84 7H13l6-6-2 6h3l-1.58 2.37C19.36 9.88 20 10.86 20 12"/></svg>
+
+    </a>
+    Compose Stability Analyzer
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/skydoves/compose-stability-analyzer" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Compose Stability Analyzer
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IDE Plugin
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    IDE Plugin
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/gutter-icons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gutter Icons & Tooltips
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/inline-hints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inline Hints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/inspections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Inspections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/stability-explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stability Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/recomposition-cascade/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recomposition Cascade
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/recomposition-heatmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recomposition Heatmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/reality-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stability Reality Check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/recomposition-blame/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recomposition Blame
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/stability-doctor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stability Doctor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gradle Plugin
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Gradle Plugin
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gradle-plugin/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gradle-plugin/kotlin-multiplatform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin Multiplatform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gradle-plugin/trace-recomposition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TraceRecomposition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gradle-plugin/trace-all/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trace-All Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gradle-plugin/custom-logger/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Logger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gradle-plugin/stability-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stability Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gradle-plugin/ci-cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gradle-plugin/stability-configuration-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stability configuration files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin Toolchain
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin Toolchain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pin-the-kotlin-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pin the Kotlin version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stabilityoutputdir-is-required-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stabilityOutputDir is required here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-report-is-one-shared-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The report is one shared file
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-runtime-dependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The runtime dependency
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trace-all-behaves-differently-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trace-all behaves differently here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#previews-are-not-excluded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Previews are not excluded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ide-stability-explorer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IDE Stability Explorer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-not-available" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is not available
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stability-concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stability Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../version-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin Version Map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sponsor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sponsor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pin-the-kotlin-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pin the Kotlin version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stabilityoutputdir-is-required-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stabilityOutputDir is required here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-report-is-one-shared-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The report is one shared file
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-runtime-dependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The runtime dependency
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trace-all-behaves-differently-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trace-all behaves differently here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#previews-are-not-excluded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Previews are not excluded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ide-stability-explorer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IDE Stability Explorer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-not-available" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is not available
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="kotlin-toolchain">Kotlin Toolchain<a class="headerlink" href="#kotlin-toolchain" title="Permanent link">&para;</a></h1>
+<p><a href="https://kotlin-toolchain.org/">Kotlin Toolchain</a> is JetBrains' standalone build system for Kotlin,
+configured with YAML instead of Gradle scripts. The Compose Stability Analyzer <strong>compiler plugin</strong>
+works there, because Kotlin Toolchain can apply any third-party Kotlin compiler plugin.</p>
+<p>You get stability analysis, the <code>stability-info.json</code> report, and <code>@TraceRecomposition</code>
+instrumentation. You do not get the Gradle plugin, so <code>stabilityDump</code>, <code>stabilityCheck</code> and the
+<code>composeStabilityAnalyzer { }</code> DSL are unavailable. See
+<a href="#what-is-not-available">What is not available</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Alpha, and moving</p>
+<p>Kotlin Toolchain is Alpha and its plugin API is documented as guaranteed to change. Everything
+here was verified against the CLI that the <code>v0.12.2</code> wrapper provisions (<code>0.12.0-dev-4289</code>)
+with analyzer 0.15.0, on <code>jvm/lib</code>, <code>kmp/lib</code> and <code>js</code>. A working example lives in
+<a href="https://github.com/skydoves/compose-stability-analyzer/tree/main/samples/kotlin-toolchain"><code>samples/kotlin-toolchain</code></a>.</p>
+</div>
+<h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="nt">product</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jvm/lib</span>
+
+<span class="nt">settings</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">compose</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">kotlin</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Kotlin Toolchain defaults to its own bundled Kotlin version. Pin it to the version this</span>
+<span class="w">    </span><span class="c1"># analyzer release is built against, or the compiler plugin may fail to load. See below.</span>
+<span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.4.20</span>
+<span class="w">    </span><span class="nt">compilerPlugins</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">com.skydoves.compose.stability.compiler</span>
+<span class="w">        </span><span class="nt">dependency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">com.github.skydoves:compose-stability-compiler:$version</span>
+<span class="w">        </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">          </span><span class="nt">stabilityOutputDir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">build/stability</span>
+</code></pre></div>
+<p>Then build:</p>
+<div class="highlight"><pre><span></span><code>./kotlin<span class="w"> </span>build
+cat<span class="w"> </span>build/stability/stability-info.json
+</code></pre></div>
+<p>The <code>id</code> must be exactly <code>com.skydoves.compose.stability.compiler</code>. It has to match the plugin id
+the compiler plugin registers, and a wrong value means the plugin is silently never applied.</p>
+<h2 id="pin-the-kotlin-version">Pin the Kotlin version<a class="headerlink" href="#pin-the-kotlin-version" title="Permanent link">&para;</a></h2>
+<p>Kotlin Toolchain ships its own default Kotlin version, and it is not necessarily the one this
+analyzer is built against. At the time of writing the CLI defaults to Kotlin <strong>2.4.10</strong> while
+analyzer 0.15.0 requires <strong>2.4.20</strong>.</p>
+<p>A Kotlin compiler plugin is compiled against unstable compiler internals, so a mismatch can fail
+the build or misbehave. Set it explicitly:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">settings</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">kotlin</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.4.20</span>
+</code></pre></div>
+<p>Look up the right pair in the <a href="../../version-map/">Kotlin Version Map</a>. Note that
+<code>settings.compose.version</code> is a second, independent axis: our inference is aligned against a
+specific Compose compiler release, so changing it can shift reported verdicts.</p>
+<h2 id="stabilityoutputdir-is-required-here">stabilityOutputDir is required here<a class="headerlink" href="#stabilityoutputdir-is-required-here" title="Permanent link">&para;</a></h2>
+<p>This is the one option you must set. Without it the plugin still compiles and still instruments
+<code>@TraceRecomposition</code>, but it performs no stability analysis and writes no report of any kind. It
+emits no warning about this either, so an absent report is the only symptom.</p>
+<p>Kotlin Toolchain does not substitute build paths into option values, so the value is a literal
+string. A relative value resolves against the compiler process working directory, which for
+<code>./kotlin build</code> in a single module is that module's directory, putting the report at
+<code>build/stability/stability-info.json</code>. The Gradle plugin instead passes an absolute, per compile
+task path, so values are not portable between the two.</p>
+<h2 id="the-report-is-one-shared-file">The report is one shared file<a class="headerlink" href="#the-report-is-one-shared-file" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Composables can vanish from the report</p>
+<p>Every compilation in a module writes to the same literal <code>stabilityOutputDir</code>, and the last
+one to finish replaces the file. Nothing warns you.</p>
+</div>
+<p>This is the most important thing to know about the report, and it has two consequences.</p>
+<p><strong>Tests overwrite your report.</strong> <code>compilerPlugins</code> lives under <code>settings.kotlin</code>, which also applies
+to test code. Verified: a <code>jvm/lib</code> module with a composable in <code>src</code> and another in <code>test</code>, after
+<code>./kotlin test</code>, produced a report containing <strong>only</strong> the test composable. The main one was gone.
+If you run tests and then read the report, you may be reading your test sources.</p>
+<p><strong>Multiplatform targets overwrite each other.</strong> In a <code>kmp/lib</code> module with more than one platform,
+each platform writes the same path. Verified on <code>[jvm, js]</code> with one composable in <code>src@jvm</code> and one
+in <code>src@js</code>: the report held the <code>jvm</code> one and silently omitted the <code>js</code> one. Composables in common
+<code>src</code> are unaffected, since every platform reports them identically. The plugin does run correctly
+on non JVM targets, confirmed by building <code>platforms: [js]</code> alone and getting a complete report, so
+this is an overwrite and not a gap in platform support.</p>
+<p>There is no per platform or per compilation override. Kotlin Toolchain rejects the attempt:</p>
+<div class="highlight"><pre><span></span><code>ERROR: Setting `compilerPlugins` can only be used without any @platform qualifier.
+</code></pre></div>
+<p>So treat the report as describing whichever compilation ran last. For a multiplatform module, read
+it as covering your common sources. If you need dependable per target reporting, keep that module on
+the Gradle plugin, which gives each compile task its own directory, though note that <code>stabilityDump</code>
+there still reads a single compilation (see
+<a href="../../gradle-plugin/kotlin-multiplatform/">Kotlin Multiplatform</a>).</p>
+<h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
+<p>Pass options as a key to value map under <code>options</code>. Every one has a compiler side default except
+<code>stabilityOutputDir</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td><code>true</code></td>
+<td><code>false</code> registers nothing at all</td>
+</tr>
+<tr>
+<td><code>stabilityOutputDir</code></td>
+<td>none</td>
+<td>No default. Unset means no report and no analysis</td>
+</tr>
+<tr>
+<td><code>strongSkipping</code></td>
+<td><code>true</code></td>
+<td>Must mirror the Compose compiler's own <code>StrongSkipping</code> flag, or reported <code>skippable</code> will contradict the generated code</td>
+</tr>
+<tr>
+<td><code>traceAll</code></td>
+<td><code>false</code></td>
+<td>See <a href="#trace-all-behaves-differently-here">trace-all</a></td>
+</tr>
+<tr>
+<td><code>traceAllThreshold</code></td>
+<td><code>2</code></td>
+<td>Skips the initial composition burst</td>
+</tr>
+<tr>
+<td><code>stabilityConfigurationFile</code></td>
+<td>none</td>
+<td>A <a href="../../gradle-plugin/stability-configuration-files/">stability configuration file</a>, resolved like <code>stabilityOutputDir</code>. The Gradle DSL accepts a list, but a YAML mapping holds the key once, so exactly one file is expressible here</td>
+</tr>
+</tbody>
+</table>
+<p><code>enabled</code>, <code>traceAll</code> and <code>strongSkipping</code> are parsed strictly and case sensitively: anything other
+than <code>true</code> or <code>false</code> fails the build with a named error. <code>traceAllThreshold</code> is not, so a
+malformed value silently falls back to <code>2</code>.</p>
+<h2 id="the-runtime-dependency">The runtime dependency<a class="headerlink" href="#the-runtime-dependency" title="Permanent link">&para;</a></h2>
+<p>Add the runtime if you use <code>@TraceRecomposition</code> or <code>@IgnoreStabilityReport</code> in your sources, <strong>or
+if you enable <code>traceAll</code></strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">dependencies</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">com.github.skydoves:compose-stability-runtime:$version</span>
+</code></pre></div>
+<p>The Gradle plugin adds this for you. Kotlin Toolchain does not, so you declare it yourself, and the
+two ways of getting it wrong fail very differently:</p>
+<ul>
+<li><strong>Loud.</strong> Naming <code>@TraceRecomposition</code> yourself without the dependency fails compilation with
+  <code>Unresolved reference 'TraceRecomposition'</code>.</li>
+<li><strong>Silent.</strong> <code>traceAll: true</code> without the dependency needs no annotation in your sources, so it
+  compiles cleanly, writes a normal looking report, and emits <strong>zero</strong> instrumentation. Verified: a
+  successful build with <code>traceAll: true</code> and no runtime produced no tracker calls at all and no
+  warning.</li>
+</ul>
+<p>Stability reporting itself never resolves runtime symbols, so it works without the dependency. That
+is why the silent case exists: only the tracing half needs the runtime.</p>
+<h2 id="trace-all-behaves-differently-here">Trace-all behaves differently here<a class="headerlink" href="#trace-all-behaves-differently-here" title="Permanent link">&para;</a></h2>
+<p>The <code>variants</code> gate is an <strong>Android</strong> property, not a Gradle one. A compilation named <code>main</code>, which
+is what every non Android target uses, is always instrumented on the Gradle path too. So a Gradle
+JVM or KMP module already behaves the way Kotlin Toolchain does.</p>
+<p>What is genuinely missing here is any variant dimension to gate on, so <code>traceAll: true</code> instruments
+every restartable composable in every build of that module, and test compilations are not excluded
+the way the Gradle plugin excludes them. Keep the runtime gate wired to your own debug flag:</p>
+<div class="highlight"><pre><span></span><code><span class="n">ComposeStabilityAnalyzer</span><span class="p">.</span><span class="na">setEnabled</span><span class="p">(</span><span class="n">isDebug</span><span class="p">)</span>
+</code></pre></div>
+<p>Trace output goes wherever the platform logger writes: <code>System.out</code> on JVM, logcat on Android,
+<code>console.log</code> on JS, <code>println</code> on native. A <code>jvm/lib</code> user should read stdout, not logcat.</p>
+<h2 id="previews-are-not-excluded">Previews are not excluded<a class="headerlink" href="#previews-are-not-excluded" title="Permanent link">&para;</a></h2>
+<p>The plugin excludes <code>@Preview</code> composables from the report and from trace-all by matching the
+AndroidX annotation <code>androidx.compose.ui.tooling.preview.Preview</code>. Kotlin Toolchain's
+<code>settings.compose</code> is Compose Multiplatform, whose annotation is
+<code>org.jetbrains.compose.ui.tooling.preview.Preview</code>, which the plugin does not recognise.</p>
+<p>So previews written against Compose Multiplatform appear in your report and get instrumented by
+trace-all. Use <code>@IgnoreStabilityReport</code> on them if that is a problem.</p>
+<h2 id="ide-stability-explorer">IDE Stability Explorer<a class="headerlink" href="#ide-stability-explorer" title="Permanent link">&para;</a></h2>
+<p>The Explorer looks for <code>stability-info.json</code> under <code>build/stability</code> in a module's content root,
+either directly or one directory deeper, and uses no Gradle API to find it. So
+<code>stabilityOutputDir: build/stability</code> puts the report where it looks. Keep that value if you want
+the tool window to pick it up.</p>
+<p>Everything the IDE plugin derives statically (gutter icons, tooltips, inline hints, inspections,
+cascade, blame) reads your source through the Kotlin Analysis API and does not depend on the build
+system, so it is unaffected either way.</p>
+<h2 id="what-is-not-available">What is not available<a class="headerlink" href="#what-is-not-available" title="Permanent link">&para;</a></h2>
+<p>These are Gradle plugin features. Publishing Kotlin Toolchain plugins is listed as planned rather
+than available, and custom tasks explicitly cannot customize the Kotlin compilation task, so there
+is currently no way for us to supply them.</p>
+<ul>
+<li><code>stabilityDump</code> and <code>stabilityCheck</code>, so no baseline <code>.stability</code> files and no CI regression gate</li>
+<li>Automatic runtime dependency wiring</li>
+<li>Exclusion of test compilations, and variant aware trace-all</li>
+<li>The <code>composeStabilityAnalyzer { }</code> DSL, including <code>stabilityValidation { }</code>, <code>ignoredPackages</code>,
+  <code>ignoredProjects</code> and <code>includeTests</code></li>
+<li><code>android/lib</code>, which Kotlin Toolchain does not offer as a product type at all</li>
+</ul>
+<p>Android was not tested here. One thing to expect if you try it: our Lint checks ship inside the
+runtime AAR's <code>lint.jar</code> and are discovered by the Android Gradle plugin, so they most likely do not
+run under Kotlin Toolchain. That is untested either way.</p>
+<p>If you need stability validation in CI, keep that module on Gradle for now, or
+<a href="https://github.com/skydoves/compose-stability-analyzer/issues">open an issue</a> describing your setup.</p>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.tabs.link", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
