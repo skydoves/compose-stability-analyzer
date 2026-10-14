@@ -2,6 +2,12 @@
 
 The sponsors listed below made it possible for this project to be released as open source. Many thanks to all of them for their support!
 
+## Switch
+
+<a href="https://devtoolsacademy.link/Jaewoong"><img alt="Switch" src="https://github.com/skydoves/compose-stability-analyzer/raw/main/art/logo-switch-dark.svg" width="300"/></a>
+
+**[Switch](https://devtoolsacademy.link/Jaewoong)** is an **open-source**, self-hostable platform that connects any AI agent to your team in Slack, Teams & Discord. The code lives on GitHub, so you can inspect it and run it on your own infrastructure.
+
 ## Vision Agents
 
 <a href="https://github.com/GetStream/Vision-Agents/?utm_source=github&utm_medium=devrel&utm_campaign=jaewoong-github"><img alt="Vision Agents" src="https://github.com/skydoves/compose-stability-analyzer/raw/main/art/logo-vision-agents.png" width="300"/></a>
@@ -19,12 +25,6 @@ The sponsors listed below made it possible for this project to be released as op
 <a href="https://firebender.com/?utm_source=skydoves"><img alt="Firebender" src="https://github.com/skydoves/compose-stability-analyzer/raw/main/art/logo-firebender.png" width="300"/></a>
 
 **[Firebender](https://firebender.com/?utm_source=skydoves)** is the most powerful AI coding agent in Android Studio. It can create entire compose UIs from Figma links, generate UML diagrams, and even understand your voice input.
-
-## Switch
-
-<a href="https://devtoolsacademy.link/Jaewoong"><img alt="Switch" src="https://github.com/skydoves/compose-stability-analyzer/raw/main/art/logo-switch-dark.svg" width="300"/></a>
-
-**[Switch](https://devtoolsacademy.link/Jaewoong)**: Connect any AI agent to your team in Slack, Teams & Discord. Open-source and self-hostable.
 
 ---
 

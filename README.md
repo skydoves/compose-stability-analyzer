@@ -25,6 +25,10 @@ You can change the colors used for stability indicators to match your IDE theme,
 
 The sponsors listed below made it possible for this project to be released as open source. Many thanks to all of them for their support!
 
+<a href="https://devtoolsacademy.link/Jaewoong"><picture><source media="(prefers-color-scheme: dark)" srcset="art/logo-switch-dark.svg"><img alt="Switch" src="art/logo-switch.svg" width="300"/></picture></a>
+
+**[Switch (GitHub)](https://devtoolsacademy.link/Jaewoong)** is an **open-source**, self-hostable platform that connects any AI agent to your team in Slack, Teams & Discord. The code lives on GitHub, so you can inspect it and run it on your own infrastructure.
+
 <a href="https://github.com/GetStream/Vision-Agents/?utm_source=github&utm_medium=devrel&utm_campaign=jaewoong-github"><img alt="Profile" src="art/logo-vision-agents.png" width="300"/></a>
 
 **[Vision Agents (GitHub)](https://github.com/GetStream/Vision-Agents/?utm_source=github&utm_medium=devrel&utm_campaign=jaewoong-github)** is an open-source Video AI framework for building real-time voice and video applications. The framework is edge/transport agnostic, meaning developers can also bring any edge layer they like.
@@ -36,10 +40,6 @@ The sponsors listed below made it possible for this project to be released as op
 <a href="https://firebender.com/?utm_source=skydoves"><img alt="Profile" src="art/logo-firebender.png" width="300"/></a>
 
 **[Firebender](https://firebender.com/?utm_source=skydoves)** is the most powerful AI coding agent in Android Studio. It can create entire compose UIs from Figma links, generate UML diagrams, and even understand your voice input.
-
-<a href="https://devtoolsacademy.link/Jaewoong"><picture><source media="(prefers-color-scheme: dark)" srcset="art/logo-switch-dark.svg"><img alt="Switch" src="art/logo-switch.svg" width="300"/></picture></a>
-
-**[Switch](https://devtoolsacademy.link/Jaewoong)**: Connect any AI agent to your team in Slack, Teams & Discord. Open-source and self-hostable.
 
 <a href="https://howcomposeworks.com/">
 <img src="https://github.com/user-attachments/assets/0f0f72fc-49ce-48b5-b3dd-f2c04e907f80" width="13%" align="right"/>
