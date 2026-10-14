@@ -16,7 +16,7 @@ The sponsors listed below made it possible for this project to be released as op
 
 ## CodeRabbit
 
-<a href="https://coderabbit.link/Jaewoong" target="_blank"><img width="300" alt="CodeRabbit" src="https://github.com/skydoves/compose-stability-analyzer/raw/main/art/logo-coderabbit.png" /></a>
+<a href="https://coderabbit.link/Jaewoong" target="_blank"><img width="300" alt="CodeRabbit" src="https://github.com/skydoves/compose-stability-analyzer/raw/main/art/logo-coderabbit-dark.png" /></a>
 
 **[CodeRabbit](https://coderabbit.link/Jaewoong)** is an AI-powered code review platform that integrates directly into pull-request workflows and IDEs, examining code changes in context and suggesting improvements.
 
