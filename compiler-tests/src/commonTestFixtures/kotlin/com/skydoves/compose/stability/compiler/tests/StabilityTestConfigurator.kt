@@ -15,13 +15,8 @@
  */
 package com.skydoves.compose.stability.compiler.tests
 
-import com.skydoves.compose.stability.compiler.StabilityAnalyzerFirExtensionRegistrar
-import com.skydoves.compose.stability.compiler.StabilityAnalyzerIrGenerationExtension
-import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
-import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
-import org.jetbrains.kotlin.compiler.plugin.registerExtension
+import com.skydoves.compose.stability.compiler.StabilityAnalyzerConfigurationKeys
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 import org.jetbrains.kotlin.test.directives.model.DirectivesContainer
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.EnvironmentConfigurator
@@ -29,10 +24,7 @@ import org.jetbrains.kotlin.test.services.TestServices
 import java.io.File
 
 /**
- * Test configurator that registers the Stability Analyzer compiler plugin
- * for use in compiler tests.
- *
- * This is used by test base classes to ensure the plugin is active during test compilation.
+ * Test configurator that registers compiler configuration for the Stability Analyzer compiler plugin
  */
 class StabilityTestConfigurator(testServices: TestServices) :
   EnvironmentConfigurator(testServices) {
@@ -40,29 +32,19 @@ class StabilityTestConfigurator(testServices: TestServices) :
   override val directiveContainers: List<DirectivesContainer> =
     listOf(StabilityTestDirectives)
 
-  override fun CompilerPluginRegistrar.ExtensionStorage.registerCompilerExtensions(
-    module: TestModule,
+  override fun configureCompilerConfiguration(
     configuration: CompilerConfiguration,
+    module: TestModule,
   ) {
-    // Register FIR extensions for frontend analysis (K2). Matches the production registrar's
-    // Kotlin 2.4.0 registration (KT-83341): register via FirExtensionRegistrar, not the adapter.
-    FirExtensionRegistrar.registerExtension(
-      StabilityAnalyzerFirExtensionRegistrar(),
+    configuration.put(
+      StabilityAnalyzerConfigurationKeys.KEY_TRACE_ALL,
+      StabilityTestDirectives.ENABLE_TRACE_ALL in module.directives,
     )
-
-    val traceAll = StabilityTestDirectives.ENABLE_TRACE_ALL in module.directives
-
-    val stabilityConfigurationFiles = module
-      .directives[StabilityTestDirectives.STABILITY_CONFIGURATION_FILES]
-      .map { File(it) }
-
-    // Register IR generation extension for backend transformations
-    IrGenerationExtension.registerExtension(
-      StabilityAnalyzerIrGenerationExtension(
-        stabilityOutputDir = "",
-        traceAll = traceAll,
-        stabilityConfigurationFiles = stabilityConfigurationFiles,
-      ),
+    configuration.put(
+      StabilityAnalyzerConfigurationKeys.KEY_STABILITY_CONFIGURATION_FILES,
+      module
+        .directives[StabilityTestDirectives.STABILITY_CONFIGURATION_FILES]
+        .map { File(it) },
     )
   }
 }

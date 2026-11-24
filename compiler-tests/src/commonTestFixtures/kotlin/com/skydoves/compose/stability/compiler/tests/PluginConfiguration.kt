@@ -15,6 +15,8 @@
  */
 package com.skydoves.compose.stability.compiler.tests
 
+import com.skydoves.compose.stability.compiler.StabilityAnalyzerPluginRegistrar
+import org.jetbrains.kotlin.compiler.plugin.devkit.services.configurePlugin
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
 
 /**
@@ -25,5 +27,6 @@ import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
  */
 fun TestConfigurationBuilder.configurePlugin() {
   // Register the compiler plugin
+  configurePlugin(StabilityAnalyzerPluginRegistrar())
   useConfigurators(::StabilityTestConfigurator)
 }
