@@ -132,7 +132,7 @@ internal class AndroidStabilityTaskRegistrar : StabilityTaskRegistrar() {
     }
 
     target.afterEvaluate {
-      addRuntimeDependency(target)
+      registerLintingTask(project)
     }
   }
 
