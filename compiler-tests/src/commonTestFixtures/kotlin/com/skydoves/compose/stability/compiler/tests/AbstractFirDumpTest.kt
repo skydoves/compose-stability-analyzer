@@ -31,7 +31,7 @@ import org.jetbrains.kotlin.test.services.TestPhase
  * - Debugging frontend analysis
  * - Tracking FIR tree changes over time
  *
- * Test data files should be placed in `compiler-tests/src/test/data/dump/fir/`.
+ * Test data files should be placed in `compiler-tests/src/commonTest/data/dump/fir/`.
  *
  * Example test file:
  * ```kotlin

@@ -38,7 +38,7 @@ import org.jetbrains.kotlin.test.runners.ir.AbstractFirLightTreeJvmIrTextTest
  * - Tracking IR changes over time
  * - Understanding how high-level Kotlin code becomes IR
  *
- * Test data files should be placed in `compiler-tests/src/test/data/dump/ir/`.
+ * Test data files should be placed in `compiler-tests/src/commonTest/data/dump/ir/`.
  *
  * Example test file:
  * ```kotlin
