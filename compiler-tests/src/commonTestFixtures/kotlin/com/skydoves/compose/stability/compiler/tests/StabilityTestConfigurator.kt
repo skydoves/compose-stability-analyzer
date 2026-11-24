@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.test.directives.model.DirectivesContainer
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.EnvironmentConfigurator
 import org.jetbrains.kotlin.test.services.TestServices
-import java.io.File
+import org.jetbrains.kotlin.test.services.moduleStructure
 
 /**
  * Test configurator that registers compiler configuration for the Stability Analyzer compiler plugin
@@ -40,11 +40,12 @@ class StabilityTestConfigurator(testServices: TestServices) :
       StabilityAnalyzerConfigurationKeys.KEY_TRACE_ALL,
       StabilityTestDirectives.ENABLE_TRACE_ALL in module.directives,
     )
+    val parentDirectory = testServices.moduleStructure.originalTestDataFiles.first().parentFile
     configuration.put(
       StabilityAnalyzerConfigurationKeys.KEY_STABILITY_CONFIGURATION_FILES,
       module
         .directives[StabilityTestDirectives.STABILITY_CONFIGURATION_FILES]
-        .map { File(it) },
+        .map { parentDirectory.resolve(it) },
     )
   }
 }

@@ -1,6 +1,6 @@
 // DUMP_KT_IR
 // ENABLE_TRACE_ALL
-// STABILITY_CONFIGURATION_FILES: compiler-tests/src/commonTest/data/dump/ir/stability_config_mismatch.conf
+// STABILITY_CONFIGURATION_FILES: stability_config_mismatch.conf
 
 import androidx.compose.runtime.Composable
 
