@@ -6,7 +6,7 @@ Compiler tests using JetBrains' official Kotlin compiler testing infrastructure.
 
 ### 1. Diagnostic Tests
 
-Create `.kt` files under `src/test/data/diagnostic/` to test compiler diagnostics (errors, warnings).
+Create `.kt` files under `src/commonTest/data/diagnostic/` to test compiler diagnostics (errors, warnings).
 
 - Fast (frontend-only execution)
 - Diagnostics are injected as comments in the test file
@@ -27,7 +27,7 @@ fun UserCard(user: MutableUser) {
 
 ### 2. Box Tests
 
-Create `.kt` files under `src/test/data/box/` to test end-to-end compilation and execution.
+Create `.kt` files under `src/commonTest/data/box/` to test end-to-end compilation and execution.
 
 - Full compiler execution (FIR + IR + codegen)
 - Must have a `box()` function that returns `"OK"` on success
@@ -57,8 +57,8 @@ fun box(): String {
 ### 1. Create Test File
 
 Add a `.kt` file to the appropriate directory:
-- `src/test/data/diagnostic/` for diagnostic tests
-- `src/test/data/box/` for box tests
+- `src/commonTest/data/diagnostic/` for diagnostic tests
+- `src/commonTest/data/box/` for box tests
 
 ### 2. Generate Test Classes
 
@@ -68,7 +68,7 @@ Run the `generateTests` task to create test classes:
 ./gradlew :compiler-tests:generateTests
 ```
 
-This will generate test classes in `src/test/java/` based on your test data files.
+This will generate test classes in `src/build/test-gen/` based on your test data files.
 
 ### 3. Run Tests
 
@@ -107,5 +107,5 @@ Install the [Kotlin Compiler DevKit](https://github.com/JetBrains/kotlin-compile
 ## Examples
 
 See existing test files in:
-- `src/test/data/diagnostic/` - Diagnostic test examples
-- `src/test/data/box/` - Box test examples
+- `src/commonTest/data/diagnostic/` - Diagnostic test examples
+- `src/commonTest/data/box/` - Box test examples

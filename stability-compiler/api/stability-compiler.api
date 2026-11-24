@@ -84,14 +84,10 @@ public final class com/skydoves/compose/stability/compiler/ParameterStabilityInf
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerCommandLineProcessor : org/jetbrains/kotlin/compiler/plugin/CommandLineProcessor {
+public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerCommandLineProcessor : org/jetbrains/kotlin/compiler/plugin/devkit/DevKitCLP {
 	public static final field Companion Lcom/skydoves/compose/stability/compiler/StabilityAnalyzerCommandLineProcessor$Companion;
 	public static final field PLUGIN_ID Ljava/lang/String;
 	public fun <init> ()V
-	public fun appendList (Lorg/jetbrains/kotlin/config/CompilerConfiguration;Lorg/jetbrains/kotlin/config/CompilerConfigurationKey;Ljava/lang/Object;)V
-	public fun appendList (Lorg/jetbrains/kotlin/config/CompilerConfiguration;Lorg/jetbrains/kotlin/config/CompilerConfigurationKey;Ljava/util/List;)V
-	public fun applyOptionsFrom (Lorg/jetbrains/kotlin/config/CompilerConfiguration;Ljava/util/Map;Ljava/util/Collection;)V
-	public fun getPluginId ()Ljava/lang/String;
 	public fun getPluginOptions ()Ljava/util/Collection;
 	public fun processOption (Lorg/jetbrains/kotlin/compiler/plugin/AbstractCliOption;Ljava/lang/String;Lorg/jetbrains/kotlin/config/CompilerConfiguration;)V
 }
@@ -129,10 +125,8 @@ public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerIrGe
 	public fun getShouldAlsoBeAppliedInKaptStubGenerationMode ()Z
 }
 
-public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerPluginRegistrar : org/jetbrains/kotlin/compiler/plugin/CompilerPluginRegistrar {
+public final class com/skydoves/compose/stability/compiler/StabilityAnalyzerPluginRegistrar : org/jetbrains/kotlin/compiler/plugin/devkit/DevKitComponentRegistrar {
 	public fun <init> ()V
-	public fun getPluginId ()Ljava/lang/String;
-	public fun getSupportsK2 ()Z
 	public fun registerExtensions (Lorg/jetbrains/kotlin/compiler/plugin/CompilerPluginRegistrar$ExtensionStorage;Lorg/jetbrains/kotlin/config/CompilerConfiguration;)V
 }
 

@@ -1,0 +1,189 @@
+/*
+ * Designed and developed by 2025 skydoves (Jaewoong Eum)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.skydoves.compose.stability.compiler
+
+import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
+import org.jetbrains.kotlin.compiler.plugin.CliOption
+import org.jetbrains.kotlin.compiler.plugin.CliOptionProcessingException
+import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
+import org.jetbrains.kotlin.compiler.plugin.devkit.DevKitCLP
+import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.CompilerConfigurationKey
+import java.io.File
+
+public object StabilityAnalyzerConfigurationKeys {
+  public val KEY_ENABLED: CompilerConfigurationKey<Boolean> =
+    CompilerConfigurationKey<Boolean>("enabled")
+
+  public val KEY_STABILITY_OUTPUT_DIR: CompilerConfigurationKey<String> =
+    CompilerConfigurationKey<String>("stabilityOutputDir")
+
+  @Deprecated(
+    "Cross-module types are detected from their IR declaration origin; this key is no longer " +
+      "read. Kept so older Gradle plugin versions keep compiling. Removed in 1.0.",
+  )
+  public val KEY_PROJECT_DEPENDENCIES: CompilerConfigurationKey<String> =
+    CompilerConfigurationKey<String>("projectDependencies")
+
+  public val KEY_TRACE_ALL: CompilerConfigurationKey<Boolean> =
+    CompilerConfigurationKey<Boolean>("traceAll")
+
+  public val KEY_TRACE_ALL_THRESHOLD: CompilerConfigurationKey<Int> =
+    CompilerConfigurationKey<Int>("traceAllThreshold")
+
+  public val KEY_STRONG_SKIPPING: CompilerConfigurationKey<Boolean> =
+    CompilerConfigurationKey<Boolean>("strongSkipping")
+
+  public val KEY_STABILITY_CONFIGURATION_FILES: CompilerConfigurationKey<List<File>> =
+    CompilerConfigurationKey<List<File>>("stabilityConfigurationFiles")
+}
+
+public class StabilityAnalyzerCommandLineProcessor : DevKitCLP {
+
+  public companion object {
+    public const val PLUGIN_ID: String = "com.skydoves.compose.stability.compiler"
+
+    public val OPTION_ENABLED: CliOption = CliOption(
+      optionName = "enabled",
+      valueDescription = "<true|false>",
+      description = "Enable stability analyzer",
+      required = false,
+    )
+
+    public val OPTION_STABILITY_OUTPUT_DIR: CliOption = CliOption(
+      optionName = "stabilityOutputDir",
+      valueDescription = "<path>",
+      description = "Output directory for stability information",
+      required = false,
+    )
+
+    /**
+     * No longer read. Cross-module types are detected from their IR declaration origin instead of
+     * a Gradle-side scan of sibling projects, which was incompatible with Isolated Projects
+     * (issue #107). The option stays registered because [CommandLineProcessor] rejects unknown
+     * options outright, which would break builds that pin an older Gradle plugin against this
+     * compiler artifact. Removed in 1.0.
+     */
+    @Deprecated(
+      "No longer read; cross-module detection uses IR declaration origins. Removed in 1.0.",
+    )
+    public val OPTION_PROJECT_DEPENDENCIES: CliOption = CliOption(
+      optionName = "projectDependencies",
+      valueDescription = "<path>",
+      description = "Deprecated and ignored; cross-module types are detected from IR origins",
+      required = false,
+    )
+
+    public val OPTION_TRACE_ALL: CliOption = CliOption(
+      optionName = "traceAll",
+      valueDescription = "<true|false>",
+      description = "Auto-instrument every restartable composable for recomposition tracing",
+      required = false,
+    )
+
+    public val OPTION_TRACE_ALL_THRESHOLD: CliOption = CliOption(
+      optionName = "traceAllThreshold",
+      valueDescription = "<int>",
+      description = "Recomposition count threshold for auto-traced composables",
+      required = false,
+    )
+
+    /**
+     * Mirrors the Compose compiler's `StrongSkipping` feature flag, which is enabled by default
+     * (`ComposePlugin.FeatureFlag.StrongSkipping`). With strong skipping on, an unstable parameter
+     * no longer prevents a restartable composable from skipping, so the reported `skippable`
+     * verdict must follow the same rule or it contradicts the compiler.
+     */
+    public val OPTION_STRONG_SKIPPING: CliOption = CliOption(
+      optionName = "strongSkipping",
+      valueDescription = "<true|false>",
+      description = "Report skippability using Compose's strong skipping semantics",
+      required = false,
+    )
+
+    public val OPTION_STABILITY_CONFIGURATION_FILE: CliOption = CliOption(
+      optionName = "stabilityConfigurationFile",
+      valueDescription = "<path>",
+      description = "Stability configuration file to take into account when analyzing stability",
+      required = false,
+      allowMultipleOccurrences = true,
+    )
+  }
+
+  @Suppress("DEPRECATION")
+  override val pluginOptions: Collection<AbstractCliOption> = listOf(
+    OPTION_ENABLED,
+    OPTION_STABILITY_OUTPUT_DIR,
+    OPTION_PROJECT_DEPENDENCIES,
+    OPTION_TRACE_ALL,
+    OPTION_TRACE_ALL_THRESHOLD,
+    OPTION_STRONG_SKIPPING,
+    OPTION_STABILITY_CONFIGURATION_FILE,
+  )
+
+  @Suppress("DEPRECATION")
+  override fun processOption(
+    option: AbstractCliOption,
+    value: String,
+    configuration: CompilerConfiguration,
+  ) {
+    when (option) {
+      OPTION_ENABLED -> configuration.put(
+        StabilityAnalyzerConfigurationKeys.KEY_ENABLED,
+        value.toBooleanOrFail("enabled"),
+      )
+
+      OPTION_STABILITY_OUTPUT_DIR -> configuration.put(
+        StabilityAnalyzerConfigurationKeys.KEY_STABILITY_OUTPUT_DIR,
+        value,
+      )
+
+      // Accepted and ignored — see OPTION_PROJECT_DEPENDENCIES.
+      OPTION_PROJECT_DEPENDENCIES -> Unit
+
+      OPTION_TRACE_ALL -> configuration.put(
+        StabilityAnalyzerConfigurationKeys.KEY_TRACE_ALL,
+        value.toBooleanOrFail("traceAll"),
+      )
+
+      OPTION_TRACE_ALL_THRESHOLD -> configuration.put(
+        StabilityAnalyzerConfigurationKeys.KEY_TRACE_ALL_THRESHOLD,
+        value.toIntOrNull() ?: 2,
+      )
+
+      OPTION_STRONG_SKIPPING -> configuration.put(
+        StabilityAnalyzerConfigurationKeys.KEY_STRONG_SKIPPING,
+        value.toBooleanOrFail("strongSkipping"),
+      )
+
+      OPTION_STABILITY_CONFIGURATION_FILE -> configuration.add(
+        StabilityAnalyzerConfigurationKeys.KEY_STABILITY_CONFIGURATION_FILES,
+        File(value),
+      )
+    }
+  }
+
+  /**
+   * `String.toBoolean()` maps every value that is not "true" to `false`, so a typo such as
+   * `strongSkipping=treu` would silently invert the option and produce a report that disagrees with
+   * the code the Compose compiler generates. Fail loudly instead; the Gradle plugin always passes a
+   * real `Boolean.toString()`, so only a hand-written compiler argument can reach this.
+   */
+  private fun String.toBooleanOrFail(optionName: String): Boolean =
+    toBooleanStrictOrNull() ?: throw CliOptionProcessingException(
+      "Invalid value for '$optionName': '$this'. Expected 'true' or 'false'.",
+    )
+}

@@ -45,7 +45,7 @@ The sample app resolves the Gradle plugin from Maven Local (it shadows Maven Cen
 3. **Tests**: run the suites relevant to your change:
    - `./gradlew :stability-runtime:jvmTest :stability-gradle:test :stability-compiler:test :compiler-tests:test`
    - IDE plugin: `cd compose-stability-analyzer-idea && ../gradlew test`
-4. **Compiler golden data**: if your change affects generated IR, regenerate snapshots with `./gradlew :compiler-tests:test -Pupdate.test.data` (the regenerating run reports failures while writing; the next run passes). Never hand-edit `.txt` snapshots or the generated JUnit classes under `compiler-tests/src/test/java/`.
+4. **Compiler golden data**: if your change affects generated IR, regenerate snapshots with `./gradlew :compiler-tests:test -PPupdateTestData` (the regenerating run reports failures while writing; the next run passes). Never hand-edit `.txt` snapshots or the generated JUnit classes under `compiler-tests/src/commonTest`.
 
 ## Things to Know Before Changing…
 

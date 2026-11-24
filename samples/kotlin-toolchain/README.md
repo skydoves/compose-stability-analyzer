@@ -57,7 +57,7 @@ the same verdict. Measured: `parameters = 0`, `parameters = 1` and no annotation
 `RUNTIME`.
 
 That behaviour is worth guarding, and it already is, by
-`compiler-tests/src/test/data/dump/ir/StabilityInferredIsBinaryOnly.kt` and
+`compiler-tests/src/commonTest/data/dump/ir/StabilityInferredIsBinaryOnly.kt` and
 `StabilityInferredCrossModule.kt`, which run in CI and can actually fail. Do not re-add it here.
 
 ## Releasing

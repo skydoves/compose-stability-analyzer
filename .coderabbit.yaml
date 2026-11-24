@@ -46,7 +46,7 @@ reviews:
     # Generated JUnit classes from the Kotlin compiler test framework
     # (regenerated via `./gradlew :compiler-tests:generateTests` — never hand-written).
     - "!compiler-tests/src/test/java/**"
-    # Golden dump data (FIR/IR snapshots), regenerated with `-Pupdate.test.data`.
+    # Golden dump data (FIR/IR snapshots), regenerated with `-PupdateTestData`.
     # The *.kt test-data SOURCES next to them ARE reviewed; only snapshots are excluded.
     - "!compiler-tests/src/test/data/**/*.txt"
     # Binary-compatibility-validator dumps, regenerated via `./gradlew apiDump`.
@@ -185,7 +185,7 @@ reviews:
       instructions: >-
         Kotlin compiler-test-framework suite. The .kt files under src/test/data are TEST
         SOURCES (review them); the .txt goldens and generated JUnit classes are excluded from
-        review and must be produced by `generateTests` / `-Pupdate.test.data`, never
+        review and must be produced by `generateTests` / `-PupdateTestData`, never
         hand-edited. New compiler behavior (especially anything gated by a plugin option)
         needs a directive-driven test (see StabilityTestDirectives) covering both the positive
         case and the skip/exclusion matrix.
