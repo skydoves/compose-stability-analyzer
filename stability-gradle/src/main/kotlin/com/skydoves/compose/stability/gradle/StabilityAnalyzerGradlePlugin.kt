@@ -15,12 +15,12 @@
  */
 package com.skydoves.compose.stability.gradle
 
+import com.skydoves.compose.stability.compiler.PluginInfo
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
+import org.jetbrains.kotlin.compiler.plugin.devkit.DevKitSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.FilesSubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
-import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
-import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -34,23 +34,9 @@ import java.io.File
  * This plugin follows the KotlinCompilerPluginSupportPlugin pattern for proper
  * integration with the Kotlin Gradle Plugin.
  */
-public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
+public class StabilityAnalyzerGradlePlugin : DevKitSupportPlugin(PluginInfo.PLUGIN_INFO) {
 
   public companion object {
-    // Plugin IDs
-    private const val COMPILER_PLUGIN_ID = "com.skydoves.compose.stability.compiler"
-    internal const val MULTIPLATFORM_PLUGIN_ID = "org.jetbrains.kotlin.multiplatform"
-
-    // Artifact coordinates
-    internal const val GROUP_ID = "com.github.skydoves"
-    private const val COMPILER_ARTIFACT_ID = "compose-stability-compiler"
-    internal const val RUNTIME_ARTIFACT_ID = "compose-stability-runtime"
-
-    // This version should match the version in gradle.properties (VERSION_NAME).
-    // Update this when bumping the library version — it pins the compiler/runtime
-    // artifacts the Gradle plugin pulls onto the Kotlin compile classpath.
-    internal const val VERSION = "0.15.0"
-
     // Compiler option keys
     private const val OPTION_ENABLED = "enabled"
     private const val OPTION_STABILITY_OUTPUT_DIR = "stabilityOutputDir"
@@ -58,9 +44,6 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     private const val OPTION_TRACE_ALL_THRESHOLD = "traceAllThreshold"
     private const val OPTION_STRONG_SKIPPING = "strongSkipping"
     private const val OPTION_STABILITY_CONFIGURATION_FILE = "stabilityConfigurationFile"
-
-    /** Maven coordinate of the runtime this plugin version pairs with. */
-    internal const val RUNTIME_DEPENDENCY: String = "$GROUP_ID:$RUNTIME_ARTIFACT_ID:$VERSION"
 
     /**
      * Builds the compiler plugin options. Extracted from [applyToCompilation] so the choice of
@@ -123,9 +106,6 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       StabilityAnalyzerExtension::class.java,
       target.layout,
     )
-
-    // Add runtime to compiler plugin classpath for all compilations
-    addRuntimeToCompilerClasspath(target)
 
     val registrar =
       if (target.plugins.hasPlugin("com.android.base")) {
@@ -207,31 +187,22 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
     return true
   }
 
-  override fun getCompilerPluginId(): String = COMPILER_PLUGIN_ID
-
-  override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
-    groupId = GROUP_ID,
-    artifactId = COMPILER_ARTIFACT_ID,
-    version = VERSION,
-  )
-
-  override fun applyToCompilation(
+  override fun Project.applyToCompilation(
     kotlinCompilation: KotlinCompilation<*>,
   ): Provider<List<SubpluginOption>> {
-    val project = kotlinCompilation.target.project
-    val extension = project.extensions.getByType(StabilityAnalyzerExtension::class.java)
+    val extension = extensions.getByType(StabilityAnalyzerExtension::class.java)
 
     // Everything the provider needs is resolved to a plain value or a Provider here, so the lambda
     // below closes over neither Project nor KotlinCompilation (the latter transitively holds the
     // Project). That matters on Kotlin/Native, where KGP realizes this provider eagerly during
     // task configuration rather than at configuration-cache store time.
     // Per-compilation output directory avoids shared output conflicts (Issue #153).
-    val stabilityDir = project.layout.buildDirectory
+    val stabilityDir = layout.buildDirectory
       .dir("stability/${kotlinCompilation.compileTaskProvider.name}")
     val compilationName = kotlinCompilation.name
     val isTestCompilation = isTestCompilation(kotlinCompilation)
 
-    return project.providers.provider {
+    return provider {
       val traceAllEnabled = extension.traceAll.enabled.get() &&
         compilationAcceptsTraceAll(
           compilationName,
@@ -271,19 +242,6 @@ public class StabilityAnalyzerGradlePlugin : KotlinCompilerPluginSupportPlugin {
       return false
     }
     return traceAllMatchesCompilationName(compilationName, variantTokens)
-  }
-
-  /**
-   * Add runtime to compiler plugin classpath.
-   * This ensures the compiler plugin can access runtime classes during compilation.
-   */
-  private fun addRuntimeToCompilerClasspath(project: Project) {
-    // Add runtime to all compiler plugin classpath configurations
-    project.configurations.configureEach {
-      if (name.contains("CompilerPluginClasspath", ignoreCase = true)) {
-        project.dependencies.add(name, RUNTIME_DEPENDENCY)
-      }
-    }
   }
 
   /**

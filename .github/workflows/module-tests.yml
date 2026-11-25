@@ -31,16 +31,6 @@ jobs:
       - name: Build stability-compiler
         run: ./gradlew :stability-compiler:build --no-daemon --stacktrace
 
-      - name: Run stability-compiler tests
-        run: ./gradlew :stability-compiler:test --no-daemon --stacktrace
-
-      - name: Upload test results
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: compiler-test-results
-          path: stability-compiler/build/reports/tests/
-
   compiler-tests:
     name: Compiler Tests (FIR/IR Dumps)
     runs-on: ubuntu-latest
@@ -62,7 +52,7 @@ jobs:
         run: ./gradlew :compiler-tests:build --no-daemon --stacktrace
 
       - name: Run compiler-tests
-        run: ./gradlew :compiler-tests:test --no-daemon --stacktrace
+        run: ./gradlew :compiler-tests:allTests --no-daemon --stacktrace
 
       - name: Upload test results
         if: failure()

@@ -17,7 +17,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("compose-stability.conventions")
-    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.devkit.functional.test.publishing)
+    alias(libs.plugins.devkit.gradle.plugin)
     `kotlin-dsl`
     alias(libs.plugins.nexus.plugin)
 }
@@ -27,6 +28,12 @@ version = project.property("VERSION_NAME") as String
 
 kotlin {
   explicitApi()
+}
+
+pluginDevKit {
+  compilerPlugin(project(":stability-compiler"))
+  companionLibrary(project(":stability-runtime"))
+  pluginPackage = "com.skydoves.compose.stability.compiler"
 }
 
 dependencies {
@@ -46,7 +53,7 @@ dependencies {
 
 tasks.withType<KotlinCompile> {
   compilerOptions {
-    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
     languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
   }
@@ -64,6 +71,6 @@ gradlePlugin {
 }
 
 java {
-  sourceCompatibility = JavaVersion.VERSION_11
-  targetCompatibility = JavaVersion.VERSION_11
+  sourceCompatibility = JavaVersion.VERSION_17
+  targetCompatibility = JavaVersion.VERSION_17
 }

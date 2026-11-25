@@ -60,7 +60,7 @@ spotless {
     target("**/*.kt")
     targetExclude("**/build/**/*.kt")
     // Exclude test data files (they have special formatting requirements)
-    targetExclude("**/src/test/data/**/*.kt")
+    targetExclude("**/src/commonTest/data/**/*.kt")
     // Exclude files using context parameters (ktlint doesn't support them yet)
     targetExclude("**/ComposableStabilityChecker.kt")
     ktlint().editorConfigOverride(

@@ -2,6 +2,7 @@
 junit = "4.13.2"
 kotlin = "2.4.20"
 dokka = "2.2.0"
+devkit = "0.1.0"
 jvmTarget = "17"
 kotlinxCollectionsImmutable = "0.4.0"
 kotlinxSerialization = "1.11.0"
@@ -49,6 +50,10 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+devkit-functional-test-publishing = { id = "org.jetbrains.kotlin.compiler.plugin.devkit.functional-test-publishing", version.ref = "devkit" }
+devkit-compiler-library = { id = "org.jetbrains.kotlin.compiler.plugin.devkit.compiler-library", version.ref = "devkit" }
+devkit-compiler-plugin = { id = "org.jetbrains.kotlin.compiler.plugin.devkit.compiler-plugin", version.ref = "devkit" }
+devkit-gradle-plugin = { id = "org.jetbrains.kotlin.compiler.plugin.devkit.gradle-plugin", version.ref = "devkit" }
 kotlin-binary-compatibility = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "kotlinBinaryCompatibility" }
 jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "jetbrains-compose" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

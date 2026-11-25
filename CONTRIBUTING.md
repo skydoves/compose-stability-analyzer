@@ -43,9 +43,9 @@ The sample app resolves the Gradle plugin from Maven Local (it shadows Maven Cen
 1. **Format**: run `./gradlew spotlessApply` — CI fails on formatting violations, and Spotless also applies the license header to new files.
 2. **API dumps**: if you changed any public API in a published module, run `./gradlew apiDump` and commit the updated `api/*.api` files.
 3. **Tests**: run the suites relevant to your change:
-   - `./gradlew :stability-runtime:jvmTest :stability-gradle:test :stability-compiler:test :compiler-tests:test`
+   - `./gradlew :stability-runtime:jvmTest :stability-gradle:test :compiler-tests:allTests`
    - IDE plugin: `cd compose-stability-analyzer-idea && ../gradlew test`
-4. **Compiler golden data**: if your change affects generated IR, regenerate snapshots with `./gradlew :compiler-tests:test -Pupdate.test.data` (the regenerating run reports failures while writing; the next run passes). Never hand-edit `.txt` snapshots or the generated JUnit classes under `compiler-tests/src/test/java/`.
+4. **Compiler golden data**: if your change affects generated IR, regenerate snapshots with `./gradlew :compiler-tests:allTests -PupdateTestData` (the regenerating run reports failures while writing; the next run passes). Never hand-edit `.txt` snapshots or the generated JUnit classes under `compiler-tests/build/test-gen`.
 
 ## Things to Know Before Changing…
 

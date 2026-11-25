@@ -83,7 +83,7 @@ internal class JvmStabilityTaskRegistrar : StabilityTaskRegistrar() {
     // Configure after project evaluation
     target.afterEvaluate {
       configureTaskDependencies(target, extension, null, stabilityDumpTask, stabilityCheckTask)
-      addRuntimeDependency(target)
+      registerLintingTask(project)
     }
   }
 

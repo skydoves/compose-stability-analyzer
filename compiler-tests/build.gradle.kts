@@ -15,7 +15,8 @@
  */
 plugins {
   id("compose-stability.conventions")
-  kotlin("jvm")
+  alias(libs.plugins.devkit.functional.test.publishing)
+  alias(libs.plugins.devkit.compiler.library)
 }
 
 kotlin {
@@ -27,100 +28,23 @@ java {
   targetCompatibility = JavaVersion.VERSION_17
 }
 
-val testCompilerVersion = libs.versions.kotlin.get()
-
-val stabilityRuntimeClasspath: Configuration by configurations.creating {
-  isTransitive = false
+kotlin {
+  sourceSets {
+    commonTestFixtures.dependencies {
+      implementation(project(":stability-compiler"))
+    }
+  }
 }
 
-val composeRuntimeClasspath: Configuration by configurations.creating {}
+pluginDevKit {
+  testDataLibraries {
+    jvm(project(":stability-runtime"))
 
-dependencies {
-  // Compiler test framework
-  val compilerTestFramework = "org.jetbrains.kotlin:kotlin-compiler-internal-test-framework:$testCompilerVersion"
-  testImplementation(compilerTestFramework)
-  testImplementation("org.jetbrains.kotlin:kotlin-compiler:$testCompilerVersion")
-
-  // Our compiler plugin and runtime
-  testImplementation(project(":stability-compiler"))
-  testImplementation(project(":stability-runtime"))
-
-  // Test framework
-  testImplementation(kotlin("test-junit5"))
-  testImplementation(kotlin("test"))
-
-  // Required runtime dependencies
-  testRuntimeOnly(kotlin("reflect"))
-  testRuntimeOnly(kotlin("script-runtime"))
-  testRuntimeOnly("org.jetbrains.kotlin:kotlin-annotations-jvm:$testCompilerVersion")
-
-  // Compose runtime for testing
-  stabilityRuntimeClasspath(project(":stability-runtime"))
-  val composeVersion = "1.8.1" // Match with androidx.compose.runtime version
-  composeRuntimeClasspath("androidx.compose.runtime:runtime:$composeVersion")
-}
-
-val generateTests =
-  tasks.register<JavaExec>("generateTests") {
-    inputs
-      .dir(layout.projectDirectory.dir("src/test/data"))
-      .withPropertyName("testData")
-      .withPathSensitivity(PathSensitivity.RELATIVE)
-
-    outputs
-      .dir(layout.projectDirectory.dir("src/test/java"))
-      .withPropertyName("generatedTests")
-
-    classpath = sourceSets.test.get().runtimeClasspath
-    mainClass.set("com.skydoves.compose.stability.compiler.tests.GenerateTestsKt")
-    workingDir = rootDir
-
-    // Larger heap size for test generation
-    minHeapSize = "128m"
-    maxHeapSize = "1g"
-
-    // Larger stack size
-    jvmArgs("-Xss1m")
+    val composeVersion = "1.8.1" // Match with androidx.compose.runtime version
+    jvm("androidx.compose.runtime:runtime:$composeVersion")
   }
-
-tasks.withType<Test> {
-  dependsOn(stabilityRuntimeClasspath)
-  dependsOn(composeRuntimeClasspath)
-
-  inputs
-    .dir(layout.projectDirectory.dir("src/test/data"))
-    .withPropertyName("testData")
-    .withPathSensitivity(PathSensitivity.RELATIVE)
-
-  workingDir = rootDir
-
-  useJUnitPlatform()
-
-  // Set library properties for test framework
-  setLibraryProperty("kotlin.minimal.stdlib.path", "kotlin-stdlib")
-  setLibraryProperty("kotlin.full.stdlib.path", "kotlin-stdlib-jdk8")
-  setLibraryProperty("kotlin.reflect.jar.path", "kotlin-reflect")
-  setLibraryProperty("kotlin.test.jar.path", "kotlin-test")
-  setLibraryProperty("kotlin.script.runtime.path", "kotlin-script-runtime")
-  setLibraryProperty("kotlin.annotations.path", "kotlin-annotations-jvm")
-
-  // Set runtime classpaths
-  systemProperty("stabilityRuntime.classpath", stabilityRuntimeClasspath.asPath)
-  systemProperty("composeRuntime.classpath", composeRuntimeClasspath.asPath)
-
-  // Required properties for test framework
-  systemProperty("idea.ignore.disabled.plugins", "true")
-  systemProperty("idea.home.path", rootDir.absolutePath)
-
-  // Regenerate golden FIR/IR dump files: ./gradlew :compiler-tests:test -Pupdate.test.data
-  if (project.hasProperty("update.test.data")) {
-    systemProperty("kotlin.test.update.test.data", "true")
-  }
-
-  // Larger memory for tests
-  minHeapSize = "512m"
-  maxHeapSize = "2g"
-  jvmArgs("-Xss2m")
+  generateTestsEnabled = true
+  generateTestsClass = "com.skydoves.compose.stability.compiler.tests.GenerateTestsKt"
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
@@ -134,19 +58,9 @@ tasks.withType<JavaCompile> {
   targetCompatibility = "17"
 }
 
-fun Test.setLibraryProperty(propName: String, jarName: String) {
-  val path =
-    project.configurations.testRuntimeClasspath
-      .get()
-      .files
-      .find { """$jarName-\d.*jar""".toRegex().matches(it.name) }
-      ?.absolutePath ?: return
-  systemProperty(propName, path)
-}
-
 // Configure Spotless to exclude test data files
 configure<com.diffplug.gradle.spotless.SpotlessExtension> {
   kotlin {
-    targetExclude("src/test/data/**/*.kt")
+    targetExclude("src/commonTest/data/**/*.kt")
   }
 }
